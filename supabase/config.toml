@@ -1,1 +1,10 @@
 project_id = "yvclpmdgrwugayrvjtqg"
+
+[functions.analyze-trade]
+verify_jwt = false
+
+[functions.weekly-summary]
+verify_jwt = true
+
+[functions.trade-chat]
+verify_jwt = true

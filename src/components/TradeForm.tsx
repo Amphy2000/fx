@@ -36,7 +36,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { error } = await supabase.from("trades").insert({
+      const tradeData = {
         user_id: user.id,
         pair: formData.pair,
         direction: formData.direction,
@@ -48,11 +48,29 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
         profit_loss: formData.profit_loss ? parseFloat(formData.profit_loss) : null,
         notes: formData.notes || null,
         emotion_before: formData.emotion_before || null,
-      });
+      };
+
+      const { error } = await supabase.from("trades").insert(tradeData);
 
       if (error) throw error;
 
-      toast.success("Trade logged successfully!");
+      toast.success("Trade logged successfully! Getting AI feedback...");
+
+      // Get AI feedback
+      try {
+        const { data: aiData, error: aiError } = await supabase.functions.invoke('analyze-trade', {
+          body: { trade: tradeData }
+        });
+
+        if (aiError) throw aiError;
+
+        if (aiData?.feedback) {
+          toast.success(aiData.feedback, { duration: 8000 });
+        }
+      } catch (aiError) {
+        console.error("AI analysis error:", aiError);
+      }
+
       setFormData({
         pair: "",
         direction: "buy",
