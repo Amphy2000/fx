@@ -1,12 +1,192 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import Navbar from "@/components/Navbar";
+import { 
+  TrendingUp, 
+  Brain, 
+  BarChart3, 
+  Target, 
+  Shield, 
+  Zap,
+  Check
+} from "lucide-react";
+import heroImage from "@/assets/hero-bg.jpg";
 
 const Index = () => {
+  const navigate = useNavigate();
+
+  const features = [
+    {
+      icon: <TrendingUp className="h-6 w-6" />,
+      title: "Track Every Trade",
+      description: "Log trades with detailed entries, stops, targets, and outcomes",
+    },
+    {
+      icon: <Brain className="h-6 w-6" />,
+      title: "AI-Powered Insights",
+      description: "Get personalized feedback and pattern recognition from AI",
+    },
+    {
+      icon: <BarChart3 className="h-6 w-6" />,
+      title: "Performance Analytics",
+      description: "Visualize win rates, profit/loss, and trading patterns",
+    },
+    {
+      icon: <Target className="h-6 w-6" />,
+      title: "Psychology Tracking",
+      description: "Monitor emotions and discover psychological patterns",
+    },
+    {
+      icon: <Shield className="h-6 w-6" />,
+      title: "Secure & Private",
+      description: "Your trading data is encrypted and completely private",
+    },
+    {
+      icon: <Zap className="h-6 w-6" />,
+      title: "Real-Time Updates",
+      description: "Instantly sync across all your devices",
+    },
+  ];
+
+  const benefits = [
+    "Discover your strongest trading pairs",
+    "Get AI feedback after every trade",
+    "Stay disciplined and consistent",
+    "Track your trading habits effectively",
+  ];
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen gradient-dark">
+      <Navbar />
+      
+      {/* Hero Section */}
+      <section className="relative overflow-hidden">
+        <div 
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `url(${heroImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+        <div className="container mx-auto px-4 py-20 md:py-32 relative">
+          <div className="max-w-3xl mx-auto text-center">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
+              Your AI Trading Coach
+            </h1>
+            <p className="text-xl md:text-2xl text-muted-foreground mb-8">
+              Master Forex & Gold trading with AI-powered insights, psychology tracking, and personalized feedback
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                size="lg"
+                onClick={() => navigate("/auth")}
+                className="gradient-primary text-lg px-8"
+              >
+                Start Free Trial
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => navigate("/auth")}
+                className="text-lg px-8"
+              >
+                View Demo
+              </Button>
+            </div>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Free: 10 trades/month • Premium: $10/month for unlimited
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Benefits Section */}
+      <section className="py-16 bg-card/30">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-3xl font-bold text-center mb-12">
+              Why Traders Choose Amphy AI
+            </h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              {benefits.map((benefit, index) => (
+                <div
+                  key={index}
+                  className="flex items-start gap-3 p-4 rounded-lg bg-card/50 border border-border/50"
+                >
+                  <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                  <p className="text-foreground">{benefit}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
+            Everything You Need to Succeed
+          </h2>
+          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+            A complete trading journal built for serious traders who want to improve
+          </p>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((feature, index) => (
+              <Card
+                key={index}
+                className="border-border/50 bg-card/50 backdrop-blur transition-smooth hover:bg-card hover:border-primary/20"
+              >
+                <CardContent className="pt-6">
+                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
+                    {feature.icon}
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                  <p className="text-muted-foreground">{feature.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 gradient-primary">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-primary-foreground">
+            Ready to Transform Your Trading?
+          </h2>
+          <p className="text-lg text-primary-foreground/80 mb-8 max-w-2xl mx-auto">
+            Join traders who are improving their discipline and consistency with AI-powered insights
+          </p>
+          <Button
+            size="lg"
+            variant="secondary"
+            onClick={() => navigate("/auth")}
+            className="text-lg px-8"
+          >
+            Get Started Free
+          </Button>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-8 border-t border-border/50">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              <span className="font-semibold">Amphy AI Trade Journal</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              © 2025 Amphy AI. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
