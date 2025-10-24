@@ -11,6 +11,7 @@ import AIChat from "./pages/AIChat";
 import WeeklySummary from "./pages/WeeklySummary";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
+import Targets from "./pages/Targets";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/weekly-summary" element={<WeeklySummary />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/targets" element={<Targets />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

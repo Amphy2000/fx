@@ -20,13 +20,13 @@ export function Layout({ children }: LayoutProps) {
         <div className="flex-1 flex flex-col min-h-screen gradient-dark">
           {/* Mobile Header with Hamburger */}
           {isMobile && (
-            <div className="sticky top-0 z-40 flex items-center gap-3 border-b border-sidebar-border bg-sidebar/95 backdrop-blur-sm px-4 py-3">
+            <div className="sticky top-0 z-40 flex items-center gap-3 border-b border-border bg-background/95 backdrop-blur-sm px-4 py-3">
               <SidebarTrigger>
-                <Menu className="h-5 w-5 text-sidebar-foreground" />
+                <Menu className="h-5 w-5 text-foreground" />
               </SidebarTrigger>
               <div className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-sidebar-primary" />
-                <span className="font-bold text-lg text-sidebar-foreground">Amphy AI</span>
+                <TrendingUp className="h-5 w-5 text-primary" />
+                <span className="font-bold text-lg text-foreground">Amphy AI</span>
               </div>
             </div>
           )}
