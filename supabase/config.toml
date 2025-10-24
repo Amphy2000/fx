@@ -8,3 +8,12 @@ verify_jwt = true
 
 [functions.trade-chat]
 verify_jwt = true
+
+[functions.telegram-webhook]
+verify_jwt = false
+
+[functions.send-telegram-notification]
+verify_jwt = true
+
+[functions.telegram-weekly-summary]
+verify_jwt = false

@@ -71,6 +71,13 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
         console.error("AI analysis error:", aiError);
       }
 
+      // Send Telegram notification in background (don't wait for it)
+      supabase.functions.invoke('send-telegram-notification', {
+        body: { trade: tradeData }
+      }).catch(error => {
+        console.error("Error sending Telegram notification:", error);
+      });
+
       setFormData({
         pair: "",
         direction: "buy",
