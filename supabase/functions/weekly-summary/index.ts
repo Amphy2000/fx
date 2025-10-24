@@ -12,16 +12,32 @@ serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization')!;
+    const authHeader = req.headers.get('Authorization');
+    
+    if (!authHeader) {
+      return new Response(JSON.stringify({ 
+        error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
-      throw new Error("User not authenticated");
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !user) {
+      console.error("Auth error:", userError);
+      return new Response(JSON.stringify({ 
+        error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Get trades from the last 7 days
@@ -50,6 +66,12 @@ serve(async (req) => {
     const losses = trades.filter(t => t.result === 'loss').length;
     const winRate = trades.length > 0 ? Math.round((wins / trades.length) * 100) : 0;
     
+    // Calculate total P/L
+    const totalPL = trades.reduce((sum, t) => {
+      const pl = t.profit_loss ? parseFloat(String(t.profit_loss)) : 0;
+      return sum + pl;
+    }, 0);
+    
     const pairCounts: Record<string, number> = {};
     trades.forEach(t => {
       pairCounts[t.pair] = (pairCounts[t.pair] || 0) + 1;
@@ -73,11 +95,12 @@ Statistics:
 - Win Rate: ${winRate}%
 - Wins: ${wins}
 - Losses: ${losses}
+- Total P/L: $${totalPL.toFixed(2)}
 - Most Traded Pair: ${mostTradedPair}
 - Common Emotions: ${Object.keys(emotionCounts).join(', ')}
 
 Recent Trades Summary:
-${trades.slice(0, 10).map(t => `- ${t.pair} ${t.direction} (${t.result || 'pending'})`).join('\n')}
+${trades.slice(0, 10).map(t => `- ${t.pair} ${t.direction} (${t.result || 'pending'})${t.profit_loss ? ` P/L: $${t.profit_loss}` : ''}`).join('\n')}
 
 Provide:
 1. A brief performance overview (2-3 sentences)
@@ -103,19 +126,13 @@ Keep it motivating and specific.`;
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limits exceeded, please try again later." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required, please add funds to your workspace." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      throw new Error("AI gateway error");
+      console.error("AI gateway error:", response.status);
+      return new Response(JSON.stringify({ 
+        error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const data = await response.json();
@@ -128,6 +145,7 @@ Keep it motivating and specific.`;
         winRate,
         wins,
         losses,
+        totalPL: totalPL.toFixed(2),
         mostTradedPair
       }
     }), {
@@ -135,8 +153,10 @@ Keep it motivating and specific.`;
     });
   } catch (error) {
     console.error("Error in weekly-summary function:", error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
-      status: 500,
+    return new Response(JSON.stringify({ 
+      error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
+    }), {
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
