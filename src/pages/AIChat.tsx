@@ -40,10 +40,12 @@ const AIChat = () => {
     } catch (error: any) {
       console.error("Chat error:", error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to get AI response",
+        title: "Oops! Our AI is feeling sleepy 😴",
+        description: "Please try again in a moment. Our AI assistant needs a quick break!",
         variant: "destructive",
       });
+      // Remove the failed user message
+      setMessages(prev => prev.slice(0, -1));
     } finally {
       setIsLoading(false);
     }

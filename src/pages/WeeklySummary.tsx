@@ -33,10 +33,11 @@ const WeeklySummary = () => {
     } catch (error: any) {
       console.error("Summary error:", error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to load weekly summary",
+        title: "Oops! Our AI is feeling sleepy 😴",
+        description: "Please try again in a moment. We're refreshing the summary generator!",
         variant: "destructive",
       });
+      setSummary("Unable to generate summary at this time. Please try again in a moment.");
     } finally {
       setIsLoading(false);
     }
