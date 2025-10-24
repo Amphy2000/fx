@@ -7,14 +7,35 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Calculator, TrendingUp, Wallet, DollarSign } from "lucide-react";
+import { Calculator, TrendingUp, Wallet, DollarSign, Info } from "lucide-react";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+type InstrumentType = "forex" | "jpy" | "gold" | "silver" | "oil" | "btc" | "eth";
+
+interface InstrumentConfig {
+  pipMultiplier: number;
+  contractSize: number;
+  pipValue: number;
+  decimals: number;
+}
+
+const instrumentConfigs: Record<InstrumentType, InstrumentConfig> = {
+  forex: { pipMultiplier: 10000, contractSize: 100000, pipValue: 10, decimals: 5 },
+  jpy: { pipMultiplier: 100, contractSize: 100000, pipValue: 9.09, decimals: 3 },
+  gold: { pipMultiplier: 100, contractSize: 100, pipValue: 1, decimals: 2 },
+  silver: { pipMultiplier: 1000, contractSize: 5000, pipValue: 5, decimals: 3 },
+  oil: { pipMultiplier: 100, contractSize: 1000, pipValue: 10, decimals: 2 },
+  btc: { pipMultiplier: 1, contractSize: 1, pipValue: 1, decimals: 2 },
+  eth: { pipMultiplier: 100, contractSize: 1, pipValue: 0.01, decimals: 2 },
+};
 
 const Calculators = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [lastTrade, setLastTrade] = useState<any>(null);
+  const [instrumentType, setInstrumentType] = useState<InstrumentType>("forex");
 
   // Lot Size Calculator State
   const [lotSize, setLotSize] = useState({
@@ -86,14 +107,38 @@ const Calculators = () => {
 
     if (tradesData && tradesData.length > 0) {
       setLastTrade(tradesData[0]);
+      // Detect instrument type from pair
+      const pair = tradesData[0].pair?.toUpperCase() || "";
+      let detectedType: InstrumentType = "forex";
+      
+      if (pair.includes("JPY")) detectedType = "jpy";
+      else if (pair.includes("XAU") || pair.includes("GOLD")) detectedType = "gold";
+      else if (pair.includes("XAG") || pair.includes("SILVER")) detectedType = "silver";
+      else if (pair.includes("OIL") || pair.includes("WTI") || pair.includes("BRENT")) detectedType = "oil";
+      else if (pair.includes("BTC")) detectedType = "btc";
+      else if (pair.includes("ETH")) detectedType = "eth";
+      
+      setInstrumentType(detectedType);
+      
       // Pre-fill P&L calculator with last trade data
       setPnl(prev => ({
         ...prev,
         entryPrice: tradesData[0].entry_price?.toString() || "",
         exitPrice: tradesData[0].exit_price?.toString() || "",
         direction: tradesData[0].direction || "buy",
+        pipValue: instrumentConfigs[detectedType].pipValue.toString(),
       }));
     }
+  };
+
+  const handleInstrumentChange = (type: InstrumentType) => {
+    setInstrumentType(type);
+    const config = instrumentConfigs[type];
+    
+    // Update all calculators with new instrument config
+    setLotSize(prev => ({ ...prev, pipValue: config.pipValue.toString() }));
+    setMargin(prev => ({ ...prev, contractSize: config.contractSize.toString() }));
+    setPnl(prev => ({ ...prev, pipValue: config.pipValue.toString() }));
   };
 
   const calculateLotSize = () => {
@@ -142,11 +187,13 @@ const Calculators = () => {
       return;
     }
 
+    const config = instrumentConfigs[instrumentType];
+    
     let pips = 0;
     if (pnl.direction === "buy") {
-      pips = (exit - entry) * 10000; // For 4 decimal pairs
+      pips = (exit - entry) * config.pipMultiplier;
     } else {
-      pips = (entry - exit) * 10000;
+      pips = (entry - exit) * config.pipMultiplier;
     }
 
     const profitLoss = pips * pipVal * lots;
@@ -167,10 +214,41 @@ const Calculators = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
             <Calculator className="h-8 w-8" />
-            Forex Calculators
+            Trading Calculators
           </h1>
           <p className="text-muted-foreground">Essential tools for risk management and trade planning</p>
         </div>
+
+        {/* Instrument Type Selector */}
+        <Card className="mb-6 border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-lg">Select Instrument Type</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Select value={instrumentType} onValueChange={(value: InstrumentType) => handleInstrumentChange(value)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select instrument type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="forex">Forex Pairs (EUR/USD, GBP/USD)</SelectItem>
+                <SelectItem value="jpy">JPY Pairs (USD/JPY, EUR/JPY)</SelectItem>
+                <SelectItem value="gold">Gold (XAU/USD)</SelectItem>
+                <SelectItem value="silver">Silver (XAG/USD)</SelectItem>
+                <SelectItem value="oil">Oil (WTI, Brent)</SelectItem>
+                <SelectItem value="btc">Bitcoin (BTC/USD)</SelectItem>
+                <SelectItem value="eth">Ethereum (ETH/USD)</SelectItem>
+              </SelectContent>
+            </Select>
+            <Alert className="mt-4">
+              <Info className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                <strong>{instrumentType.toUpperCase()} Settings:</strong> Pip Multiplier: {instrumentConfigs[instrumentType].pipMultiplier} | 
+                Contract Size: {instrumentConfigs[instrumentType].contractSize.toLocaleString()} | 
+                Default Pip Value: ${instrumentConfigs[instrumentType].pipValue}
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Lot Size Calculator */}
@@ -329,10 +407,10 @@ const Calculators = () => {
                   <Input
                     id="entryPrice"
                     type="number"
-                    step="0.0001"
+                    step={1 / instrumentConfigs[instrumentType].pipMultiplier}
                     value={pnl.entryPrice}
                     onChange={(e) => setPnl(prev => ({ ...prev, entryPrice: e.target.value }))}
-                    placeholder="1.0500"
+                    placeholder={instrumentType === "btc" ? "45000" : instrumentType === "gold" ? "1950.00" : "1.0500"}
                   />
                 </div>
 
@@ -341,10 +419,10 @@ const Calculators = () => {
                   <Input
                     id="exitPrice"
                     type="number"
-                    step="0.0001"
+                    step={1 / instrumentConfigs[instrumentType].pipMultiplier}
                     value={pnl.exitPrice}
                     onChange={(e) => setPnl(prev => ({ ...prev, exitPrice: e.target.value }))}
-                    placeholder="1.0550"
+                    placeholder={instrumentType === "btc" ? "46000" : instrumentType === "gold" ? "1960.00" : "1.0550"}
                   />
                 </div>
 
