@@ -50,8 +50,8 @@ const Settings = () => {
     
     setTelegramConnecting(true);
     try {
-      const TELEGRAM_BOT_TOKEN = "YOUR_BOT_TOKEN"; // This will be replaced by bot username
-      const botUsername = "your_bot_username"; // User needs to provide this
+      // Use the actual bot username for Amphy Trade Journal
+      const botUsername = "AmphyJournalBot";
       
       // Create deep link with user ID
       const deepLink = `https://t.me/${botUsername}?start=${profile.id}`;
