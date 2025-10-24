@@ -35,6 +35,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
+      const { data: { session } } = await supabase.auth.getSession();
 
       const tradeData = {
         user_id: user.id,
@@ -73,7 +74,8 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
 
       // Send Telegram notification in background (don't wait for it)
       supabase.functions.invoke('send-telegram-notification', {
-        body: { trade: tradeData }
+        body: { trade: tradeData },
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined
       }).catch(error => {
         console.error("Error sending Telegram notification:", error);
       });
