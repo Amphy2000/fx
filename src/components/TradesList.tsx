@@ -1,10 +1,13 @@
+import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Trash2, TrendingUp, TrendingDown } from "lucide-react";
-import { formatDistance } from "date-fns";
+import { Trash2, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, Filter, Image as ImageIcon } from "lucide-react";
+import { formatDistance, format } from "date-fns";
 
 interface TradesListProps {
   trades: any[];
@@ -12,6 +15,14 @@ interface TradesListProps {
 }
 
 const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filterInstrument, setFilterInstrument] = useState<string>("all");
+  const [filterResult, setFilterResult] = useState<string>("all");
+  const [filterDateFrom, setFilterDateFrom] = useState<string>("");
+  const [filterDateTo, setFilterDateTo] = useState<string>("");
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  
+  const itemsPerPage = 10;
   const handleDelete = async (tradeId: string) => {
     try {
       const { error } = await supabase
@@ -26,6 +37,44 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
     } catch (error: any) {
       toast.error(error.message || "Failed to delete trade");
     }
+  };
+
+  // Get unique instruments for filter
+  const uniqueInstruments = useMemo(() => {
+    const instruments = new Set(trades.map(t => t.pair));
+    return Array.from(instruments);
+  }, [trades]);
+
+  // Apply filters and pagination
+  const filteredTrades = useMemo(() => {
+    return trades.filter(trade => {
+      const matchesInstrument = filterInstrument === "all" || trade.pair === filterInstrument;
+      const matchesResult = filterResult === "all" || trade.result === filterResult;
+      
+      let matchesDate = true;
+      if (filterDateFrom || filterDateTo) {
+        const tradeDate = new Date(trade.created_at);
+        if (filterDateFrom) {
+          matchesDate = matchesDate && tradeDate >= new Date(filterDateFrom);
+        }
+        if (filterDateTo) {
+          matchesDate = matchesDate && tradeDate <= new Date(filterDateTo + "T23:59:59");
+        }
+      }
+      
+      return matchesInstrument && matchesResult && matchesDate;
+    });
+  }, [trades, filterInstrument, filterResult, filterDateFrom, filterDateTo]);
+
+  const totalPages = Math.ceil(filteredTrades.length / itemsPerPage);
+  const paginatedTrades = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredTrades.slice(start, start + itemsPerPage);
+  }, [filteredTrades, currentPage]);
+
+  // Reset to page 1 when filters change
+  const handleFilterChange = () => {
+    setCurrentPage(1);
   };
 
   const getResultColor = (result: string) => {
@@ -59,10 +108,100 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
   return (
     <Card className="border-border/50">
       <CardHeader>
-        <CardTitle>Trade History</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>Trade History</CardTitle>
+          <Badge variant="outline" className="text-xs">
+            {filteredTrades.length} {filteredTrades.length === 1 ? 'trade' : 'trades'}
+          </Badge>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {trades.map((trade) => (
+        {/* Filters */}
+        <div className="p-4 rounded-lg border border-border/50 bg-muted/30 space-y-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-medium">Filters</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Instrument</label>
+              <Select value={filterInstrument} onValueChange={(v) => { setFilterInstrument(v); handleFilterChange(); }}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Instruments</SelectItem>
+                  {uniqueInstruments.map(inst => (
+                    <SelectItem key={inst} value={inst}>{inst}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Result</label>
+              <Select value={filterResult} onValueChange={(v) => { setFilterResult(v); handleFilterChange(); }}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Results</SelectItem>
+                  <SelectItem value="win">Win</SelectItem>
+                  <SelectItem value="loss">Loss</SelectItem>
+                  <SelectItem value="breakeven">Breakeven</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">From Date</label>
+              <Input 
+                type="date" 
+                value={filterDateFrom} 
+                onChange={(e) => { setFilterDateFrom(e.target.value); handleFilterChange(); }}
+                className="h-9"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">To Date</label>
+              <Input 
+                type="date" 
+                value={filterDateTo} 
+                onChange={(e) => { setFilterDateTo(e.target.value); handleFilterChange(); }}
+                className="h-9"
+              />
+            </div>
+          </div>
+
+          {(filterInstrument !== "all" || filterResult !== "all" || filterDateFrom || filterDateTo) && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => {
+                setFilterInstrument("all");
+                setFilterResult("all");
+                setFilterDateFrom("");
+                setFilterDateTo("");
+                handleFilterChange();
+              }}
+              className="h-8 text-xs"
+            >
+              Clear Filters
+            </Button>
+          )}
+        </div>
+
+        {filteredTrades.length === 0 ? (
+          <p className="text-center text-muted-foreground py-8">
+            No trades match your filters. Try adjusting them!
+          </p>
+        ) : (
+          <>
+            {/* Trades List */}
+            {paginatedTrades.map((trade) => (
           <div
             key={trade.id}
             className="p-4 rounded-lg border border-border/50 bg-card/50 transition-smooth hover:bg-card"
@@ -157,8 +296,67 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
                 <p className="text-sm text-muted-foreground">{trade.notes}</p>
               </div>
             )}
+
+            {/* Screenshots */}
+            {trade.screenshot_url && (
+              <div className="mt-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Screenshots</span>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {trade.screenshot_url.split(',').map((url: string, idx: number) => (
+                    <button
+                      key={idx}
+                      onClick={() => window.open(url.trim(), '_blank')}
+                      className="relative group"
+                    >
+                      <img
+                        src={url.trim()}
+                        alt={`Trade screenshot ${idx + 1}`}
+                        className="w-20 h-20 object-cover rounded border-2 border-border hover:border-primary transition-smooth cursor-pointer"
+                      />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-smooth rounded flex items-center justify-center">
+                        <span className="text-white text-xs">View</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ))}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-4 border-t border-border/50">
+            <p className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
+          </>
+        )}
       </CardContent>
     </Card>
   );
