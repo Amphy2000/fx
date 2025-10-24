@@ -11,8 +11,30 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Handle GET requests (webhook verification)
+  if (req.method === 'GET') {
+    return new Response(JSON.stringify({ status: 'ok' }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
-    const update = await req.json();
+    // Check if request has body
+    const contentType = req.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      return new Response(JSON.stringify({ status: 'ok', message: 'No JSON body' }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const text = await req.text();
+    if (!text || text.trim() === '') {
+      return new Response(JSON.stringify({ status: 'ok', message: 'Empty body' }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const update = JSON.parse(text);
     console.log("Telegram webhook received:", update);
 
     const supabaseClient = createClient(
