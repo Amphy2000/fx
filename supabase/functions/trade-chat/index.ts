@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message } = await req.json();
+    const { message, messages: history } = await req.json();
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {
@@ -87,23 +87,23 @@ serve(async (req) => {
 
     const totalPL = trades?.reduce((sum, t) => sum + (Number(t.profit_loss) || 0), 0) || 0;
 
-    const contextPrompt = `Here's what I know about their trading:
+    const insightContext = `Internal trading context (do not quote numbers unless asked; use these only to inform advice):\n- Total trades: ${totalTrades}\n- Win rate: ${winRate}%\n- Wins: ${wins}, Losses: ${losses}\n- Total P/L: ${totalPL > 0 ? '+' : ''}${totalPL.toFixed(2)}\n- Pair performance: ${Object.entries(pairPerformance).map(([pair, perf]) => `${pair}: ${perf.wins}W/${perf.losses}L`).join(', ') || 'n/a'}`;
 
-Stats: ${totalTrades} trades total, ${winRate}% win rate (${wins} wins, ${losses} losses)${totalPL !== 0 ? `, total P/L: ${totalPL > 0 ? '+' : ''}${totalPL.toFixed(2)}` : ''}
+    const historyNormalized = Array.isArray(history)
+      ? history
+          .filter((m: any) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+          .map((m: any) => ({ role: m.role, content: String(m.content).slice(0, 2000) }))
+      : [];
 
-Pairs they're trading:
-${Object.entries(pairPerformance).map(([pair, perf]) => 
-  `${pair}: ${perf.wins} wins, ${perf.losses} losses`
-).join('\n')}
+    const chatMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+      { role: "system", content: "You're a friendly, experienced trading buddy who gives real talk. Be conversational and supportive, but honest. Don't regurgitate stats. Use the internal context only to inform advice. Unless the user explicitly asks for analysis (keywords: win rate, stats, performance, analyze, P/L, history, trades), avoid listing numbers. Keep it natural and human, and when helpful, end with a short follow-up question to keep the conversation going." },
+      { role: "system", content: insightContext },
+      ...historyNormalized,
+    ];
 
-Last 10 trades:
-${trades?.slice(0, 10).map(t => 
-  `${t.pair} ${t.direction} - ${t.result || 'open'} ${t.profit_loss ? `(${t.profit_loss > 0 ? '+' : ''}${t.profit_loss})` : ''} on ${new Date(t.created_at!).toLocaleDateString()}`
-).join('\n')}
-
-Their question: "${message}"
-
-Give them a real, honest answer like a trading buddy would. Be conversational, supportive but real. Don't just repeat their stats back - give actual insights and advice. If they don't have enough data yet, be honest about it and suggest what they should focus on. Keep it natural and friendly.`;
+    if (typeof message === 'string' && message.trim().length > 0) {
+      chatMessages.push({ role: "user", content: message });
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -113,10 +113,7 @@ Give them a real, honest answer like a trading buddy would. Be conversational, s
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: "You're a friendly, experienced trading buddy who gives real talk. Be conversational and supportive, but honest. Don't just regurgitate stats - give actual insights and actionable advice. Talk like a friend who really knows trading, not a formal assistant. Use natural language, be encouraging but real about what the data shows. If there's not enough data to answer something, say so directly and tell them what to focus on instead." },
-          { role: "user", content: contextPrompt }
-        ],
+        messages: chatMessages,
       }),
     });
 
