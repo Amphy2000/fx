@@ -15,8 +15,8 @@ interface TradeFormProps {
 
 const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [screenshot, setScreenshot] = useState<File | null>(null);
-  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const [screenshots, setScreenshots] = useState<File[]>([]);
+  const [screenshotPreviews, setScreenshotPreviews] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     pair: "",
     direction: "buy",
@@ -31,24 +31,40 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
   });
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("Image must be less than 5MB");
-        return;
-      }
-      setScreenshot(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setScreenshotPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    const files = Array.from(e.target.files || []);
+    
+    if (screenshots.length + files.length > 5) {
+      toast.error("Maximum 5 images allowed");
+      return;
     }
+
+    const validFiles = files.filter(file => {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`${file.name} is too large. Maximum 5MB per image`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length > 0) {
+      setScreenshots(prev => [...prev, ...validFiles]);
+      
+      validFiles.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setScreenshotPreviews(prev => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Reset input
+    e.target.value = '';
   };
 
-  const removeImage = () => {
-    setScreenshot(null);
-    setScreenshotPreview(null);
+  const removeImage = (index: number) => {
+    setScreenshots(prev => prev.filter((_, i) => i !== index));
+    setScreenshotPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,24 +76,29 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
       if (!user) throw new Error("Not authenticated");
       const { data: { session } } = await supabase.auth.getSession();
 
-      let screenshotUrl = null;
+      let screenshotUrls: string[] = [];
 
-      // Upload screenshot if provided
-      if (screenshot) {
-        const fileExt = screenshot.name.split('.').pop();
-        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-        
-        const { error: uploadError, data: uploadData } = await supabase.storage
-          .from('trade-screenshots')
-          .upload(fileName, screenshot);
+      // Upload screenshots if provided
+      if (screenshots.length > 0) {
+        for (const screenshot of screenshots) {
+          const fileExt = screenshot.name.split('.').pop();
+          const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('trade-screenshots')
+            .upload(fileName, screenshot);
 
-        if (uploadError) throw uploadError;
+          if (uploadError) {
+            console.error("Upload error:", uploadError);
+            continue;
+          }
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('trade-screenshots')
-          .getPublicUrl(fileName);
+          const { data: { publicUrl } } = supabase.storage
+            .from('trade-screenshots')
+            .getPublicUrl(fileName);
 
-        screenshotUrl = publicUrl;
+          screenshotUrls.push(publicUrl);
+        }
       }
 
       const tradeData = {
@@ -92,7 +113,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
         profit_loss: formData.profit_loss ? parseFloat(formData.profit_loss) : null,
         notes: formData.notes || null,
         emotion_before: formData.emotion_before || null,
-        screenshot_url: screenshotUrl,
+        screenshot_url: screenshotUrls.length > 0 ? screenshotUrls.join(',') : null,
       };
 
       const { error } = await supabase.from("trades").insert(tradeData);
@@ -136,8 +157,8 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
         notes: "",
         emotion_before: "",
       });
-      setScreenshot(null);
-      setScreenshotPreview(null);
+      setScreenshots([]);
+      setScreenshotPreviews([]);
       onTradeAdded();
     } catch (error: any) {
       toast.error(error.message || "Failed to log trade");
@@ -299,40 +320,48 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="screenshot">Trade Screenshot</Label>
-            {screenshotPreview ? (
-              <div className="relative">
-                <img 
-                  src={screenshotPreview} 
-                  alt="Trade screenshot preview" 
-                  className="w-full h-48 object-cover rounded-lg border-2 border-border"
-                />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-2 right-2"
-                  onClick={removeImage}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+            <Label htmlFor="screenshot">Trade Screenshots ({screenshots.length}/5)</Label>
+            
+            {screenshotPreviews.length > 0 && (
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                {screenshotPreviews.map((preview, index) => (
+                  <div key={index} className="relative">
+                    <img 
+                      src={preview} 
+                      alt={`Trade screenshot ${index + 1}`} 
+                      className="w-full h-32 object-cover rounded-lg border-2 border-border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-6 w-6"
+                      onClick={() => removeImage(index)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
               </div>
-            ) : (
-              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-smooth cursor-pointer">
+            )}
+
+            {screenshots.length < 5 && (
+              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-smooth cursor-pointer">
                 <input
                   id="screenshot"
                   type="file"
                   accept="image/*"
+                  multiple
                   onChange={handleImageChange}
                   className="hidden"
                 />
                 <label htmlFor="screenshot" className="cursor-pointer flex flex-col items-center gap-2">
-                  <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                  <ImageIcon className="h-10 w-10 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">
-                    Click to upload trade screenshot
+                    Click to upload screenshots (max 5)
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    PNG, JPG, WEBP up to 5MB
+                    PNG, JPG, WEBP up to 5MB each
                   </p>
                 </label>
               </div>

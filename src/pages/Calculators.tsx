@@ -42,7 +42,6 @@ const Calculators = () => {
     accountBalance: "",
     riskPercentage: "2",
     stopLossPips: "",
-    pipValue: "10",
     result: null as number | null,
   });
 
@@ -50,8 +49,6 @@ const Calculators = () => {
   const [margin, setMargin] = useState({
     lotSize: "",
     leverage: "100",
-    contractSize: "100000",
-    exchangeRate: "1",
     result: null as number | null,
   });
 
@@ -61,7 +58,6 @@ const Calculators = () => {
     exitPrice: "",
     lotSize: "",
     direction: "buy",
-    pipValue: "10",
     result: null as number | null,
     pips: null as number | null,
   });
@@ -126,31 +122,26 @@ const Calculators = () => {
         entryPrice: tradesData[0].entry_price?.toString() || "",
         exitPrice: tradesData[0].exit_price?.toString() || "",
         direction: tradesData[0].direction || "buy",
-        pipValue: instrumentConfigs[detectedType].pipValue.toString(),
       }));
     }
   };
 
   const handleInstrumentChange = (type: InstrumentType) => {
     setInstrumentType(type);
-    const config = instrumentConfigs[type];
-    
-    // Update all calculators with new instrument config
-    setLotSize(prev => ({ ...prev, pipValue: config.pipValue.toString() }));
-    setMargin(prev => ({ ...prev, contractSize: config.contractSize.toString() }));
-    setPnl(prev => ({ ...prev, pipValue: config.pipValue.toString() }));
   };
 
   const calculateLotSize = () => {
     const balance = parseFloat(lotSize.accountBalance);
     const risk = parseFloat(lotSize.riskPercentage);
     const slPips = parseFloat(lotSize.stopLossPips);
-    const pipVal = parseFloat(lotSize.pipValue);
 
-    if (!balance || !risk || !slPips || !pipVal) {
+    if (!balance || !risk || !slPips) {
       toast.error("Please fill all fields");
       return;
     }
+
+    const config = instrumentConfigs[instrumentType];
+    const pipVal = config.pipValue;
 
     const riskAmount = (balance * risk) / 100;
     const calculatedLotSize = riskAmount / (slPips * pipVal);
@@ -162,15 +153,16 @@ const Calculators = () => {
   const calculateMargin = () => {
     const lots = parseFloat(margin.lotSize);
     const lev = parseFloat(margin.leverage);
-    const contract = parseFloat(margin.contractSize);
-    const rate = parseFloat(margin.exchangeRate);
 
-    if (!lots || !lev || !contract || !rate) {
+    if (!lots || !lev) {
       toast.error("Please fill all fields");
       return;
     }
 
-    const requiredMargin = (lots * contract * rate) / lev;
+    const config = instrumentConfigs[instrumentType];
+    const contract = config.contractSize;
+
+    const requiredMargin = (lots * contract) / lev;
 
     setMargin(prev => ({ ...prev, result: parseFloat(requiredMargin.toFixed(2)) }));
     toast.success("Margin calculated!");
@@ -180,14 +172,14 @@ const Calculators = () => {
     const entry = parseFloat(pnl.entryPrice);
     const exit = parseFloat(pnl.exitPrice);
     const lots = parseFloat(pnl.lotSize);
-    const pipVal = parseFloat(pnl.pipValue);
 
-    if (!entry || !exit || !lots || !pipVal) {
+    if (!entry || !exit || !lots) {
       toast.error("Please fill all fields");
       return;
     }
 
     const config = instrumentConfigs[instrumentType];
+    const pipVal = config.pipValue;
     
     let pips = 0;
     if (pnl.direction === "buy") {
@@ -295,18 +287,6 @@ const Calculators = () => {
                 />
               </div>
 
-              <div>
-                <Label htmlFor="pipValue">Pip Value ($)</Label>
-                <Input
-                  id="pipValue"
-                  type="number"
-                  step="0.01"
-                  value={lotSize.pipValue}
-                  onChange={(e) => setLotSize(prev => ({ ...prev, pipValue: e.target.value }))}
-                  placeholder="10"
-                />
-              </div>
-
               <Button onClick={calculateLotSize} className="w-full">
                 Calculate Lot Size
               </Button>
@@ -354,29 +334,6 @@ const Calculators = () => {
                     <SelectItem value="500">1:500</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="contractSize">Contract Size</Label>
-                <Input
-                  id="contractSize"
-                  type="number"
-                  value={margin.contractSize}
-                  onChange={(e) => setMargin(prev => ({ ...prev, contractSize: e.target.value }))}
-                  placeholder="100000"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="exchangeRate">Exchange Rate</Label>
-                <Input
-                  id="exchangeRate"
-                  type="number"
-                  step="0.0001"
-                  value={margin.exchangeRate}
-                  onChange={(e) => setMargin(prev => ({ ...prev, exchangeRate: e.target.value }))}
-                  placeholder="1.0000"
-                />
               </div>
 
               <Button onClick={calculateMargin} className="w-full">
@@ -449,18 +406,6 @@ const Calculators = () => {
                       <SelectItem value="sell">Sell</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="pnlPipValue">Pip Value ($)</Label>
-                  <Input
-                    id="pnlPipValue"
-                    type="number"
-                    step="0.01"
-                    value={pnl.pipValue}
-                    onChange={(e) => setPnl(prev => ({ ...prev, pipValue: e.target.value }))}
-                    placeholder="10"
-                  />
                 </div>
 
                 <div className="flex items-end">
