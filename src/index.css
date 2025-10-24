@@ -45,6 +45,16 @@ All colors MUST be HSL.
     --gradient-dark: linear-gradient(180deg, hsl(222 47% 11%), hsl(217 33% 17%));
     
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Sidebar tokens */
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 43 59% 52%;
+    --sidebar-primary-foreground: 0 0% 5%;
+    --sidebar-accent: 43 59% 52%;
+    --sidebar-accent-foreground: 0 0% 5%;
+    --sidebar-border: 217 33% 25%;
+    --sidebar-ring: 43 59% 52%;
   }
 
   .light {
