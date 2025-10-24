@@ -1,7 +1,7 @@
 project_id = "yvclpmdgrwugayrvjtqg"
 
 [functions.analyze-trade]
-verify_jwt = false
+verify_jwt = true
 
 [functions.weekly-summary]
 verify_jwt = true
