@@ -68,6 +68,28 @@ const Settings = () => {
     }
   };
 
+  const handleReconnectTelegram = async () => {
+    // Allow users to reconnect at any time
+    await handleConnectTelegram();
+  };
+
+  const handleDisconnectTelegram = async () => {
+    if (!profile) return;
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ telegram_chat_id: null, telegram_notifications_enabled: false })
+        .eq("id", profile.id);
+
+      if (error) throw error;
+      setProfile({ ...profile, telegram_chat_id: null, telegram_notifications_enabled: false });
+      toast.success("Telegram disconnected. You can reconnect anytime.");
+    } catch (error) {
+      console.error("Error disconnecting Telegram:", error);
+      toast.error("Failed to disconnect Telegram");
+    }
+  };
+
   const handleToggleNotifications = async (enabled: boolean) => {
     if (!profile) return;
 
@@ -131,7 +153,22 @@ const Settings = () => {
                       </Label>
                     </div>
                   </div>
-                </>
+                  <div className="flex items-center gap-2 pt-2">
+                    <Button variant="outline" onClick={handleReconnectTelegram} disabled={telegramConnecting}>
+                      {telegramConnecting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Opening Telegram...
+                        </>
+                      ) : (
+                        'Reconnect Telegram'
+                      )}
+                    </Button>
+                    <Button variant="destructive" onClick={handleDisconnectTelegram}>
+                      Disconnect
+                    </Button>
+                  </div>
+                 </>
               ) : (
                 <Button 
                   onClick={handleConnectTelegram}
