@@ -108,16 +108,16 @@ export default function TradeCalendar() {
       <div className="container mx-auto px-4 py-8 space-y-6">
         <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Trade Calendar</h1>
-            <p className="text-muted-foreground mt-2">View your trades by day and track monthly performance</p>
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Trade Calendar</h1>
+            <p className="text-muted-foreground mt-2 text-sm md:text-base">View your trades by day and track monthly performance</p>
           </div>
 
           {/* Month Stats Summary */}
-          <Card className="bg-gradient-to-br from-primary/10 via-background to-background border-primary/20">
+          <Card className="bg-gradient-to-br from-primary/5 via-background to-background border-primary/30 shadow-lg">
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>{format(currentDate, "MMMM yyyy")} Summary</span>
-                <Badge variant={monthStats.totalPL >= 0 ? "default" : "destructive"} className="text-lg px-4 py-1">
+              <CardTitle className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <span className="text-foreground">{format(currentDate, "MMMM yyyy")} Summary</span>
+                <Badge variant={monthStats.totalPL >= 0 ? "default" : "destructive"} className="text-lg px-4 py-1 w-fit">
                   ${monthStats.totalPL.toFixed(2)}
                 </Badge>
               </CardTitle>
@@ -126,7 +126,7 @@ export default function TradeCalendar() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Total Trades</p>
-                  <p className="text-2xl font-bold">{monthStats.totalTrades}</p>
+                  <p className="text-2xl font-bold text-foreground">{monthStats.totalTrades}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Wins</p>
@@ -138,7 +138,7 @@ export default function TradeCalendar() {
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Win Rate</p>
-                  <p className="text-2xl font-bold">{monthStats.winRate}%</p>
+                  <p className="text-2xl font-bold text-foreground">{monthStats.winRate}%</p>
                 </div>
               </div>
             </CardContent>
@@ -167,19 +167,19 @@ export default function TradeCalendar() {
         </div>
 
         {/* Calendar Grid */}
-        <Card>
-          <CardContent className="p-4">
+        <Card className="shadow-xl">
+          <CardContent className="p-2 md:p-4">
             {/* Weekday Headers */}
-            <div className="grid grid-cols-7 gap-2 mb-2">
+            <div className="grid grid-cols-7 gap-1 md:gap-2 mb-2">
               {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(day => (
-                <div key={day} className="text-center text-sm font-semibold text-muted-foreground py-2">
+                <div key={day} className="text-center text-xs md:text-sm font-semibold text-muted-foreground py-2">
                   {day}
                 </div>
               ))}
             </div>
 
             {/* Calendar Days */}
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-1 md:gap-2">
               {calendarDays.map((day) => {
                 const dayStats = getDayStats(day);
                 const isCurrentMonth = isSameMonth(day, currentDate);
@@ -190,36 +190,36 @@ export default function TradeCalendar() {
                   <div
                     key={day.toISOString()}
                     className={`
-                      min-h-24 p-2 rounded-lg border transition-all
-                      ${isCurrentMonth ? "bg-card" : "bg-muted/30"}
-                      ${isToday ? "border-primary border-2" : "border-border"}
-                      ${hasTrades ? "hover:shadow-lg cursor-pointer" : ""}
+                      min-h-[100px] md:min-h-24 p-2 md:p-3 rounded-lg border-2 transition-all
+                      ${isCurrentMonth ? "bg-card" : "bg-muted/20"}
+                      ${isToday ? "border-primary shadow-lg shadow-primary/20" : "border-border"}
+                      ${hasTrades ? "hover:shadow-xl hover:scale-[1.02] cursor-pointer bg-gradient-to-br from-card to-primary/5" : ""}
                     `}
                   >
                     <div className="flex flex-col h-full">
-                      <span className={`text-sm font-medium mb-1 ${!isCurrentMonth ? "text-muted-foreground" : ""}`}>
+                      <span className={`text-sm md:text-base font-semibold mb-1 ${!isCurrentMonth ? "text-muted-foreground/50" : "text-foreground"} ${isToday ? "text-primary" : ""}`}>
                         {format(day, "d")}
                       </span>
                       
                       {hasTrades && (
-                        <div className="flex-1 space-y-1">
-                          <div className="flex items-center gap-1 text-xs">
-                            <Badge variant="secondary" className="px-1 py-0 text-xs">
-                              {dayStats.count}
+                        <div className="flex-1 space-y-1.5">
+                          <div className="flex items-center gap-1">
+                            <Badge variant="secondary" className="px-2 py-0.5 text-xs font-semibold">
+                              {dayStats.count} {dayStats.count === 1 ? "trade" : "trades"}
                             </Badge>
                           </div>
-                          <div className={`text-xs font-semibold ${dayStats.totalPL >= 0 ? "text-success" : "text-destructive"}`}>
+                          <div className={`text-sm md:text-base font-bold ${dayStats.totalPL >= 0 ? "text-success" : "text-destructive"}`}>
                             ${dayStats.totalPL.toFixed(2)}
                           </div>
-                          <div className="flex gap-1 text-xs">
+                          <div className="flex gap-2 text-xs">
                             {dayStats.wins > 0 && (
-                              <span className="text-success flex items-center">
+                              <span className="text-success flex items-center gap-0.5 font-medium">
                                 <TrendingUp className="h-3 w-3" />
                                 {dayStats.wins}
                               </span>
                             )}
                             {dayStats.losses > 0 && (
-                              <span className="text-destructive flex items-center">
+                              <span className="text-destructive flex items-center gap-0.5 font-medium">
                                 <TrendingDown className="h-3 w-3" />
                                 {dayStats.losses}
                               </span>
