@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import Navbar from "@/components/Navbar";
 import { Loader2, Download, Search, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -142,20 +142,18 @@ const Admin = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <Layout>
         <div className="container mx-auto p-6 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </div>
+      </Layout>
     );
   }
 
   if (!isAdmin) return null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <Layout>
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-bold text-foreground">Admin Panel</h1>
@@ -296,7 +294,7 @@ const Admin = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </div>
+    </Layout>
   );
 };
 

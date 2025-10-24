@@ -1,18 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import Navbar from "@/components/Navbar";
+import { Layout } from "@/components/Layout";
 import TradeForm from "@/components/TradeForm";
 import TradesList from "@/components/TradesList";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Target, FileText, Menu } from "lucide-react";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { TrendingUp, TrendingDown, Target, FileText } from "lucide-react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [trades, setTrades] = useState<any[]>([]);
@@ -93,28 +89,8 @@ const Dashboard = () => {
   }
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        {isMobile && <AppSidebar />}
-        
-        <div className="flex-1 flex flex-col min-h-screen gradient-dark">
-          {/* Mobile Header with Hamburger */}
-          {isMobile && (
-            <div className="sticky top-0 z-40 flex items-center gap-3 border-b border-border/50 bg-card/95 backdrop-blur-sm px-4 py-3">
-              <SidebarTrigger className="lg:hidden">
-                <Menu className="h-5 w-5" />
-              </SidebarTrigger>
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                <span className="font-bold text-lg">Amphy AI</span>
-              </div>
-            </div>
-          )}
-
-          {/* Desktop Navbar */}
-          {!isMobile && <Navbar />}
-          
-          <div className="container mx-auto px-4 py-8">
+    <Layout>
+      <div className="container mx-auto px-4 py-8">
             <div className="mb-8">
               <h1 className="text-3xl font-bold mb-2">Welcome back, {profile?.full_name || "Trader"}!</h1>
               <p className="text-muted-foreground">Track your trades and improve your performance</p>
@@ -174,9 +150,7 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </SidebarProvider>
+    </Layout>
   );
 };
 

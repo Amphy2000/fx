@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import Navbar from "@/components/Navbar";
 import { Loader2 } from "lucide-react";
 
 const Settings = () => {
@@ -89,18 +89,16 @@ const Settings = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
+      <Layout>
         <div className="container mx-auto p-6 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <Layout>
       <div className="container mx-auto p-6 max-w-4xl">
         <h1 className="text-4xl font-bold mb-8 text-foreground">Settings</h1>
 
@@ -176,7 +174,7 @@ const Settings = () => {
           </Card>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

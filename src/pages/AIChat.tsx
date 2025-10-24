@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import Navbar from "@/components/Navbar";
+import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,9 +50,7 @@ const AIChat = () => {
   };
 
   return (
-    <div className="min-h-screen gradient-dark">
-      <Navbar />
-      
+    <Layout>
       <div className="container mx-auto px-4 py-8">
         <Card className="max-w-4xl mx-auto border-border/50">
           <CardHeader>
@@ -132,7 +130,7 @@ const AIChat = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </Layout>
   );
 };
 
