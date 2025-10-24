@@ -42,8 +42,10 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
+    
     // Handle /start command
-    if (update.message?.text === '/start') {
+    if (update.message?.text?.startsWith('/start')) {
       const chatId = update.message.chat.id;
       const deepLink = update.message.text.split(' ')[1]; // Get user_id from deep link
 
@@ -66,7 +68,6 @@ serve(async (req) => {
         }
 
         // Send confirmation message
-        const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -76,7 +77,30 @@ serve(async (req) => {
             parse_mode: "Markdown"
           })
         });
+      } else {
+        // /start without deep link
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: "👋 Welcome to Amphy AI Trade Journal!\n\nTo connect this bot to your account, please use the 'Connect Telegram' button in the app settings.\n\n📱 Visit your app and go to Settings to get your personal connection link.",
+            parse_mode: "Markdown"
+          })
+        });
       }
+    } else if (update.message?.text) {
+      // Handle any other text message
+      const chatId = update.message.chat.id;
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: "📊 This bot sends you trade notifications and weekly summaries.\n\nCommands:\n/start - Connect your account\n\nManage your notifications in the app settings.",
+          parse_mode: "Markdown"
+        })
+      });
     }
 
     return new Response(JSON.stringify({ success: true }), {
