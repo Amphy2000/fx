@@ -21,8 +21,9 @@ import { toast } from "sonner";
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Targets", url: "/targets", icon: Target },
+  { title: "Trade Calendar", url: "/trade-calendar", icon: Calendar },
   { title: "AI Chat", url: "/ai-chat", icon: MessageSquare },
-  { title: "Weekly Summary", url: "/weekly-summary", icon: Calendar },
+  { title: "Weekly Summary", url: "/weekly-summary", icon: TrendingUp },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 

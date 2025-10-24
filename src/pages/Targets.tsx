@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -181,19 +182,23 @@ export default function Targets() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">Trading Targets</h1>
-            <p className="text-muted-foreground mt-2">Set and track your trading goals</p>
+        <div className="flex flex-col gap-4 mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                Trading Targets
+              </h1>
+              <p className="text-muted-foreground mt-2">Set and track your trading goals with precision</p>
+            </div>
+            <Button onClick={() => setShowForm(!showForm)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              {showForm ? "Cancel" : "New Target"}
+            </Button>
           </div>
-          <Button onClick={() => setShowForm(!showForm)}>
-            <Plus className="mr-2 h-4 w-4" />
-            {showForm ? "Cancel" : "New Target"}
-          </Button>
         </div>
 
         {showForm && (
-          <Card className="mb-8">
+          <Card className="mb-8 border-primary/20 bg-gradient-to-br from-card to-card/50">
             <CardHeader>
               <CardTitle>Create New Target</CardTitle>
               <CardDescription>Set a new trading target to track your progress</CardDescription>
@@ -296,58 +301,85 @@ export default function Targets() {
 
         <div className="grid gap-6">
           {targets.length === 0 ? (
-            <Card>
+            <Card className="border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-12">
-                <p className="text-muted-foreground mb-4">No targets yet</p>
-                <Button onClick={() => setShowForm(true)}>
+                <div className="rounded-full bg-primary/10 p-4 mb-4">
+                  <Plus className="h-8 w-8 text-primary" />
+                </div>
+                <p className="text-muted-foreground mb-4 text-center">No targets yet. Start setting your trading goals!</p>
+                <Button onClick={() => setShowForm(true)} size="lg">
                   <Plus className="mr-2 h-4 w-4" />
                   Create Your First Target
                 </Button>
               </CardContent>
             </Card>
           ) : (
-            targets.map((target) => (
-              <Card key={target.id}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle>{target.title}</CardTitle>
-                      <CardDescription>
-                        {target.description}
-                      </CardDescription>
+            targets.map((target) => {
+              const progress = getProgressPercentage(target);
+              const isComplete = progress >= 100;
+              
+              return (
+                <Card key={target.id} className={`transition-all hover:shadow-lg ${isComplete ? "border-success/50 bg-success/5" : "border-border"}`}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-xl">{target.title}</CardTitle>
+                          {isComplete && (
+                            <Badge className="bg-success text-success-foreground">Completed!</Badge>
+                          )}
+                        </div>
+                        <CardDescription className="mt-2">
+                          {target.description}
+                        </CardDescription>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(target.id)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(target.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {format(new Date(target.start_date), "MMM d, yyyy")} - {format(new Date(target.end_date), "MMM d, yyyy")}
-                    </span>
-                    <span className="font-medium capitalize">{target.target_type}</span>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Progress</span>
-                      <span className="font-medium">
-                        {target.current_value} / {target.target_value}
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between text-sm bg-muted/50 rounded-lg p-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">Period:</span>
+                        <span className="font-medium capitalize">{target.target_type}</span>
+                      </div>
+                      <span className="text-muted-foreground">
+                        {format(new Date(target.start_date), "MMM d")} - {format(new Date(target.end_date), "MMM d, yyyy")}
                       </span>
                     </div>
-                    <Progress value={getProgressPercentage(target)} />
-                    <p className="text-xs text-muted-foreground text-right">
-                      {getProgressPercentage(target).toFixed(1)}% complete
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+                    
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-sm text-muted-foreground">Progress</span>
+                        <div className="text-right">
+                          <span className="text-2xl font-bold">{target.current_value}</span>
+                          <span className="text-muted-foreground"> / {target.target_value}</span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Progress value={progress} className="h-3" />
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm font-semibold text-primary">
+                            {progress.toFixed(1)}% complete
+                          </p>
+                          {!isComplete && (
+                            <p className="text-xs text-muted-foreground">
+                              {(target.target_value - target.current_value).toFixed(2)} remaining
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
           )}
         </div>
       </div>
