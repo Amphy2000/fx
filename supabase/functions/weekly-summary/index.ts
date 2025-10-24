@@ -29,7 +29,8 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !user) {
       console.error("Auth error:", userError);
       return new Response(JSON.stringify({ 
@@ -92,6 +93,8 @@ serve(async (req) => {
       if (t.emotion_before) emotionCounts[t.emotion_before] = (emotionCounts[t.emotion_before] || 0) + 1;
     });
 
+    const totalPL = trades.reduce((sum, t) => sum + (Number(t.profit_loss) || 0), 0);
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       console.error("LOVABLE_API_KEY not configured");
@@ -103,26 +106,20 @@ serve(async (req) => {
       });
     }
 
-    const prompt = `You are a professional Forex trading analyst. Generate a weekly summary for this trader.
+    const prompt = `Here's how this trader did this week:
 
-Statistics:
-- Total Trades: ${trades.length}
-- Win Rate: ${winRate}%
-- Wins: ${wins}
-- Losses: ${losses}
-- Most Traded Pair: ${mostTradedPair}
-- Common Emotions: ${Object.keys(emotionCounts).join(', ')}
+This Week's Numbers:
+- ${trades.length} trades (${wins} wins, ${losses} losses) = ${winRate}% win rate
+- Total P/L: ${totalPL > 0 ? '+' : ''}${totalPL.toFixed(2)}
+- Favorite pair: ${mostTradedPair}
+- Trading emotions: ${Object.keys(emotionCounts).length > 0 ? Object.keys(emotionCounts).join(', ') : 'Not tracked'}
 
-Recent Trades Summary:
-${trades.slice(0, 10).map(t => `- ${t.pair} ${t.direction} (${t.result || 'pending'})`).join('\n')}
+Their Trades This Week:
+${trades.slice(0, 10).map(t => 
+  `${t.pair} ${t.direction} → ${t.result || 'still open'} ${t.profit_loss ? `(${t.profit_loss > 0 ? '+' : ''}${t.profit_loss})` : ''}`
+).join('\n')}
 
-Provide:
-1. A brief performance overview (2-3 sentences)
-2. One key strength they're showing
-3. One area for improvement
-4. One actionable tip for next week
-
-Keep it motivating and specific.`;
+Write them a weekly recap that feels like it's from a real trading mentor. Be conversational and genuine. Start with how their week went, mention something specific they did well or a pattern you noticed, and give them one clear thing to work on next week. Make it personal and actionable, not generic. If they had a rough week, be supportive but honest. If they crushed it, celebrate with them! Keep it under 150 words.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -133,7 +130,7 @@ Keep it motivating and specific.`;
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: "You are a supportive trading coach providing weekly performance reviews." },
+          { role: "system", content: "You're an experienced trading mentor who gives real, conversational feedback. Write like you're texting a friend, not writing a formal report. Be genuine, supportive, and specific - no generic motivational fluff. Point out actual patterns in their trading and give concrete advice they can use." },
           { role: "user", content: prompt }
         ],
       }),
@@ -167,7 +164,8 @@ Keep it motivating and specific.`;
         winRate,
         wins,
         losses,
-        mostTradedPair
+        mostTradedPair,
+        totalPL
       }
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -85,27 +85,25 @@ serve(async (req) => {
       });
     }
 
-    const contextPrompt = `You are an AI trading assistant with access to the user's trading history. Answer their question based on this data:
+    const totalPL = trades?.reduce((sum, t) => sum + (Number(t.profit_loss) || 0), 0) || 0;
 
-Trading Statistics:
-- Total Trades: ${totalTrades}
-- Win Rate: ${winRate}%
-- Wins: ${wins}
-- Losses: ${losses}
+    const contextPrompt = `Here's what I know about their trading:
 
-Pair Performance:
+Stats: ${totalTrades} trades total, ${winRate}% win rate (${wins} wins, ${losses} losses)${totalPL !== 0 ? `, total P/L: ${totalPL > 0 ? '+' : ''}${totalPL.toFixed(2)}` : ''}
+
+Pairs they're trading:
 ${Object.entries(pairPerformance).map(([pair, perf]) => 
-  `- ${pair}: ${perf.wins}W/${perf.losses}L`
+  `${pair}: ${perf.wins} wins, ${perf.losses} losses`
 ).join('\n')}
 
-Recent Trades (last 10):
+Last 10 trades:
 ${trades?.slice(0, 10).map(t => 
-  `${t.pair} ${t.direction} - ${t.result || 'pending'} (${new Date(t.created_at!).toLocaleDateString()})`
+  `${t.pair} ${t.direction} - ${t.result || 'open'} ${t.profit_loss ? `(${t.profit_loss > 0 ? '+' : ''}${t.profit_loss})` : ''} on ${new Date(t.created_at!).toLocaleDateString()}`
 ).join('\n')}
 
-User Question: ${message}
+Their question: "${message}"
 
-Provide a helpful, specific answer based on their actual trading data. Keep it concise and actionable.`;
+Give them a real, honest answer like a trading buddy would. Be conversational, supportive but real. Don't just repeat their stats back - give actual insights and advice. If they don't have enough data yet, be honest about it and suggest what they should focus on. Keep it natural and friendly.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -116,7 +114,7 @@ Provide a helpful, specific answer based on their actual trading data. Keep it c
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: "You are a knowledgeable trading assistant helping traders understand their performance data." },
+          { role: "system", content: "You're a friendly, experienced trading buddy who gives real talk. Be conversational and supportive, but honest. Don't just regurgitate stats - give actual insights and actionable advice. Talk like a friend who really knows trading, not a formal assistant. Use natural language, be encouraging but real about what the data shows. If there's not enough data to answer something, say so directly and tell them what to focus on instead." },
           { role: "user", content: contextPrompt }
         ],
       }),
