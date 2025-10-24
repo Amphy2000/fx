@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Calculators from "./pages/Calculators";
 import AIChat from "./pages/AIChat";
 import WeeklySummary from "./pages/WeeklySummary";
 import Settings from "./pages/Settings";
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/calculators" element={<Calculators />} />
             <Route path="/ai-chat" element={<AIChat />} />
             <Route path="/weekly-summary" element={<WeeklySummary />} />
             <Route path="/settings" element={<Settings />} />
