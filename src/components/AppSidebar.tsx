@@ -1,4 +1,4 @@
-import { LayoutDashboard, MessageSquare, Calendar, Settings, Shield, TrendingUp, LogOut, Target } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Calendar, Settings, Shield, TrendingUp, LogOut, Target, Sun, Moon } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";

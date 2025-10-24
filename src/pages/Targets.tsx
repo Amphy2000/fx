@@ -39,6 +39,7 @@ export default function Targets() {
   const [startDate, setStartDate] = useState<Date>();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [progressMap, setProgressMap] = useState<Record<string, { current: number; progress: number }>>({});
 
   useEffect(() => {
     checkUser();
@@ -165,8 +166,70 @@ export default function Targets() {
     }
   };
 
+  // Compute progress for all targets based on trades within their periods
+  const computeAllProgress = async () => {
+    try {
+      if (!targets.length) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const minStart = new Date(Math.min(...targets.map(t => new Date(t.start_date).getTime())));
+      const maxEnd = new Date(Math.max(...targets.map(t => new Date(t.end_date).getTime())));
+
+      const { data, error } = await supabase
+        .from("trades")
+        .select("profit_loss, created_at")
+        .eq("user_id", user.id)
+        .gte("created_at", minStart.toISOString())
+        .lte("created_at", maxEnd.toISOString());
+
+      if (error) throw error;
+      const trades = (data || []) as { profit_loss: number | null; created_at: string }[];
+
+      const map: Record<string, { current: number; progress: number }> = {};
+      for (const target of targets) {
+        const start = new Date(target.start_date).getTime();
+        const end = new Date(target.end_date).getTime();
+        const current = trades
+          .filter(tr => {
+            const ts = new Date(tr.created_at).getTime();
+            return ts >= start && ts <= end;
+          })
+          .reduce((sum, tr) => sum + (Number(tr.profit_loss) || 0), 0);
+        const progress = Math.min((current / target.target_value) * 100, 100);
+        map[target.id] = { current, progress };
+      }
+      setProgressMap(map);
+    } catch (err) {
+      console.error("Failed to compute target progress:", err);
+    }
+  };
+
+  // Recompute when targets change
+  useEffect(() => {
+    if (targets.length) computeAllProgress();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targets]);
+
+  // Realtime updates when trades change
+  useEffect(() => {
+    if (!targets.length) return;
+    const channel = supabase
+      .channel("trades-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "trades" }, () => {
+        computeAllProgress();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targets]);
+
   const getProgressPercentage = (target: Target): number => {
-    return Math.min((target.current_value / target.target_value) * 100, 100);
+    const value = progressMap[target.id]?.current ?? 0;
+    return Math.min((value / target.target_value) * 100, 100);
   };
 
   if (loading) {
@@ -358,7 +421,7 @@ export default function Targets() {
                       <div className="flex justify-between items-baseline">
                         <span className="text-sm text-muted-foreground">Progress</span>
                         <div className="text-right">
-                          <span className="text-2xl font-bold">{target.current_value}</span>
+                          <span className="text-2xl font-bold">{(progressMap[target.id]?.current ?? 0).toFixed(2)}</span>
                           <span className="text-muted-foreground"> / {target.target_value}</span>
                         </div>
                       </div>
@@ -370,7 +433,7 @@ export default function Targets() {
                           </p>
                           {!isComplete && (
                             <p className="text-xs text-muted-foreground">
-                              {(target.target_value - target.current_value).toFixed(2)} remaining
+                              {(target.target_value - (progressMap[target.id]?.current ?? 0)).toFixed(2)} remaining
                             </p>
                           )}
                         </div>

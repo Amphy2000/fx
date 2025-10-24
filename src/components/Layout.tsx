@@ -20,7 +20,7 @@ export function Layout({ children }: LayoutProps) {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         
-        <div className="flex-1 flex flex-col min-h-screen gradient-dark">
+        <div className="flex-1 flex flex-col min-h-screen bg-background">
           {/* Mobile Header with Hamburger */}
           {isMobile && (
             <div className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-border bg-background/95 backdrop-blur-sm px-4 py-3">
