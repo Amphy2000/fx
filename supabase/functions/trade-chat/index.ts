@@ -17,9 +17,9 @@ serve(async (req) => {
     
     if (!authHeader) {
       return new Response(JSON.stringify({ 
-        error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
+        error: "Oops! Our AI is feeling sleepy 😴. Please try logging in again!" 
       }), {
-        status: 200,
+        status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -34,9 +34,9 @@ serve(async (req) => {
     if (userError || !user) {
       console.error("Auth error:", userError);
       return new Response(JSON.stringify({ 
-        error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
+        error: "Oops! Our AI is feeling sleepy 😴. Please try logging in again!" 
       }), {
-        status: 200,
+        status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -49,7 +49,15 @@ serve(async (req) => {
       .order('created_at', { ascending: false })
       .limit(50);
 
-    if (error) throw error;
+    if (error) {
+      console.error("Trade fetch error:", error);
+      return new Response(JSON.stringify({ 
+        error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const wins = trades?.filter(t => t.result === 'win').length || 0;
     const losses = trades?.filter(t => t.result === 'loss').length || 0;
@@ -67,7 +75,13 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+      console.error("LOVABLE_API_KEY not configured");
+      return new Response(JSON.stringify({ 
+        error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const contextPrompt = `You are an AI trading assistant with access to the user's trading history. Answer their question based on this data:
@@ -108,6 +122,22 @@ Provide a helpful, specific answer based on their actual trading data. Keep it c
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ 
+          error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ 
+          error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       console.error("AI gateway error:", response.status);
       return new Response(JSON.stringify({ 
         error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 

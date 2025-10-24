@@ -16,9 +16,9 @@ serve(async (req) => {
     
     if (!authHeader) {
       return new Response(JSON.stringify({ 
-        error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
+        error: "Oops! Our AI is feeling sleepy 😴. Please try logging in again!" 
       }), {
-        status: 200,
+        status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -33,9 +33,9 @@ serve(async (req) => {
     if (userError || !user) {
       console.error("Auth error:", userError);
       return new Response(JSON.stringify({ 
-        error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
+        error: "Oops! Our AI is feeling sleepy 😴. Please try logging in again!" 
       }), {
-        status: 200,
+        status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -51,11 +51,26 @@ serve(async (req) => {
       .gte('created_at', sevenDaysAgo.toISOString())
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error("Trade fetch error:", error);
+      return new Response(JSON.stringify({ 
+        error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (!trades || trades.length === 0) {
       return new Response(JSON.stringify({ 
-        summary: "No trades recorded this week. Start logging your trades to get AI insights!" 
+        summary: "No trades recorded this week. Start logging your trades to get AI insights!",
+        stats: {
+          totalTrades: 0,
+          winRate: 0,
+          wins: 0,
+          losses: 0,
+          mostTradedPair: "N/A"
+        }
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -65,12 +80,6 @@ serve(async (req) => {
     const wins = trades.filter(t => t.result === 'win').length;
     const losses = trades.filter(t => t.result === 'loss').length;
     const winRate = trades.length > 0 ? Math.round((wins / trades.length) * 100) : 0;
-    
-    // Calculate total P/L
-    const totalPL = trades.reduce((sum, t) => {
-      const pl = t.profit_loss ? parseFloat(String(t.profit_loss)) : 0;
-      return sum + pl;
-    }, 0);
     
     const pairCounts: Record<string, number> = {};
     trades.forEach(t => {
@@ -85,7 +94,13 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+      console.error("LOVABLE_API_KEY not configured");
+      return new Response(JSON.stringify({ 
+        error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const prompt = `You are a professional Forex trading analyst. Generate a weekly summary for this trader.
@@ -95,12 +110,11 @@ Statistics:
 - Win Rate: ${winRate}%
 - Wins: ${wins}
 - Losses: ${losses}
-- Total P/L: $${totalPL.toFixed(2)}
 - Most Traded Pair: ${mostTradedPair}
 - Common Emotions: ${Object.keys(emotionCounts).join(', ')}
 
 Recent Trades Summary:
-${trades.slice(0, 10).map(t => `- ${t.pair} ${t.direction} (${t.result || 'pending'})${t.profit_loss ? ` P/L: $${t.profit_loss}` : ''}`).join('\n')}
+${trades.slice(0, 10).map(t => `- ${t.pair} ${t.direction} (${t.result || 'pending'})`).join('\n')}
 
 Provide:
 1. A brief performance overview (2-3 sentences)
@@ -126,6 +140,14 @@ Keep it motivating and specific.`;
     });
 
     if (!response.ok) {
+      if (response.status === 429 || response.status === 402) {
+        return new Response(JSON.stringify({ 
+          error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       console.error("AI gateway error:", response.status);
       return new Response(JSON.stringify({ 
         error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
@@ -145,7 +167,6 @@ Keep it motivating and specific.`;
         winRate,
         wins,
         losses,
-        totalPL: totalPL.toFixed(2),
         mostTradedPair
       }
     }), {
