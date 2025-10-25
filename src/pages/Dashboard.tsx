@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import TradeForm from "@/components/TradeForm";
 import TradesList from "@/components/TradesList";
+import EmotionalInsights from "@/components/EmotionalInsights";
+import TradingBadges from "@/components/TradingBadges";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Target, FileText } from "lucide-react";
 
@@ -139,8 +141,14 @@ const Dashboard = () => {
               </Card>
             </div>
 
+            {/* Emotional Insights */}
+            <EmotionalInsights trades={trades} />
+
+            {/* Trading Badges */}
+            <TradingBadges trades={trades} />
+
             {/* Trade Form & List */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
               <div className="lg:col-span-1">
                 <TradeForm onTradeAdded={handleTradeAdded} />
               </div>

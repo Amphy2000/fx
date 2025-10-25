@@ -89,9 +89,34 @@ serve(async (req) => {
     const mostTradedPair = Object.entries(pairCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
 
     const emotionCounts: Record<string, number> = {};
+    const emotionWins: Record<string, { wins: number; total: number }> = {};
+    const lossEmotions: Record<string, number> = {};
+    
     trades.forEach(t => {
-      if (t.emotion_before) emotionCounts[t.emotion_before] = (emotionCounts[t.emotion_before] || 0) + 1;
+      if (t.emotion_before) {
+        emotionCounts[t.emotion_before] = (emotionCounts[t.emotion_before] || 0) + 1;
+        
+        if (!emotionWins[t.emotion_before]) {
+          emotionWins[t.emotion_before] = { wins: 0, total: 0 };
+        }
+        emotionWins[t.emotion_before].total++;
+        
+        if (t.result === 'win') {
+          emotionWins[t.emotion_before].wins++;
+        } else if (t.result === 'loss') {
+          lossEmotions[t.emotion_before] = (lossEmotions[t.emotion_before] || 0) + 1;
+        }
+      }
     });
+
+    const mostCommonEmotion = Object.entries(emotionCounts).sort((a, b) => b[1] - a[1])[0];
+    const lossEmotion = Object.entries(lossEmotions).sort((a, b) => b[1] - a[1])[0];
+    const bestEmotion = Object.entries(emotionWins)
+      .map(([emotion, stats]) => ({
+        emotion,
+        winRate: (stats.wins / stats.total) * 100
+      }))
+      .sort((a, b) => b.winRate - a.winRate)[0];
 
     const totalPL = trades.reduce((sum, t) => sum + (Number(t.profit_loss) || 0), 0);
 
@@ -106,6 +131,14 @@ serve(async (req) => {
       });
     }
 
+    const emotionalInsight = bestEmotion ? 
+      `Best mindset: ${bestEmotion.emotion} (${Math.round(bestEmotion.winRate)}% win rate)` :
+      '';
+    
+    const emotionalWarning = lossEmotion && lossEmotion[1] >= 2 ?
+      `Watch out: ${lossEmotion[0]} emotion linked to ${lossEmotion[1]} losses` :
+      '';
+
     const prompt = `Here's how this trader did this week:
 
 This Week's Numbers:
@@ -113,13 +146,15 @@ This Week's Numbers:
 - Total P/L: ${totalPL > 0 ? '+' : ''}${totalPL.toFixed(2)}
 - Favorite pair: ${mostTradedPair}
 - Trading emotions: ${Object.keys(emotionCounts).length > 0 ? Object.keys(emotionCounts).join(', ') : 'Not tracked'}
+${emotionalInsight ? `- ${emotionalInsight}` : ''}
+${emotionalWarning ? `- ${emotionalWarning}` : ''}
 
 Their Trades This Week:
 ${trades.slice(0, 10).map(t => 
-  `${t.pair} ${t.direction} → ${t.result || 'still open'} ${t.profit_loss ? `(${t.profit_loss > 0 ? '+' : ''}${t.profit_loss})` : ''}`
+  `${t.pair} ${t.direction} → ${t.result || 'still open'} ${t.profit_loss ? `(${t.profit_loss > 0 ? '+' : ''}${t.profit_loss})` : ''} ${t.emotion_before ? `[felt: ${t.emotion_before}]` : ''}`
 ).join('\n')}
 
-Write them a weekly recap that feels like it's from a real trading mentor. Be conversational and genuine. Start with how their week went, mention something specific they did well or a pattern you noticed, and give them one clear thing to work on next week. Make it personal and actionable, not generic. If they had a rough week, be supportive but honest. If they crushed it, celebrate with them! Keep it under 150 words.`;
+Write them a weekly recap that feels like it's from a real trading mentor. Be conversational and genuine. Start with how their week went, mention something specific they did well or a pattern you noticed. If they're tracking emotions, definitely comment on emotional patterns and how mindset affects their results. Give them one clear thing to work on next week. Make it personal and actionable, not generic. If they had a rough week, be supportive but honest. If they crushed it, celebrate with them! Keep it under 150 words.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -157,6 +192,18 @@ Write them a weekly recap that feels like it's from a real trading mentor. Be co
     const data = await response.json();
     const summary = data.choices[0].message.content;
 
+    const emotionEmojis: Record<string, string> = {
+      calm: '😌', neutral: '😐', anxious: '😟', 
+      impatient: '😤', confident: '😎'
+    };
+
+    const emotionalOverview = mostCommonEmotion ? {
+      mostCommon: `${emotionEmojis[mostCommonEmotion[0]] || ''} ${mostCommonEmotion[0].charAt(0).toUpperCase() + mostCommonEmotion[0].slice(1)}`,
+      lossEmotion: lossEmotion ? `${emotionEmojis[lossEmotion[0]] || ''} ${lossEmotion[0].charAt(0).toUpperCase() + lossEmotion[0].slice(1)}` : "N/A",
+      bestEmotion: bestEmotion ? `${emotionEmojis[bestEmotion.emotion] || ''} ${bestEmotion.emotion.charAt(0).toUpperCase() + bestEmotion.emotion.slice(1)}` : "N/A",
+      insight: emotionalInsight || emotionalWarning || "Keep tracking emotions for insights"
+    } : null;
+
     return new Response(JSON.stringify({ 
       summary,
       stats: {
@@ -165,7 +212,8 @@ Write them a weekly recap that feels like it's from a real trading mentor. Be co
         wins,
         losses,
         mostTradedPair,
-        totalPL
+        totalPL,
+        emotionalOverview
       }
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

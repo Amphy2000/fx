@@ -28,6 +28,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
     profit_loss: "",
     notes: "",
     emotion_before: "",
+    emotion_after: "",
   });
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,6 +115,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
         profit_loss: formData.profit_loss ? parseFloat(formData.profit_loss) : null,
         notes: formData.notes || null,
         emotion_before: formData.emotion_before || null,
+        emotion_after: formData.emotion_after || null,
         screenshot_url: screenshotUrls.length > 0 ? screenshotUrls.join(',') : null,
       };
 
@@ -157,6 +159,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
         profit_loss: "",
         notes: "",
         emotion_before: "",
+        emotion_after: "",
       });
       setScreenshots([]);
       setScreenshotPreviews([]);
@@ -290,23 +293,49 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
             </>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="emotion_before">Emotion Before</Label>
-            <Select
-              value={formData.emotion_before}
-              onValueChange={(value) => setFormData({ ...formData, emotion_before: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select emotion" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="calm">Calm</SelectItem>
-                <SelectItem value="confident">Confident</SelectItem>
-                <SelectItem value="fearful">Fearful</SelectItem>
-                <SelectItem value="greedy">Greedy</SelectItem>
-                <SelectItem value="anxious">Anxious</SelectItem>
-              </SelectContent>
-            </Select>
+          {/* Emotion Tracking */}
+          <div className="space-y-4 pt-4 border-t border-border/30">
+            <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              🧘 Emotional Tracking
+            </h3>
+            
+            <div className="space-y-2">
+              <Label htmlFor="emotion_before">Emotion Before Trade</Label>
+              <Select
+                value={formData.emotion_before}
+                onValueChange={(value) => setFormData({ ...formData, emotion_before: value })}
+              >
+                <SelectTrigger id="emotion_before" className="bg-card border-border/50">
+                  <SelectValue placeholder="Select emotion..." />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border/50">
+                  <SelectItem value="calm">😌 Calm</SelectItem>
+                  <SelectItem value="neutral">😐 Neutral</SelectItem>
+                  <SelectItem value="anxious">😟 Anxious</SelectItem>
+                  <SelectItem value="impatient">😤 Impatient</SelectItem>
+                  <SelectItem value="confident">😎 Confident</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="emotion_after">Emotion After Trade</Label>
+              <Select
+                value={formData.emotion_after}
+                onValueChange={(value) => setFormData({ ...formData, emotion_after: value })}
+              >
+                <SelectTrigger id="emotion_after" className="bg-card border-border/50">
+                  <SelectValue placeholder="Select emotion..." />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-border/50">
+                  <SelectItem value="satisfied">😁 Satisfied</SelectItem>
+                  <SelectItem value="regretful">😔 Regretful</SelectItem>
+                  <SelectItem value="frustrated">😤 Frustrated</SelectItem>
+                  <SelectItem value="neutral">😐 Neutral</SelectItem>
+                  <SelectItem value="content">😌 Content</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="space-y-2">

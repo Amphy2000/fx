@@ -102,6 +102,38 @@ const WeeklySummary = () => {
           </div>
         )}
 
+        {/* Emotional Overview */}
+        {stats && stats.emotionalOverview && (
+          <Card className="border-border/50 border-primary/20 mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                🧘 Emotional Overview
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Most Common Pre-Trade</p>
+                  <p className="text-lg font-semibold">{stats.emotionalOverview.mostCommon}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Emotion Linked to Losses</p>
+                  <p className="text-lg font-semibold text-destructive">{stats.emotionalOverview.lossEmotion}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Best Performance</p>
+                  <p className="text-lg font-semibold text-success">{stats.emotionalOverview.bestEmotion}</p>
+                </div>
+              </div>
+              {stats.emotionalOverview.insight && (
+                <div className="bg-primary/5 border border-primary/20 rounded p-3 mt-4">
+                  <p className="text-sm text-foreground/90">{stats.emotionalOverview.insight}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         <Card className="border-border/50">
           <CardHeader>
             <CardTitle>AI Analysis</CardTitle>
