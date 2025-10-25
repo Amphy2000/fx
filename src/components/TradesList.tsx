@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +20,7 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
   const [filterResult, setFilterResult] = useState<string>("all");
   const [filterDateFrom, setFilterDateFrom] = useState<string>("");
   const [filterDateTo, setFilterDateTo] = useState<string>("");
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   
   const itemsPerPage = 10;
   const handleDelete = async (tradeId: string) => {
@@ -71,6 +71,48 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
     const start = (currentPage - 1) * itemsPerPage;
     return filteredTrades.slice(start, start + itemsPerPage);
   }, [filteredTrades, currentPage]);
+
+  // Generate signed URLs for all screenshots in current page
+  useEffect(() => {
+    const generateSignedUrls = async () => {
+      const urlsToGenerate = new Set<string>();
+      
+      paginatedTrades.forEach(trade => {
+        if (trade.screenshot_url) {
+          trade.screenshot_url.split(',').forEach((url: string) => {
+            urlsToGenerate.add(url.trim());
+          });
+        }
+      });
+
+      const newSignedUrls: Record<string, string> = {};
+      
+      for (const url of urlsToGenerate) {
+        try {
+          // Extract file path from URL
+          const urlObj = new URL(url);
+          const pathParts = urlObj.pathname.split('/');
+          const fileName = pathParts.slice(pathParts.indexOf('trade-screenshots') + 1).join('/');
+          
+          const { data, error } = await supabase.storage
+            .from('trade-screenshots')
+            .createSignedUrl(fileName, 3600); // 1 hour expiry
+
+          if (!error && data) {
+            newSignedUrls[url] = data.signedUrl;
+          }
+        } catch (error) {
+          console.error("Error generating signed URL:", error);
+        }
+      }
+      
+      setSignedUrls(newSignedUrls);
+    };
+
+    if (paginatedTrades.length > 0) {
+      generateSignedUrls();
+    }
+  }, [paginatedTrades]);
 
   // Reset to page 1 when filters change
   const handleFilterChange = () => {
@@ -305,27 +347,32 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
                   <span className="text-xs text-muted-foreground">Screenshots</span>
                 </div>
                 <div className="flex gap-2 flex-wrap">
-                  {trade.screenshot_url.split(',').map((url: string, idx: number) => (
-                    <button
-                      key={idx}
-                      onClick={() => window.open(url.trim(), '_blank')}
-                      className="relative group"
-                    >
-                      <img
-                        src={url.trim()}
-                        alt={`Trade screenshot ${idx + 1}`}
-                        loading="lazy"
-                        onError={(e) => {
-                          const target = e.currentTarget as HTMLImageElement;
-                          target.src = "/placeholder.svg";
-                        }}
-                        className="w-20 h-20 object-cover rounded border-2 border-border hover:border-primary transition-smooth cursor-pointer"
-                      />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-smooth rounded flex items-center justify-center">
-                        <span className="text-white text-xs">View</span>
-                      </div>
-                    </button>
-                  ))}
+                  {trade.screenshot_url.split(',').map((url: string, idx: number) => {
+                    const trimmedUrl = url.trim();
+                    const signedUrl = signedUrls[trimmedUrl] || trimmedUrl;
+                    
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => window.open(signedUrl, '_blank')}
+                        className="relative group"
+                      >
+                        <img
+                          src={signedUrl}
+                          alt={`Trade screenshot ${idx + 1}`}
+                          loading="lazy"
+                          onError={(e) => {
+                            const target = e.currentTarget as HTMLImageElement;
+                            target.src = "/placeholder.svg";
+                          }}
+                          className="w-20 h-20 object-cover rounded border-2 border-border hover:border-primary transition-smooth cursor-pointer"
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-smooth rounded flex items-center justify-center">
+                          <span className="text-white text-xs">View</span>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}

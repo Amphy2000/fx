@@ -19,6 +19,20 @@ serve(async (req) => {
   }
 
   try {
+    const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
+    
+    // Verify Telegram secret token for webhook security
+    const secretToken = req.headers.get('X-Telegram-Bot-Api-Secret-Token');
+    const expectedToken = Deno.env.get("TELEGRAM_WEBHOOK_SECRET");
+    
+    if (!secretToken || secretToken !== expectedToken) {
+      console.error("Invalid or missing webhook secret token");
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Check if request has body
     const contentType = req.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
@@ -41,8 +55,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
-
-    const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
     
     // Handle /start command
     if (update.message?.text?.startsWith('/start')) {
@@ -50,6 +62,49 @@ serve(async (req) => {
       const deepLink = update.message.text.split(' ')[1]; // Get user_id from deep link
 
       if (deepLink) {
+        // Validate UUID format to prevent injection
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(deepLink)) {
+          console.error("Invalid user ID format in deep link");
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: "❌ Invalid connection link. Please use the link from your app settings.",
+              parse_mode: "Markdown"
+            })
+          });
+          return new Response(JSON.stringify({ error: 'Invalid user ID' }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // Verify user exists before updating
+        const { data: userExists } = await supabaseClient
+          .from('profiles')
+          .select('id')
+          .eq('id', deepLink)
+          .single();
+
+        if (!userExists) {
+          console.error("User not found for deep link");
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: "❌ User not found. Please generate a new connection link from your app settings.",
+              parse_mode: "Markdown"
+            })
+          });
+          return new Response(JSON.stringify({ error: 'User not found' }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
         // Update user's telegram_chat_id
         const { error } = await supabaseClient
           .from('profiles')

@@ -95,11 +95,17 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
             continue;
           }
 
-          const { data: { publicUrl } } = supabase.storage
+          // Use signed URLs for private bucket (1 hour expiry)
+          const { data: signedUrlData, error: signedUrlError } = await supabase.storage
             .from('trade-screenshots')
-            .getPublicUrl(fileName);
+            .createSignedUrl(fileName, 3600);
 
-          screenshotUrls.push(publicUrl);
+          if (signedUrlError) {
+            console.error("Signed URL error:", signedUrlError);
+            continue;
+          }
+
+          screenshotUrls.push(signedUrlData.signedUrl);
         }
       }
 
