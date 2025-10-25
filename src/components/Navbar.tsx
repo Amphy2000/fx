@@ -21,11 +21,15 @@ const Navbar = () => {
       if (session?.user) {
         checkAdminStatus(session.user.id);
         
-        // Show welcome back toast for returning users (not fresh logins)
+        // Show welcome back toast only once per session for returning users
         const justLoggedIn = localStorage.getItem('just_logged_in');
-        if (!justLoggedIn) {
+        const welcomeShown = sessionStorage.getItem('welcomeShown');
+        const isReturningUser = localStorage.getItem('userLastLogin');
+        
+        if (!justLoggedIn && !welcomeShown && isReturningUser) {
           const userName = session.user.user_metadata?.full_name || 'back';
           toast.success(`Welcome back, ${userName}! 👋`);
+          sessionStorage.setItem('welcomeShown', 'true');
         }
         localStorage.removeItem('just_logged_in');
       }

@@ -69,6 +69,8 @@ const Auth = () => {
 
       // Mark as fresh login to prevent "Welcome back" toast
       localStorage.setItem('just_logged_in', 'true');
+      // Mark user as returning for future sessions
+      localStorage.setItem('userLastLogin', new Date().toISOString());
       
       toast.success("Logged in successfully!");
       navigate("/dashboard");
