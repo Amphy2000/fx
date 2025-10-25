@@ -20,6 +20,14 @@ const Navbar = () => {
       
       if (session?.user) {
         checkAdminStatus(session.user.id);
+        
+        // Show welcome back toast for returning users (not fresh logins)
+        const justLoggedIn = localStorage.getItem('just_logged_in');
+        if (!justLoggedIn) {
+          const userName = session.user.user_metadata?.full_name || 'back';
+          toast.success(`Welcome back, ${userName}! 👋`);
+        }
+        localStorage.removeItem('just_logged_in');
       }
     };
 
@@ -27,17 +35,28 @@ const Navbar = () => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
+      
       if (session?.user) {
         checkAdminStatus(session.user.id);
       } else {
         setIsAdmin(false);
+        
+        // Redirect to auth page if session expires or user signs out
+        if (!session && location.pathname !== '/auth' && location.pathname !== '/') {
+          navigate('/auth');
+          if (event === 'SIGNED_OUT' && location.pathname !== '/') {
+            // Don't show expiry message for manual sign out
+            return;
+          }
+          toast.info('Your session has expired. Please sign in again.');
+        }
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate, location.pathname]);
 
   const checkAdminStatus = async (userId: string) => {
     try {

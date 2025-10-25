@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,17 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+
+  // Redirect if already logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/dashboard");
+      }
+    };
+    checkSession();
+  }, [navigate]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +44,9 @@ const Auth = () => {
 
       if (error) throw error;
 
+      // Mark as fresh signup to prevent "Welcome back" toast
+      localStorage.setItem('just_logged_in', 'true');
+      
       toast.success("Account created successfully! You can now log in.");
     } catch (error: any) {
       toast.error(error.message || "Failed to create account");
@@ -53,6 +67,9 @@ const Auth = () => {
 
       if (error) throw error;
 
+      // Mark as fresh login to prevent "Welcome back" toast
+      localStorage.setItem('just_logged_in', 'true');
+      
       toast.success("Logged in successfully!");
       navigate("/dashboard");
     } catch (error: any) {
