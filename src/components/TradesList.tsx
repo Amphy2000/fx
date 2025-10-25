@@ -314,6 +314,11 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
                       <img
                         src={url.trim()}
                         alt={`Trade screenshot ${idx + 1}`}
+                        loading="lazy"
+                        onError={(e) => {
+                          const target = e.currentTarget as HTMLImageElement;
+                          target.src = "/placeholder.svg";
+                        }}
                         className="w-20 h-20 object-cover rounded border-2 border-border hover:border-primary transition-smooth cursor-pointer"
                       />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-smooth rounded flex items-center justify-center">

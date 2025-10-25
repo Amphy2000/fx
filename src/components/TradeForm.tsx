@@ -90,6 +90,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
 
           if (uploadError) {
             console.error("Upload error:", uploadError);
+            toast.error("AI is feeling sleepy 😴... Could not upload image right now.");
             continue;
           }
 
