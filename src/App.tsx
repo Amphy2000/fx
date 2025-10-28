@@ -16,6 +16,7 @@ import Targets from "./pages/Targets";
 import TradeCalendar from "./pages/TradeCalendar";
 import Pricing from "./pages/Pricing";
 import Feedback from "./pages/Feedback";
+import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/trade-calendar" element={<TradeCalendar />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/feedback" element={<Feedback />} />
+            <Route path="/privacy" element={<Privacy />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

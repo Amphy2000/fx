@@ -54,11 +54,11 @@ serve(async (req) => {
 
     switch (planType) {
       case 'pro':
-        amount = 499;
+        amount = 7500;
         planName = 'Pro Plan';
         break;
       case 'lifetime':
-        amount = 2000;
+        amount = 30000;
         planName = 'Lifetime Access';
         break;
       default:
@@ -79,7 +79,7 @@ serve(async (req) => {
       body: JSON.stringify({
         email,
         amount: amount * 100,
-        currency: 'USD',
+        currency: 'NGN',
         callback_url: callbackUrl,
         metadata: {
           user_id: user.id,
@@ -109,7 +109,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

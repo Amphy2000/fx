@@ -67,9 +67,9 @@ const Pricing = () => {
     },
     {
       name: "Pro Plan",
-      price: "$4.99",
+      price: "₦7,500",
       period: "/month",
-      priceAlt: "₦7,500/month",
+      priceAlt: "$4.99/month",
       description: "For serious traders",
       icon: <Zap className="h-6 w-6" />,
       features: [
@@ -88,8 +88,9 @@ const Pricing = () => {
     },
     {
       name: "Lifetime Access",
-      price: "$20",
+      price: "₦30,000",
       period: "one-time",
+      priceAlt: "~$20 USD",
       description: "Limited beta offer",
       icon: <Crown className="h-6 w-6" />,
       badge: "🔥 Best Value",
@@ -172,7 +173,11 @@ const Pricing = () => {
 
         <div className="mt-12 text-center text-sm text-muted-foreground">
           <p>All plans include secure data encryption and privacy protection.</p>
-          <p className="mt-2">Questions? Contact us at support@amphyjournal.com</p>
+          <p className="mt-2">
+            Questions? Contact us at support@amphyjournal.com
+            {" | "}
+            <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>
+          </p>
         </div>
       </div>
     </Layout>
