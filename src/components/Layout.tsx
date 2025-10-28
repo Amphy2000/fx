@@ -3,6 +3,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Navbar from "@/components/Navbar";
+import { FeedbackButton } from "@/components/FeedbackButton";
 import { TrendingUp, Menu, Moon, Sun } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,9 @@ export function Layout({ children }: LayoutProps) {
           <main className="flex-1">
             {children}
           </main>
+          
+          {/* Feedback Button */}
+          <FeedbackButton />
         </div>
       </div>
     </SidebarProvider>

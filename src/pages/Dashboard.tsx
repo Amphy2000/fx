@@ -94,8 +94,25 @@ const Dashboard = () => {
     <Layout>
       <div className="container mx-auto px-4 py-8">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold mb-2">Welcome back, {profile?.full_name || "Trader"}!</h1>
-              <p className="text-muted-foreground">Track your trades and improve your performance</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold mb-2">Welcome back, {profile?.full_name || "Trader"}!</h1>
+                  <p className="text-muted-foreground">Track your trades and improve your performance</p>
+                </div>
+                {profile && (
+                  <div className="text-right">
+                    <div className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-semibold">
+                      {profile.subscription_tier === 'lifetime' ? '👑 Lifetime' : 
+                       profile.subscription_tier === 'pro' ? '⚡ Pro' : '🆓 Free'}
+                    </div>
+                    {profile.subscription_tier === 'free' && profile.monthly_trade_limit && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {profile.trades_count || 0}/{profile.monthly_trade_limit} trades this month
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Stats Cards */}

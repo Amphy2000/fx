@@ -1,4 +1,4 @@
-import { LayoutDashboard, MessageSquare, Calendar, Settings, Shield, TrendingUp, LogOut, Target, Sun, Moon, Calculator } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Calendar, Settings, Shield, TrendingUp, LogOut, Target, Sun, Moon, Calculator, CreditCard, MessagesSquare } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +25,7 @@ const navItems = [
   { title: "Trade Calendar", url: "/trade-calendar", icon: Calendar },
   { title: "AI Chat", url: "/ai-chat", icon: MessageSquare },
   { title: "Weekly Summary", url: "/weekly-summary", icon: TrendingUp },
+  { title: "Pricing", url: "/pricing", icon: CreditCard },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
@@ -102,19 +103,34 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
               {isAdmin && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive("/admin")}
-                    className="transition-smooth hover:bg-sidebar-primary/10 data-[active=true]:bg-sidebar-primary/20 data-[active=true]:text-sidebar-primary"
-                    onClick={handleNavClick}
-                  >
-                    <NavLink to="/admin">
-                      <Shield className="h-4 w-4" />
-                      <span>Admin</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                <>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive("/admin")}
+                      className="transition-smooth hover:bg-sidebar-primary/10 data-[active=true]:bg-sidebar-primary/20 data-[active=true]:text-sidebar-primary"
+                      onClick={handleNavClick}
+                    >
+                      <NavLink to="/admin">
+                        <Shield className="h-4 w-4" />
+                        <span>Admin</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive("/feedback")}
+                      className="transition-smooth hover:bg-sidebar-primary/10 data-[active=true]:bg-sidebar-primary/20 data-[active=true]:text-sidebar-primary"
+                      onClick={handleNavClick}
+                    >
+                      <NavLink to="/feedback">
+                        <MessagesSquare className="h-4 w-4" />
+                        <span>User Feedback</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
               )}
             </SidebarMenu>
           </SidebarGroupContent>

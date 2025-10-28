@@ -95,9 +95,15 @@ const Index = () => {
                 View Demo
               </Button>
             </div>
-            <p className="mt-4 text-sm text-muted-foreground">
-              Free: 10 trades/month • Premium: $10/month for unlimited
-            </p>
+            <div className="mt-6 p-4 rounded-lg bg-card/50 border border-primary/20">
+              <p className="text-sm font-semibold text-primary mb-2">💡 Beta Launch Offer</p>
+              <p className="text-sm text-muted-foreground mb-2">Start free and upgrade anytime.</p>
+              <ul className="text-sm space-y-1 text-foreground">
+                <li><strong>Free Plan</strong> → Log up to 10 trades/month</li>
+                <li><strong>Pro Plan</strong> → $4.99/month (or ₦7,500) — Unlimited journaling, AI insights & analytics</li>
+                <li><strong>Lifetime Access</strong> → $20 one-time — Get full Pro access forever (limited-time offer)</li>
+              </ul>
+            </div>
           </div>
         </div>
       </section>
@@ -106,9 +112,14 @@ const Index = () => {
       <section className="py-16 bg-card/30">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl font-bold text-center mb-12">
-              Why Traders Choose Amphy AI
-            </h2>
+            <div className="text-center mb-8">
+              <span className="inline-block px-4 py-1 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-4">
+                🚀 Beta Launch — Limited Time Offer
+              </span>
+              <h2 className="text-3xl font-bold">
+                Why Traders Choose Amphy AI
+              </h2>
+            </div>
             <div className="grid md:grid-cols-2 gap-4">
               {benefits.map((benefit, index) => (
                 <div
