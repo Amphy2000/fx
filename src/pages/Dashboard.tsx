@@ -6,6 +6,7 @@ import TradeForm from "@/components/TradeForm";
 import TradesList from "@/components/TradesList";
 import EmotionalInsights from "@/components/EmotionalInsights";
 import TradingBadges from "@/components/TradingBadges";
+import { ConsentModal } from "@/components/ConsentModal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Target, FileText } from "lucide-react";
 
@@ -14,6 +15,7 @@ const Dashboard = () => {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [trades, setTrades] = useState<any[]>([]);
+  const [showConsentModal, setShowConsentModal] = useState(false);
   const [stats, setStats] = useState({
     totalTrades: 0,
     wins: 0,
@@ -50,7 +52,14 @@ const Dashboard = () => {
       .eq("id", userId)
       .single();
     
-    if (data) setProfile(data);
+    if (data) {
+      setProfile(data);
+      
+      // Show consent modal if user hasn't responded yet
+      if (data.data_collection_consent === null) {
+        setShowConsentModal(true);
+      }
+    }
   };
 
   const fetchTrades = async (userId: string) => {
@@ -162,7 +171,11 @@ const Dashboard = () => {
             <EmotionalInsights trades={trades} />
 
             {/* Trading Badges */}
-            <TradingBadges trades={trades} />
+            <TradingBadges 
+              trades={trades}
+              currentStreak={profile?.current_streak}
+              longestStreak={profile?.longest_streak}
+            />
 
             {/* Trade Form & List */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
@@ -173,8 +186,14 @@ const Dashboard = () => {
               <div className="lg:col-span-2">
                 <TradesList trades={trades} onTradeDeleted={handleTradeAdded} />
               </div>
-            </div>
-          </div>
+        </div>
+      </div>
+
+      <ConsentModal 
+        open={showConsentModal} 
+        onClose={() => setShowConsentModal(false)}
+        userId={user?.id}
+      />
     </Layout>
   );
 };

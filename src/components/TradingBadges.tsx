@@ -10,10 +10,41 @@ interface Trade {
 
 interface TradingBadgesProps {
   trades: Trade[];
+  currentStreak?: number;
+  longestStreak?: number;
 }
 
-const TradingBadges = ({ trades }: TradingBadgesProps) => {
+const TradingBadges = ({ trades, currentStreak, longestStreak }: TradingBadgesProps) => {
   const badges = [];
+
+  // Streak Badges
+  if (currentStreak && currentStreak >= 7) {
+    badges.push({
+      id: 'week-warrior',
+      icon: '🔥',
+      title: 'Week Warrior',
+      description: `${currentStreak} day trading streak!`,
+      color: 'text-orange-500',
+    });
+  } else if (currentStreak && currentStreak >= 3) {
+    badges.push({
+      id: 'momentum-builder',
+      icon: '⚡',
+      title: 'Momentum Builder',
+      description: `${currentStreak} day streak - keep going!`,
+      color: 'text-yellow-500',
+    });
+  }
+
+  if (longestStreak && longestStreak >= 14) {
+    badges.push({
+      id: 'consistency-champion',
+      icon: '🏅',
+      title: 'Consistency Champion',
+      description: `Longest streak: ${longestStreak} days`,
+      color: 'text-primary',
+    });
+  }
 
   // Zen Trader: 5 calm trades in a row
   let consecutiveCalm = 0;

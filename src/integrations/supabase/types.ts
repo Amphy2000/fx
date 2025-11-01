@@ -99,10 +99,15 @@ export type Database = {
       }
       profiles: {
         Row: {
+          consent_date: string | null
           created_at: string | null
+          current_streak: number | null
+          data_collection_consent: boolean | null
           email: string | null
           full_name: string | null
           id: string
+          last_trade_date: string | null
+          longest_streak: number | null
           monthly_trade_limit: number | null
           subscription_expires_at: string | null
           subscription_status: string | null
@@ -114,10 +119,15 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          consent_date?: string | null
           created_at?: string | null
+          current_streak?: number | null
+          data_collection_consent?: boolean | null
           email?: string | null
           full_name?: string | null
           id: string
+          last_trade_date?: string | null
+          longest_streak?: number | null
           monthly_trade_limit?: number | null
           subscription_expires_at?: string | null
           subscription_status?: string | null
@@ -129,10 +139,15 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          consent_date?: string | null
           created_at?: string | null
+          current_streak?: number | null
+          data_collection_consent?: boolean | null
           email?: string | null
           full_name?: string | null
           id?: string
+          last_trade_date?: string | null
+          longest_streak?: number | null
           monthly_trade_limit?: number | null
           subscription_expires_at?: string | null
           subscription_status?: string | null

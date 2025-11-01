@@ -17,3 +17,12 @@ verify_jwt = true
 
 [functions.telegram-weekly-summary]
 verify_jwt = false
+
+[functions.send-weekly-telegram]
+verify_jwt = false
+
+[functions.initialize-payment]
+verify_jwt = true
+
+[functions.paystack-webhook]
+verify_jwt = false

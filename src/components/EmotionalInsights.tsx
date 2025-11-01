@@ -63,11 +63,14 @@ const EmotionalInsights = ({ trades }: EmotionalInsightsProps) => {
     }
   });
 
-  const winRateData = Object.entries(emotionWinRates).map(([emotion, stats]) => ({
-    emotion: `${emotionEmojis[emotion] || ''} ${emotion.charAt(0).toUpperCase() + emotion.slice(1)}`,
-    winRate: Math.round((stats.wins / stats.total) * 100),
-    trades: stats.total,
-  }));
+  // Only include emotions with at least 2 trades for meaningful insights
+  const winRateData = Object.entries(emotionWinRates)
+    .filter(([_, stats]) => stats.total >= 2)
+    .map(([emotion, stats]) => ({
+      emotion: `${emotionEmojis[emotion] || ''} ${emotion.charAt(0).toUpperCase() + emotion.slice(1)}`,
+      winRate: Math.round((stats.wins / stats.total) * 100),
+      trades: stats.total,
+    }));
 
   // Post-trade emotions for losses
   const lossEmotions: Record<string, number> = {};
@@ -77,10 +80,14 @@ const EmotionalInsights = ({ trades }: EmotionalInsightsProps) => {
     }
   });
 
-  const lossEmotionData = Object.entries(lossEmotions).map(([emotion, count]) => ({
-    name: `${emotionEmojis[emotion] || ''} ${emotion.charAt(0).toUpperCase() + emotion.slice(1)}`,
-    value: count,
-  }));
+  // Only show loss emotions if at least 3 losses recorded
+  const losses = trades.filter(t => t.result === 'loss');
+  const lossEmotionData = losses.length >= 3 
+    ? Object.entries(lossEmotions).map(([emotion, count]) => ({
+        name: `${emotionEmojis[emotion] || ''} ${emotion.charAt(0).toUpperCase() + emotion.slice(1)}`,
+        value: count,
+      }))
+    : [];
 
   // Weekly emotional stability (last 4 weeks)
   const now = new Date();
@@ -128,14 +135,39 @@ const EmotionalInsights = ({ trades }: EmotionalInsightsProps) => {
               <TrendingUp className="h-5 w-5 text-primary mt-0.5" />
               <div className="space-y-1 text-sm">
                 <p className="font-medium text-primary">AI Reflection</p>
-                {bestEmotion && (
+                {winRateData.length > 0 && bestEmotion && bestEmotion.trades >= 3 && (
                   <p className="text-foreground/80">
-                    You perform best when feeling <span className="font-semibold">{bestEmotion.emotion}</span> ({bestEmotion.winRate}% win rate).
+                    Your highest win rate ({bestEmotion.winRate}%) comes when feeling{' '}
+                    <span className="font-semibold">{bestEmotion.emotion}</span> across {bestEmotion.trades} trades.
+                    This is your optimal trading mindset.
                   </p>
                 )}
-                {worstEmotion && worstEmotion.winRate < 50 && (
+                {winRateData.length > 1 && worstEmotion && worstEmotion.trades >= 2 && worstEmotion.winRate < 40 && (
+                  <p className="text-destructive">
+                    Trading while {worstEmotion.emotion} has led to a{' '}
+                    {worstEmotion.winRate}% win rate across {worstEmotion.trades} trades.
+                    Consider avoiding trades when feeling this way.
+                  </p>
+                )}
+                {lossEmotionData.length > 0 && (
                   <p className="text-foreground/80">
-                    Losses often occur when <span className="font-semibold">{worstEmotion.emotion}</span> — consider pausing trading on stressful days.
+                    After losses, you most commonly feel <span className="font-semibold">{lossEmotionData[0].name}</span>.
+                    {lossEmotionData[0].name.toLowerCase().includes('angry') || 
+                     lossEmotionData[0].name.toLowerCase().includes('frustrated')
+                      ? ' Take a break before your next trade to avoid revenge trading.'
+                      : ' Acknowledging this emotion helps you stay disciplined.'}
+                  </p>
+                )}
+                {weeklyData.length > 2 && weeklyData.some(d => d.stability < 50) && (
+                  <p className="text-warning">
+                    Your pre-trade emotional state varies significantly week-to-week.
+                    Establishing a consistent pre-trade routine may improve your results.
+                  </p>
+                )}
+                {winRateData.length === 0 && (
+                  <p className="text-muted-foreground">
+                    Record more trades with emotional data to receive personalized insights.
+                    Aim for at least 2-3 trades per emotional state for meaningful patterns.
                   </p>
                 )}
               </div>
