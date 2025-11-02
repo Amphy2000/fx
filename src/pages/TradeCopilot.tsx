@@ -53,18 +53,38 @@ export default function TradeCopilot() {
         body: formData
       });
 
+      // Handle non-2xx and rate/credits explicitly
       if (error) {
-        if (error.message?.includes('Insufficient credits')) {
+        const status = (error as any)?.status;
+        if (status === 402 || error.message?.includes('Insufficient credits')) {
           toast.error("Insufficient AI credits", {
             description: "Upgrade your plan to continue using Trade Copilot",
-            action: {
-              label: "Upgrade",
-              onClick: () => navigate("/pricing")
-            }
+            action: { label: "Upgrade", onClick: () => navigate("/pricing") }
           });
-        } else {
-          throw error;
+          return;
         }
+        if (status === 429) {
+          toast.error("AI is rate limited", {
+            description: "Please wait a moment and try again."
+          });
+          return;
+        }
+
+        // Try to surface any fallback from server in the error message text
+        const fallbackMatch = error.message?.match(/fallback[:=]\s?([^}]+)$/);
+        if (fallbackMatch?.[1]) {
+          toast.error("Trade Copilot Unavailable", { description: fallbackMatch[1] });
+        } else {
+          toast.error("Failed to analyze trade", { description: error.message || "Please try again in a moment" });
+        }
+        return;
+      }
+
+      // If server returned ok:false fallback, surface gracefully
+      if (data && (data.ok === false || data.error)) {
+        toast.error("Trade Copilot Unavailable", {
+          description: data.fallback || data.error || "Please try again in a few minutes."
+        });
         return;
       }
 

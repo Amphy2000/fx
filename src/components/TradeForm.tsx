@@ -78,6 +78,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
       const { data: { session } } = await supabase.auth.getSession();
 
       let screenshotUrls: string[] = [];
+      const uploadedFiles: { path: string; name: string; size: number }[] = [];
 
       // Upload screenshots if provided
       if (screenshots.length > 0) {
@@ -94,6 +95,8 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
             toast.error("AI is feeling sleepy 😴... Could not upload image right now.");
             continue;
           }
+
+          uploadedFiles.push({ path: fileName, name: screenshot.name, size: screenshot.size });
 
           // Use signed URLs for private bucket (1 hour expiry)
           const { data: signedUrlData, error: signedUrlError } = await supabase.storage
@@ -134,19 +137,14 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
       if (error) throw error;
 
       // Save screenshot metadata to trade_screenshots table
-      if (screenshots.length > 0 && newTrade) {
-        const screenshotMetadata = screenshots.map((file, index) => {
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-          
-          return {
-            trade_id: newTrade.id,
-            user_id: user.id,
-            storage_path: fileName,
-            file_name: file.name,
-            file_size: file.size,
-          };
-        });
+      if (uploadedFiles.length > 0 && newTrade) {
+        const screenshotMetadata = uploadedFiles.map((f) => ({
+          trade_id: newTrade.id,
+          user_id: user.id,
+          storage_path: f.path,
+          file_name: f.name,
+          file_size: f.size,
+        }));
 
         await supabase.from("trade_screenshots").insert(screenshotMetadata);
       }

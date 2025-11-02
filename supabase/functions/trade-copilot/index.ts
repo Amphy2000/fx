@@ -320,9 +320,14 @@ This is REAL money and you know THIS trader. Prioritize their historical success
 
   } catch (error) {
     console.error('Error in trade-copilot function:', error);
+    // Return graceful fallback with 200 to avoid client "non-2xx" errors
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      JSON.stringify({ 
+        ok: false,
+        error: error instanceof Error ? error.message : 'Internal server error',
+        fallback: 'Trade Copilot is temporarily unavailable. Please try again in a few minutes.'
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
   }
 });
