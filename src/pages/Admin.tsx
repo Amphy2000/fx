@@ -7,8 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Loader2, Download, Search, Eye } from "lucide-react";
+import { Loader2, Download, Search, Eye, Crown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -120,13 +122,42 @@ const Admin = () => {
     }
   };
 
+  const handleUpdateSubscription = async (userId: string, tier: string) => {
+    try {
+      const expiresAt = tier === 'lifetime' 
+        ? null 
+        : tier === 'monthly' 
+          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() 
+          : null;
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({ 
+          subscription_tier: tier,
+          subscription_status: 'active',
+          subscription_expires_at: expiresAt,
+          monthly_trade_limit: tier === 'free' ? 10 : null
+        })
+        .eq("id", userId);
+
+      if (error) throw error;
+
+      toast.success(`Subscription updated to ${tier}`);
+      await fetchAdminData();
+    } catch (error) {
+      console.error("Error updating subscription:", error);
+      toast.error("Failed to update subscription");
+    }
+  };
+
   const handleExportCSV = () => {
     const csvContent = [
-      ["Email", "Full Name", "Trades Count", "Created At"],
+      ["Email", "Full Name", "Trades Count", "Subscription", "Created At"],
       ...filteredUsers.map(user => [
         user.email,
         user.full_name || "N/A",
         user.trades_count || 0,
+        user.subscription_tier || "free",
         new Date(user.created_at).toLocaleDateString()
       ])
     ].map(row => row.join(",")).join("\n");
@@ -138,6 +169,16 @@ const Admin = () => {
     a.download = `users_export_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     toast.success("CSV exported successfully");
+  };
+
+  const getSubscriptionBadge = (tier: string) => {
+    const variants: Record<string, { variant: "default" | "secondary" | "outline" | "destructive", label: string }> = {
+      free: { variant: "outline", label: "Free" },
+      monthly: { variant: "default", label: "Monthly" },
+      lifetime: { variant: "secondary", label: "Lifetime" }
+    };
+    const config = variants[tier] || variants.free;
+    return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
   if (loading) {
@@ -210,6 +251,7 @@ const Admin = () => {
                     <TableHead>Email</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Trades</TableHead>
+                    <TableHead>Subscription</TableHead>
                     <TableHead>Joined</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -220,6 +262,29 @@ const Admin = () => {
                       <TableCell className="text-foreground">{user.email}</TableCell>
                       <TableCell className="text-foreground">{user.full_name || "N/A"}</TableCell>
                       <TableCell className="text-foreground">{user.trades_count || 0}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {getSubscriptionBadge(user.subscription_tier || 'free')}
+                          <Select
+                            value={user.subscription_tier || 'free'}
+                            onValueChange={(value) => handleUpdateSubscription(user.id, value)}
+                          >
+                            <SelectTrigger className="w-[130px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="free">Free</SelectItem>
+                              <SelectItem value="monthly">Monthly</SelectItem>
+                              <SelectItem value="lifetime">
+                                <div className="flex items-center gap-1">
+                                  <Crown className="h-3 w-3" />
+                                  Lifetime
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </TableCell>
                       <TableCell className="text-muted-foreground">
                         {new Date(user.created_at).toLocaleDateString()}
                       </TableCell>
@@ -248,7 +313,7 @@ const Admin = () => {
               <DialogTitle>User Details: {selectedUser?.email}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Full Name</p>
                   <p className="text-foreground font-medium">{selectedUser?.full_name || "N/A"}</p>
@@ -256,6 +321,10 @@ const Admin = () => {
                 <div>
                   <p className="text-sm text-muted-foreground">Total Trades</p>
                   <p className="text-foreground font-medium">{selectedUser?.trades_count || 0}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Subscription</p>
+                  <div className="mt-1">{getSubscriptionBadge(selectedUser?.subscription_tier || 'free')}</div>
                 </div>
               </div>
 
