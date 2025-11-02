@@ -211,6 +211,7 @@ This is REAL money and you know THIS trader. Prioritize their historical success
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     if (!lovableApiKey) {
+      console.error('LOVABLE_API_KEY not configured');
       return new Response(
         JSON.stringify({ 
           error: 'AI service temporarily unavailable',
@@ -219,6 +220,8 @@ This is REAL money and you know THIS trader. Prioritize their historical success
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 503 }
       );
     }
+
+    console.log(`Starting copilot analysis for user ${user.id} in ${aiMode} mode`);
 
     let analysis = '';
     let retryCount = 0;
@@ -243,6 +246,9 @@ This is REAL money and you know THIS trader. Prioritize their historical success
         });
 
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`AI API error: ${response.status} - ${errorText}`);
+          
           if (response.status === 429) {
             return new Response(
               JSON.stringify({ 
@@ -261,11 +267,18 @@ This is REAL money and you know THIS trader. Prioritize their historical success
               { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 402 }
             );
           }
-          throw new Error(`AI API error: ${response.status}`);
+          throw new Error(`AI API error: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
-        analysis = data.choices[0].message.content;
+        analysis = data.choices?.[0]?.message?.content;
+        
+        if (!analysis) {
+          console.error('No analysis content in response:', JSON.stringify(data));
+          throw new Error('Invalid AI response format');
+        }
+        
+        console.log(`Analysis completed successfully for user ${user.id}`);
         break; // Success, exit retry loop
       } catch (error) {
         retryCount++;
@@ -287,10 +300,14 @@ This is REAL money and you know THIS trader. Prioritize their historical success
     }
     
     // Deduct credits
-    await supabaseClient
+    const { error: creditError } = await supabaseClient
       .from('profiles')
       .update({ ai_credits: profile.ai_credits - COPILOT_COST })
       .eq('id', user.id);
+      
+    if (creditError) {
+      console.error('Failed to deduct credits:', creditError);
+    }
 
     return new Response(
       JSON.stringify({ 
