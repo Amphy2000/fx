@@ -73,6 +73,33 @@ export type Database = {
           },
         ]
       }
+      copilot_feedback: {
+        Row: {
+          analysis_result: string
+          created_at: string
+          feedback: boolean
+          id: string
+          trade_setup: Json
+          user_id: string
+        }
+        Insert: {
+          analysis_result: string
+          created_at?: string
+          feedback: boolean
+          id?: string
+          trade_setup: Json
+          user_id: string
+        }
+        Update: {
+          analysis_result?: string
+          created_at?: string
+          feedback?: boolean
+          id?: string
+          trade_setup?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       feedback: {
         Row: {
           created_at: string
@@ -94,6 +121,48 @@ export type Database = {
           message?: string | null
           rating?: number
           user_id?: string
+        }
+        Relationships: []
+      }
+      leaderboard_profiles: {
+        Row: {
+          best_pair: string | null
+          created_at: string
+          display_name: string
+          id: string
+          is_public: boolean
+          profit_factor: number
+          total_trades: number
+          trading_since: string | null
+          updated_at: string
+          user_id: string
+          win_rate: number
+        }
+        Insert: {
+          best_pair?: string | null
+          created_at?: string
+          display_name: string
+          id?: string
+          is_public?: boolean
+          profit_factor?: number
+          total_trades?: number
+          trading_since?: string | null
+          updated_at?: string
+          user_id: string
+          win_rate?: number
+        }
+        Update: {
+          best_pair?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_public?: boolean
+          profit_factor?: number
+          total_trades?: number
+          trading_since?: string | null
+          updated_at?: string
+          user_id?: string
+          win_rate?: number
         }
         Relationships: []
       }

@@ -1,4 +1,4 @@
-import { LayoutDashboard, MessageSquare, Calendar, Settings, Shield, TrendingUp, LogOut, Target, Sun, Moon, Calculator, CreditCard, MessagesSquare, Brain } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Calendar, Settings, Shield, TrendingUp, LogOut, Target, Sun, Moon, Calculator, CreditCard, MessagesSquare, Brain, Trophy } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +21,7 @@ import { toast } from "sonner";
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Trade Copilot", url: "/trade-copilot", icon: Brain },
+  { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
   { title: "Calculators", url: "/calculators", icon: Calculator },
   { title: "Targets", url: "/targets", icon: Target },
   { title: "Trade Calendar", url: "/trade-calendar", icon: Calendar },

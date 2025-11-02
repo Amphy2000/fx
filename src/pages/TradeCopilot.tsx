@@ -27,6 +27,8 @@ export default function TradeCopilot() {
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [statistics, setStatistics] = useState<any>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   
   const [formData, setFormData] = useState({
     pair: "",
@@ -68,14 +70,45 @@ export default function TradeCopilot() {
 
       setAnalysis(data.analysis);
       setStatistics(data.statistics);
+      setShowFeedback(true);
+      setFeedbackSubmitted(false);
       toast.success("Analysis complete!");
     } catch (error: any) {
       console.error('Copilot error:', error);
-      toast.error("Failed to analyze trade", {
-        description: error.message
-      });
+      
+      // Show fallback message if provided
+      if (error.message?.includes('fallback')) {
+        const fallbackMatch = error.message.match(/fallback: (.+)/);
+        const fallbackMsg = fallbackMatch ? fallbackMatch[1] : 'Service temporarily unavailable';
+        toast.error("Trade Copilot Unavailable", {
+          description: fallbackMsg
+        });
+      } else {
+        toast.error("Failed to analyze trade", {
+          description: error.message || "Please try again in a moment"
+        });
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFeedback = async (helpful: boolean) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      await supabase.from('copilot_feedback').insert([{
+        user_id: user.id,
+        trade_setup: formData as any,
+        analysis_result: analysis || '',
+        feedback: helpful
+      }]);
+      
+      setFeedbackSubmitted(true);
+      toast.success(helpful ? "Thanks for the positive feedback!" : "Thanks for your feedback. We'll improve!");
+    } catch (error) {
+      console.error('Feedback error:', error);
     }
   };
 
@@ -208,7 +241,7 @@ export default function TradeCopilot() {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analyzing...
+                    Analyzing Your Trade...
                   </>
                 ) : (
                   <>
@@ -217,28 +250,46 @@ export default function TradeCopilot() {
                   </>
                 )}
               </Button>
+              
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                💡 AI learns and adapts as you log more trades. More data = smarter insights.
+              </p>
             </CardContent>
           </Card>
 
           <div className="space-y-6">
             {statistics && (
-              <Card>
+              <Card className="animate-fade-in">
                 <CardHeader>
-                  <CardTitle className="text-lg">Your Performance Stats</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">Analysis Overview</CardTitle>
+                    <Badge variant="secondary" className="text-xs">
+                      {statistics.mode}
+                    </Badge>
+                  </div>
+                  <CardDescription>
+                    Based on {statistics.tradeCount} logged trade{statistics.tradeCount !== 1 ? 's' : ''}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Pair Win Rate</p>
-                    <p className="text-2xl font-bold">{statistics.pairWinRate}%</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Direction Win Rate</p>
-                    <p className="text-2xl font-bold">{statistics.directionWinRate}%</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Emotion Win Rate</p>
-                    <p className="text-2xl font-bold">{statistics.emotionWinRate}%</p>
-                  </div>
+                  {statistics.pairWinRate && (
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">Pair Win Rate</p>
+                      <p className="text-2xl font-bold">{statistics.pairWinRate}%</p>
+                    </div>
+                  )}
+                  {statistics.directionWinRate && (
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">Direction Win Rate</p>
+                      <p className="text-2xl font-bold">{statistics.directionWinRate}%</p>
+                    </div>
+                  )}
+                  {statistics.emotionWinRate && (
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">Emotion Win Rate</p>
+                      <p className="text-2xl font-bold">{statistics.emotionWinRate}%</p>
+                    </div>
+                  )}
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Risk:Reward</p>
                     <p className="text-2xl font-bold">1:{statistics.riskRewardRatio}</p>
@@ -248,20 +299,54 @@ export default function TradeCopilot() {
             )}
 
             {analysis ? (
-              <Card className="border-primary">
+              <Card className="border-primary animate-fade-in">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <CheckCircle2 className="h-5 w-5 text-primary" />
                     AI Analysis
                   </CardTitle>
                   <CardDescription>
-                    Personalized insights based on your trading history
+                    {statistics?.mode === 'General AI Mode' 
+                      ? 'Universal trading intelligence for new traders'
+                      : statistics?.mode === 'Hybrid AI Mode'
+                      ? 'Blending personal patterns with trading fundamentals'
+                      : 'Deep personalized insights from your trading history'}
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                   <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
                     {analysis}
                   </div>
+                  
+                  {showFeedback && !feedbackSubmitted && (
+                    <div className="border-t pt-4 mt-4">
+                      <p className="text-sm text-muted-foreground mb-3">Was this recommendation helpful?</p>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleFeedback(true)}
+                          className="flex-1"
+                        >
+                          👍 Yes, helpful
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleFeedback(false)}
+                          className="flex-1"
+                        >
+                          👎 Not helpful
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {feedbackSubmitted && (
+                    <div className="border-t pt-4 mt-4 text-center">
+                      <p className="text-sm text-muted-foreground">✓ Thanks for your feedback!</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ) : (
