@@ -99,8 +99,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ai_credits: number | null
           consent_date: string | null
           created_at: string | null
+          credits_reset_date: string | null
           current_streak: number | null
           data_collection_consent: boolean | null
           email: string | null
@@ -119,8 +121,10 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ai_credits?: number | null
           consent_date?: string | null
           created_at?: string | null
+          credits_reset_date?: string | null
           current_streak?: number | null
           data_collection_consent?: boolean | null
           email?: string | null
@@ -139,8 +143,10 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ai_credits?: number | null
           consent_date?: string | null
           created_at?: string | null
+          credits_reset_date?: string | null
           current_streak?: number | null
           data_collection_consent?: boolean | null
           email?: string | null
@@ -328,6 +334,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      reset_monthly_credits: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

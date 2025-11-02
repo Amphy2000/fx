@@ -41,6 +41,26 @@ serve(async (req) => {
       });
     }
 
+    // Check credits (cost: 10 credits)
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('ai_credits, subscription_tier')
+      .eq('id', user.id)
+      .single();
+      
+    const SUMMARY_COST = 10;
+    if (!profile || profile.ai_credits < SUMMARY_COST) {
+      return new Response(JSON.stringify({ 
+        error: 'Insufficient credits',
+        required: SUMMARY_COST,
+        available: profile?.ai_credits || 0,
+        message: 'You need more AI credits. Upgrade to get more!'
+      }), {
+        status: 402,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Get trades from the last 7 days
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -191,6 +211,12 @@ Write them a weekly recap that feels like it's from a real trading mentor. Be co
 
     const data = await response.json();
     const summary = data.choices[0].message.content;
+    
+    // Deduct credits
+    await supabaseClient
+      .from('profiles')
+      .update({ ai_credits: profile.ai_credits - SUMMARY_COST })
+      .eq('id', user.id);
 
     const emotionEmojis: Record<string, string> = {
       calm: '😌', neutral: '😐', anxious: '😟', 
@@ -206,6 +232,7 @@ Write them a weekly recap that feels like it's from a real trading mentor. Be co
 
     return new Response(JSON.stringify({ 
       summary,
+      credits_remaining: profile.ai_credits - SUMMARY_COST,
       stats: {
         totalTrades: trades.length,
         winRate,

@@ -18,6 +18,9 @@ verify_jwt = true
 [functions.telegram-weekly-summary]
 verify_jwt = false
 
+[functions.trade-copilot]
+verify_jwt = true
+
 [functions.send-weekly-telegram]
 verify_jwt = false
 

@@ -7,6 +7,7 @@ import TradesList from "@/components/TradesList";
 import EmotionalInsights from "@/components/EmotionalInsights";
 import TradingBadges from "@/components/TradingBadges";
 import { ConsentModal } from "@/components/ConsentModal";
+import { CreditsDisplay } from "@/components/CreditsDisplay";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Target, FileText } from "lucide-react";
 
@@ -124,8 +125,11 @@ const Dashboard = () => {
               </div>
             </div>
 
+            {/* Credits Display */}
+            <CreditsDisplay />
+
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 my-8">
               <Card className="border-border/50">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Trades</CardTitle>

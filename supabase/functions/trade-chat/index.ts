@@ -42,6 +42,26 @@ serve(async (req) => {
       });
     }
 
+    // Check credits (cost: 2 credits per message)
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('ai_credits, subscription_tier')
+      .eq('id', user.id)
+      .single();
+      
+    const CHAT_COST = 2;
+    if (!profile || profile.ai_credits < CHAT_COST) {
+      return new Response(JSON.stringify({ 
+        error: 'Insufficient credits',
+        required: CHAT_COST,
+        available: profile?.ai_credits || 0,
+        message: 'You need more AI credits. Upgrade to get more!'
+      }), {
+        status: 402,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Get recent trades for context
     const { data: trades, error } = await supabaseClient
       .from('trades')
@@ -145,8 +165,17 @@ serve(async (req) => {
 
     const data = await response.json();
     const reply = data.choices[0].message.content;
+    
+    // Deduct credits
+    await supabaseClient
+      .from('profiles')
+      .update({ ai_credits: profile.ai_credits - CHAT_COST })
+      .eq('id', user.id);
 
-    return new Response(JSON.stringify({ reply }), {
+    return new Response(JSON.stringify({ 
+      reply,
+      credits_remaining: profile.ai_credits - CHAT_COST
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {

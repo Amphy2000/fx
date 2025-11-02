@@ -35,6 +35,26 @@ serve(async (req) => {
       });
     }
 
+    // Check credits (cost: 5 credits)
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('ai_credits, subscription_tier')
+      .eq('id', user.id)
+      .single();
+      
+    const ANALYSIS_COST = 5;
+    if (!profile || profile.ai_credits < ANALYSIS_COST) {
+      return new Response(JSON.stringify({ 
+        error: 'Insufficient credits',
+        required: ANALYSIS_COST,
+        available: profile?.ai_credits || 0,
+        message: 'You need more AI credits. Upgrade to get more!'
+      }), {
+        status: 402,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { trade } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
@@ -93,8 +113,17 @@ Give specific feedback on: entry timing, risk management, and emotional state. B
 
     const data = await response.json();
     const feedback = data.choices[0].message.content;
+    
+    // Deduct credits
+    await supabaseClient
+      .from('profiles')
+      .update({ ai_credits: profile.ai_credits - ANALYSIS_COST })
+      .eq('id', user.id);
 
-    return new Response(JSON.stringify({ feedback }), {
+    return new Response(JSON.stringify({ 
+      feedback,
+      credits_remaining: profile.ai_credits - ANALYSIS_COST
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
