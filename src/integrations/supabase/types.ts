@@ -313,6 +313,44 @@ export type Database = {
         }
         Relationships: []
       }
+      trade_screenshots: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_size: number | null
+          id: string
+          storage_path: string
+          trade_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_size?: number | null
+          id?: string
+          storage_path: string
+          trade_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_size?: number | null
+          id?: string
+          storage_path?: string
+          trade_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_screenshots_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trades: {
         Row: {
           created_at: string | null

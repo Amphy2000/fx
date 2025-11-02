@@ -125,9 +125,31 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
         screenshot_url: screenshotUrls.length > 0 ? screenshotUrls.join(',') : null,
       };
 
-      const { error } = await supabase.from("trades").insert(tradeData);
+      const { data: newTrade, error } = await supabase
+        .from("trades")
+        .insert(tradeData)
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Save screenshot metadata to trade_screenshots table
+      if (screenshots.length > 0 && newTrade) {
+        const screenshotMetadata = screenshots.map((file, index) => {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+          
+          return {
+            trade_id: newTrade.id,
+            user_id: user.id,
+            storage_path: fileName,
+            file_name: file.name,
+            file_size: file.size,
+          };
+        });
+
+        await supabase.from("trade_screenshots").insert(screenshotMetadata);
+      }
 
       toast.success("Trade logged successfully! Getting AI feedback...");
 
