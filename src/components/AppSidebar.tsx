@@ -1,4 +1,4 @@
-import { LayoutDashboard, MessageSquare, Calendar, Settings, Shield, TrendingUp, LogOut, Target, Sun, Moon, Calculator, CreditCard, MessagesSquare, Brain, Trophy } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Calendar, Settings, Shield, TrendingUp, LogOut, Target, Sun, Moon, Calculator, CreditCard, MessagesSquare, Brain, Trophy, GraduationCap } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,17 +18,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-const navItems = [
+const generalNavItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Trade Copilot", url: "/trade-copilot", icon: Brain },
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
   { title: "Calculators", url: "/calculators", icon: Calculator },
   { title: "Targets", url: "/targets", icon: Target },
   { title: "Trade Calendar", url: "/trade-calendar", icon: Calendar },
-  { title: "AI Chat", url: "/ai-chat", icon: MessageSquare },
   { title: "Weekly Summary", url: "/weekly-summary", icon: TrendingUp },
   { title: "Pricing", url: "/pricing", icon: CreditCard },
   { title: "Settings", url: "/settings", icon: Settings },
+];
+
+const aiNavItems = [
+  { title: "AI Chat", url: "/ai-chat", icon: MessageSquare },
+  { title: "AI Copilot", url: "/trade-copilot", icon: Brain },
+  { title: "AI Trade Coach", url: "/ai-coach", icon: GraduationCap },
 ];
 
 export function AppSidebar() {
@@ -89,7 +93,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
+              {generalNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
@@ -134,6 +138,34 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 </>
               )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-sidebar-foreground/70 text-xs uppercase tracking-wider">
+            AI Tools
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {aiNavItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.url)}
+                    className="transition-smooth hover:bg-sidebar-primary/10 data-[active=true]:bg-sidebar-primary/20 data-[active=true]:text-sidebar-primary"
+                    onClick={handleNavClick}
+                  >
+                    <NavLink to={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

@@ -42,8 +42,12 @@ serve(async (req) => {
       
     if (profileError || !profile) {
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch profile' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        JSON.stringify({ 
+          ok: false,
+          error: 'Failed to fetch profile',
+          fallback: 'Trade Copilot is temporarily unavailable. Please try again in a few minutes.'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
     
@@ -214,10 +218,11 @@ This is REAL money and you know THIS trader. Prioritize their historical success
       console.error('LOVABLE_API_KEY not configured');
       return new Response(
         JSON.stringify({ 
+          ok: false,
           error: 'AI service temporarily unavailable',
-          fallback: 'Trade Copilot is temporarily unavailable. Please try again in a few minutes. Your trade setup has been saved.'
+          fallback: 'Trade Copilot is temporarily unavailable. Please try again in a few minutes.'
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 503 }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
@@ -287,10 +292,11 @@ This is REAL money and you know THIS trader. Prioritize their historical success
         if (retryCount > maxRetries) {
           return new Response(
             JSON.stringify({ 
+              ok: false,
               error: 'Analysis failed after multiple attempts',
-              fallback: 'Trade Copilot is temporarily unavailable. Please try again in a few minutes. Your setup looks valid based on basic checks.'
+              fallback: 'Trade Copilot is temporarily unavailable. Please try again in a few minutes.'
             }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 503 }
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
           );
         }
         

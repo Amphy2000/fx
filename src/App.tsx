@@ -11,6 +11,7 @@ import Calculators from "./pages/Calculators";
 import AIChat from "./pages/AIChat";
 import WeeklySummary from "./pages/WeeklySummary";
 import TradeCopilot from "./pages/TradeCopilot";
+import AICoach from "./pages/AICoach";
 import Leaderboard from "./pages/Leaderboard";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
@@ -37,8 +38,9 @@ const App = () => (
             <Route path="/calculators" element={<Calculators />} />
             <Route path="/ai-chat" element={<AIChat />} />
             <Route path="/weekly-summary" element={<WeeklySummary />} />
-          <Route path="/trade-copilot" element={<TradeCopilot />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/trade-copilot" element={<TradeCopilot />} />
+            <Route path="/ai-coach" element={<AICoach />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/targets" element={<Targets />} />
