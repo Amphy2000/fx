@@ -141,9 +141,6 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-sidebar-foreground/70 text-xs uppercase tracking-wider">
