@@ -93,7 +93,60 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {generalNavItems.map((item) => (
+              {/* Dashboard only */}
+              {(() => {
+                const item = generalNavItems[0];
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive(item.url)}
+                      className="transition-smooth hover:bg-sidebar-primary/10 data-[active=true]:bg-sidebar-primary/20 data-[active=true]:text-sidebar-primary"
+                      onClick={handleNavClick}
+                    >
+                      <NavLink to={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })()}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-sidebar-foreground/70 text-xs uppercase tracking-wider">
+            AI Tools
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {aiNavItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.url)}
+                    className="transition-smooth hover:bg-sidebar-primary/10 data-[active=true]:bg-sidebar-primary/20 data-[active=true]:text-sidebar-primary"
+                    onClick={handleNavClick}
+                  >
+                    <NavLink to={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-sidebar-foreground/70 text-xs uppercase tracking-wider">
+            Navigation
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {generalNavItems.slice(1).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
@@ -138,31 +191,6 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 </>
               )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/70 text-xs uppercase tracking-wider">
-            AI Tools
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {aiNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.url)}
-                    className="transition-smooth hover:bg-sidebar-primary/10 data-[active=true]:bg-sidebar-primary/20 data-[active=true]:text-sidebar-primary"
-                    onClick={handleNavClick}
-                  >
-                    <NavLink to={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

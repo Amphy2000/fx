@@ -38,6 +38,8 @@ export default function AICoach() {
         const fallbackMatch = error.message?.match(/fallback[:=]\s?([^}]+)$/);
         if (fallbackMatch?.[1]) {
           toast.error("AI Trade Coach Unavailable", { description: fallbackMatch[1] });
+        } else if (error.message?.includes('Edge Function returned a non-2xx status code')) {
+          toast.error("AI Trade Coach Unavailable", { description: "AI Trade Coach is temporarily unavailable. Please try again in a few minutes." });
         } else {
           toast.error("Failed to generate coaching report", { description: error.message || "Please try again." });
         }
@@ -54,7 +56,11 @@ export default function AICoach() {
       setReport(data.report);
       toast.success("Coaching report ready");
     } catch (e: any) {
-      toast.error("Failed to generate coaching report", { description: e.message || "Please try again." });
+      if (e.message?.includes('Edge Function returned a non-2xx status code')) {
+        toast.error("AI Trade Coach Unavailable", { description: "AI Trade Coach is temporarily unavailable. Please try again in a few minutes." });
+      } else {
+        toast.error("Failed to generate coaching report", { description: e.message || "Please try again." });
+      }
     } finally {
       setLoading(false);
     }

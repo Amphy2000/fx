@@ -74,6 +74,8 @@ export default function TradeCopilot() {
         const fallbackMatch = error.message?.match(/fallback[:=]\s?([^}]+)$/);
         if (fallbackMatch?.[1]) {
           toast.error("Trade Copilot Unavailable", { description: fallbackMatch[1] });
+        } else if (error.message?.includes('Edge Function returned a non-2xx status code')) {
+          toast.error("Trade Copilot Unavailable", { description: "AI Copilot is temporarily unavailable. Please try again in a few minutes." });
         } else {
           toast.error("Failed to analyze trade", { description: error.message || "Please try again in a moment" });
         }
@@ -102,6 +104,10 @@ export default function TradeCopilot() {
         const fallbackMsg = fallbackMatch ? fallbackMatch[1] : 'Service temporarily unavailable';
         toast.error("Trade Copilot Unavailable", {
           description: fallbackMsg
+        });
+      } else if (error.message?.includes('Edge Function returned a non-2xx status code')) {
+        toast.error("Trade Copilot Unavailable", {
+          description: "AI Copilot is temporarily unavailable. Please try again in a few minutes."
         });
       } else {
         toast.error("Failed to analyze trade", {
