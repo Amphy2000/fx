@@ -69,15 +69,20 @@ export default function TradeCopilot() {
           });
           return;
         }
+        if (status === 401) {
+          toast.error("Sign in required", {
+            description: "Please sign in to use Trade Copilot",
+            action: { label: "Sign in", onClick: () => navigate("/auth") }
+          });
+          return;
+        }
 
         // Try to surface any fallback from server in the error message text
         const fallbackMatch = error.message?.match(/fallback[:=]\s?([^}]+)$/);
         if (fallbackMatch?.[1]) {
           toast.error("Trade Copilot Unavailable", { description: fallbackMatch[1] });
-        } else if (error.message?.includes('Edge Function returned a non-2xx status code')) {
-          toast.error("Trade Copilot Unavailable", { description: "AI Copilot is temporarily unavailable. Please try again in a few minutes." });
         } else {
-          toast.error("Failed to analyze trade", { description: error.message || "Please try again in a moment" });
+          toast.error("Trade Copilot Unavailable", { description: "AI Copilot is temporarily unavailable. Please try again in a few minutes." });
         }
         return;
       }

@@ -35,13 +35,18 @@ export default function AICoach() {
           toast.error("AI is rate limited", { description: "Please wait a moment and try again." });
           return;
         }
+        if (status === 401) {
+          toast.error("Sign in required", {
+            description: "Please sign in to use AI Trade Coach",
+            action: { label: "Sign in", onClick: () => (window.location.href = "/auth") },
+          });
+          return;
+        }
         const fallbackMatch = error.message?.match(/fallback[:=]\s?([^}]+)$/);
         if (fallbackMatch?.[1]) {
           toast.error("AI Trade Coach Unavailable", { description: fallbackMatch[1] });
-        } else if (error.message?.includes('Edge Function returned a non-2xx status code')) {
-          toast.error("AI Trade Coach Unavailable", { description: "AI Trade Coach is temporarily unavailable. Please try again in a few minutes." });
         } else {
-          toast.error("Failed to generate coaching report", { description: error.message || "Please try again." });
+          toast.error("AI Trade Coach Unavailable", { description: "AI Trade Coach is temporarily unavailable. Please try again in a few minutes." });
         }
         return;
       }
