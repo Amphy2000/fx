@@ -24,19 +24,44 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 });
     }
 
-    // Credits check (shared with other AI tools)
-    const { data: profile, error: profileError } = await supabase
+    // Credits check (shared with other AI tools) - ensure profile exists
+    let profilePersisted = true;
+    let profileCredits = 0;
+
+    const { data: profileRow, error: profileError } = await supabase
       .from('profiles')
       .select('ai_credits')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (profileError || !profile) {
-      return new Response(JSON.stringify({ ok: false, error: 'Failed to fetch profile', fallback: 'AI Trade Coach is temporarily unavailable. Please try again in a few minutes.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+    if (profileError) {
+      console.error('ai-coach profile fetch error:', profileError);
+    }
+
+    if (!profileRow) {
+      profilePersisted = false;
+      profileCredits = 50; // default credits
+      try {
+        const { data: created, error: createErr } = await supabase
+          .from('profiles')
+          .insert({ id: user.id, ai_credits: 50 })
+          .select('ai_credits')
+          .single();
+        if (!createErr && created) {
+          profilePersisted = true;
+          profileCredits = created.ai_credits ?? 50;
+        } else if (createErr) {
+          console.error('ai-coach profile create error:', createErr);
+        }
+      } catch (e) {
+        console.error('ai-coach profile create exception:', e);
+      }
+    } else {
+      profileCredits = profileRow.ai_credits ?? 0;
     }
 
     const COACH_COST = 3;
-    if ((profile.ai_credits ?? 0) < COACH_COST) {
+    if (profileCredits < COACH_COST) {
       return new Response(JSON.stringify({ error: 'Insufficient credits' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 402 });
     }
 
@@ -112,7 +137,13 @@ Format the output EXACTLY as:
       if (aiResp.status === 402) return new Response(JSON.stringify({ error: 'Payment required' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 402 });
       const t = await aiResp.text();
       console.error('ai-coach gateway error:', aiResp.status, t);
-      return new Response(JSON.stringify({ ok: false, error: 'AI gateway error', fallback: 'AI Trade Coach is temporarily unavailable. Please try again in a few minutes.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+      // Provide an offline coaching report so the user isn't blocked
+      const fallbackReport = `📊 Weekly Summary: ${statsSummary}\n🧠 Key Pattern: ${winRate !== null ? (winRate >= 50 ? 'Strength in current approach; protect winners and avoid overtrading.' : 'Inconsistent outcomes; review entries and risk placement.') : 'Insufficient data; focus on building consistent routines.'}\n🎯 Focus Task: ${winRate !== null ? (winRate >= 50 ? 'Define 3 confluence rules you MUST see before entry.' : 'Backtest 10 trades focusing on entry trigger + SL placement.') : 'Log at least 5 trades this week with reasons before/after.'}`;
+
+      return new Response(
+        JSON.stringify({ report: fallbackReport, offline: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
     }
 
     const json = await aiResp.json();
@@ -123,8 +154,10 @@ Format the output EXACTLY as:
     }
 
     // Deduct credits
-    const { error: creditError } = await supabase.from('profiles').update({ ai_credits: (profile.ai_credits ?? 0) - COACH_COST }).eq('id', user.id);
-    if (creditError) console.error('ai-coach credit deduction error:', creditError);
+    if (profilePersisted) {
+      const { error: creditError } = await supabase.from('profiles').update({ ai_credits: profileCredits - COACH_COST }).eq('id', user.id);
+      if (creditError) console.error('ai-coach credit deduction error:', creditError);
+    }
 
     return new Response(JSON.stringify({ report, credits_remaining: (profile.ai_credits ?? 0) - COACH_COST }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {

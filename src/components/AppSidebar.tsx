@@ -114,9 +114,6 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/70 text-xs uppercase tracking-wider">
-            AI Tools
-          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {aiNavItems.map((item) => (

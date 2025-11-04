@@ -33,31 +33,53 @@ serve(async (req) => {
       );
     }
     
-    // Check credits (cost: 3 credits per copilot analysis)
-    const { data: profile, error: profileError } = await supabaseClient
+    // Ensure profile and credits; auto-provision if missing
+    let profilePersisted = true;
+    let profileCredits = 0;
+    let subscription_tier = 'free';
+
+    const { data: profileRow, error: profileError } = await supabaseClient
       .from('profiles')
       .select('ai_credits, subscription_tier')
       .eq('id', user.id)
-      .single();
-      
-    if (profileError || !profile) {
-      return new Response(
-        JSON.stringify({ 
-          ok: false,
-          error: 'Failed to fetch profile',
-          fallback: 'Trade Copilot is temporarily unavailable. Please try again in a few minutes.'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      );
+      .maybeSingle();
+
+    if (profileError) {
+      console.error('trade-copilot profile fetch error:', profileError);
     }
-    
+
+    if (!profileRow) {
+      profilePersisted = false;
+      profileCredits = 50; // default for new users
+      subscription_tier = 'free';
+      try {
+        const { data: created, error: createErr } = await supabaseClient
+          .from('profiles')
+          .insert({ id: user.id, ai_credits: 50, subscription_tier: 'free' })
+          .select('ai_credits, subscription_tier')
+          .single();
+        if (!createErr && created) {
+          profilePersisted = true;
+          profileCredits = created.ai_credits ?? 50;
+          subscription_tier = created.subscription_tier ?? 'free';
+        } else if (createErr) {
+          console.error('trade-copilot profile create error:', createErr);
+        }
+      } catch (e) {
+        console.error('trade-copilot profile create exception:', e);
+      }
+    } else {
+      profileCredits = profileRow.ai_credits ?? 0;
+      subscription_tier = profileRow.subscription_tier ?? 'free';
+    }
+
     const COPILOT_COST = 3;
-    if (profile.ai_credits < COPILOT_COST) {
+    if (profileCredits < COPILOT_COST) {
       return new Response(
         JSON.stringify({ 
           error: 'Insufficient credits',
           required: COPILOT_COST,
-          available: profile.ai_credits,
+          available: profileCredits,
           message: 'You need more AI credits to use Trade Copilot!'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 402 }
@@ -290,12 +312,26 @@ This is REAL money and you know THIS trader. Prioritize their historical success
         console.error(`Trade copilot attempt ${retryCount} failed:`, error);
         
         if (retryCount > maxRetries) {
+          // Build a deterministic offline fallback so users still get guidance
+          const rr = parseFloat(String(riskRewardRatio));
+          const riskLabel = Number.isFinite(rr) ? (rr >= 2 ? 'Green' : rr >= 1.5 ? 'Yellow' : 'Red') : 'Unknown';
+          const fallbackAnalysis = `Quick heuristic analysis (offline)
+\nTrade Setup
+- Pair: ${pair}
+- Direction: ${direction}
+- Entry: ${entry_price}
+- Stop Loss: ${stop_loss}
+- Take Profit: ${take_profit}
+- Risk/Reward: 1:${riskRewardRatio} (${riskLabel})
+\nMode: ${modeDescription}
+\nGuidance
+- Risk management: Aim for at least 1:2 R:R. Tighten SL or extend TP if below this.
+- Entry quality: Ensure confluence (structure + momentum + session).
+- Psychology: Trade only if your state "${emotion_before}" aligns with discipline; skip if you feel rushed.
+- Action: If R:R is Green and confluence is clear, proceed. Otherwise, refine levels or skip.`;
+
           return new Response(
-            JSON.stringify({ 
-              ok: false,
-              error: 'Analysis failed after multiple attempts',
-              fallback: 'Trade Copilot is temporarily unavailable. Please try again in a few minutes.'
-            }),
+            JSON.stringify({ analysis: fallbackAnalysis, statistics, offline: true }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
           );
         }
@@ -305,20 +341,21 @@ This is REAL money and you know THIS trader. Prioritize their historical success
       }
     }
     
-    // Deduct credits
-    const { error: creditError } = await supabaseClient
-      .from('profiles')
-      .update({ ai_credits: profile.ai_credits - COPILOT_COST })
-      .eq('id', user.id);
-      
-    if (creditError) {
-      console.error('Failed to deduct credits:', creditError);
+    // Deduct credits (skip if profile couldn't be persisted)
+    if (profilePersisted) {
+      const { error: creditError } = await supabaseClient
+        .from('profiles')
+        .update({ ai_credits: profileCredits - COPILOT_COST })
+        .eq('id', user.id);
+      if (creditError) {
+        console.error('Failed to deduct credits:', creditError);
+      }
     }
 
     return new Response(
       JSON.stringify({ 
         analysis,
-        credits_remaining: profile.ai_credits - COPILOT_COST,
+        credits_remaining: profileCredits - COPILOT_COST,
         statistics
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
