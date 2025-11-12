@@ -10,6 +10,8 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
+    console.log('import-mt5-trades: Request received');
+    
     const authHeader = req.headers.get('Authorization');
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -19,40 +21,56 @@ serve(async (req) => {
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
+      console.error('import-mt5-trades: Auth error', userError);
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
         status: 401 
       });
     }
 
+    console.log('import-mt5-trades: User authenticated:', user.id);
+
     const formData = await req.formData();
     const file = formData.get('file') as File;
     
     if (!file) {
+      console.error('import-mt5-trades: No file provided');
       return new Response(JSON.stringify({ error: 'No file provided' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400
       });
     }
 
+    console.log('import-mt5-trades: File received:', file.name, 'Size:', file.size);
+
     const fileContent = await file.text();
     const fileName = file.name.toLowerCase();
+    
+    console.log('import-mt5-trades: File content length:', fileContent.length);
     
     let trades: any[] = [];
 
     if (fileName.endsWith('.csv')) {
+      console.log('import-mt5-trades: Parsing CSV file');
       trades = parseCSV(fileContent);
     } else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) {
+      console.log('import-mt5-trades: Parsing HTML file');
       trades = parseHTML(fileContent);
     } else {
-      return new Response(JSON.stringify({ error: 'Unsupported file format' }), {
+      console.error('import-mt5-trades: Unsupported file format:', fileName);
+      return new Response(JSON.stringify({ error: 'Unsupported file format. Please upload .csv or .html file.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400
       });
     }
 
+    console.log('import-mt5-trades: Parsed trades count:', trades.length);
+
     if (trades.length === 0) {
-      return new Response(JSON.stringify({ error: 'No trades found in file' }), {
+      console.error('import-mt5-trades: No trades found in file');
+      return new Response(JSON.stringify({ 
+        error: 'No trades found in file. Please ensure the file is a valid MT5 trade report.' 
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400
       });
@@ -73,12 +91,19 @@ serve(async (req) => {
       created_at: trade.open_time || new Date().toISOString()
     }));
 
+    console.log('import-mt5-trades: Inserting trades to database');
+
     const { data: insertedTrades, error: insertError } = await supabase
       .from('trades')
       .insert(tradeInserts)
       .select('id');
 
-    if (insertError) throw insertError;
+    if (insertError) {
+      console.error('import-mt5-trades: Database insert error:', insertError);
+      throw insertError;
+    }
+
+    console.log('import-mt5-trades: Successfully inserted', insertedTrades.length, 'trades');
 
     return new Response(JSON.stringify({ 
       success: true,
@@ -100,37 +125,69 @@ serve(async (req) => {
 });
 
 function parseCSV(content: string): any[] {
-  const lines = content.split('\n').filter(line => line.trim());
-  if (lines.length < 2) return [];
-
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-  const trades: any[] = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map(v => v.trim());
-    const trade: any = {};
-
-    headers.forEach((header, index) => {
-      trade[header] = values[index];
-    });
-
-    // Map CSV columns to our schema
-    if (trade.symbol || trade.pair) {
-      trades.push({
-        pair: (trade.symbol || trade.pair).replace(/[^A-Z]/g, ''),
-        direction: detectDirection(trade.type || trade.action),
-        entry_price: parseFloat(trade.price || trade.open || trade.entry || 0),
-        exit_price: parseFloat(trade.close || trade.exit || 0),
-        stop_loss: parseFloat(trade.sl || trade.stop_loss || 0),
-        take_profit: parseFloat(trade.tp || trade.take_profit || 0),
-        result: detectResult(trade.profit || trade.pnl || trade.pl),
-        profit_loss: parseFloat(trade.profit || trade.pnl || trade.pl || 0),
-        open_time: trade.time || trade.open_time || new Date().toISOString()
-      });
+  try {
+    const lines = content.split('\n').filter(line => line.trim());
+    console.log('parseCSV: Total lines:', lines.length);
+    
+    if (lines.length < 2) {
+      console.log('parseCSV: Not enough lines');
+      return [];
     }
-  }
 
-  return trades;
+    // Try different delimiters (comma, semicolon, tab)
+    const delimiters = [',', ';', '\t'];
+    let bestDelimiter = ',';
+    let maxColumns = 0;
+
+    for (const delimiter of delimiters) {
+      const columnCount = lines[0].split(delimiter).length;
+      if (columnCount > maxColumns) {
+        maxColumns = columnCount;
+        bestDelimiter = delimiter;
+      }
+    }
+
+    console.log('parseCSV: Using delimiter:', bestDelimiter === '\t' ? 'TAB' : bestDelimiter);
+
+    const headers = lines[0].split(bestDelimiter).map(h => h.trim().toLowerCase());
+    console.log('parseCSV: Headers:', headers);
+    
+    const trades: any[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(bestDelimiter).map(v => v.trim());
+      const trade: any = {};
+
+      headers.forEach((header, index) => {
+        trade[header] = values[index] || '';
+      });
+
+      // Map CSV columns to our schema - handle various MT5 export formats
+      const symbol = trade.symbol || trade.pair || trade.currency || trade.instrument || '';
+      
+      if (symbol && symbol.length >= 6) {
+        const cleanSymbol = symbol.replace(/[^A-Z]/gi, '').toUpperCase();
+        
+        trades.push({
+          pair: cleanSymbol.substring(0, 6), // Take first 6 characters (e.g., EURUSD)
+          direction: detectDirection(trade.type || trade.action || trade.cmd || trade.order_type || ''),
+          entry_price: parseFloat(trade.price || trade.open || trade.entry || trade.open_price || '0') || 0,
+          exit_price: parseFloat(trade.close || trade.exit || trade.close_price || '0') || 0,
+          stop_loss: parseFloat(trade.sl || trade.stop_loss || trade.s_l || '0') || 0,
+          take_profit: parseFloat(trade.tp || trade.take_profit || trade.t_p || '0') || 0,
+          result: detectResult(trade.profit || trade.pnl || trade.pl || trade.result || '0'),
+          profit_loss: parseFloat(trade.profit || trade.pnl || trade.pl || '0') || 0,
+          open_time: trade.time || trade.open_time || trade.date || new Date().toISOString()
+        });
+      }
+    }
+
+    console.log('parseCSV: Successfully parsed', trades.length, 'trades');
+    return trades;
+  } catch (error) {
+    console.error('parseCSV error:', error);
+    return [];
+  }
 }
 
 function parseHTML(content: string): any[] {
@@ -173,8 +230,8 @@ function parseHTML(content: string): any[] {
 
 function detectDirection(value: string): string {
   const v = (value || '').toLowerCase();
-  if (v.includes('buy') || v.includes('long')) return 'buy';
-  if (v.includes('sell') || v.includes('short')) return 'sell';
+  if (v.includes('buy') || v.includes('long') || v === '0') return 'buy';
+  if (v.includes('sell') || v.includes('short') || v === '1') return 'sell';
   return 'buy'; // default
 }
 

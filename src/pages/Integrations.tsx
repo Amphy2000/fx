@@ -135,21 +135,35 @@ const Integrations = () => {
         body: formData
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Failed to process MT5 file. Please check the file format.");
+      }
+
+      if (!data || !data.importedCount) {
+        throw new Error("No trades found in the file. Please check the file format.");
+      }
 
       toast.success(`Successfully imported ${data.importedCount} trades!`);
       
       // Trigger AI analysis for imported trades
       if (data.tradeIds && data.tradeIds.length > 0) {
         toast.info("AI is analyzing your trades...");
-        await supabase.functions.invoke("analyze-trade-patterns", {
+        const { error: analysisError } = await supabase.functions.invoke("analyze-trade-patterns", {
           body: { tradeIds: data.tradeIds }
         });
-        toast.success("AI analysis complete!");
+        
+        if (analysisError) {
+          console.error("AI analysis error:", analysisError);
+          toast.warning("Trades imported but AI analysis failed");
+        } else {
+          toast.success("AI analysis complete!");
+        }
       }
     } catch (error: any) {
       console.error("Error uploading file:", error);
-      toast.error(error.message || "Failed to import trades");
+      const errorMessage = error.message || "Failed to import trades. Please ensure the file is a valid MT5 report.";
+      toast.error(errorMessage);
     } finally {
       setUploading(false);
       e.target.value = ""; // Reset file input
