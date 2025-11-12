@@ -159,7 +159,7 @@ Format the output EXACTLY as:
       if (creditError) console.error('ai-coach credit deduction error:', creditError);
     }
 
-    return new Response(JSON.stringify({ report, credits_remaining: (profile.ai_credits ?? 0) - COACH_COST }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ report, credits_remaining: profileCredits - COACH_COST }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
     console.error('ai-coach error:', e);
     return new Response(JSON.stringify({ ok: false, error: e instanceof Error ? e.message : 'Unknown error', fallback: 'AI Trade Coach is temporarily unavailable. Please try again in a few minutes.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
