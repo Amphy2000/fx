@@ -166,6 +166,51 @@ export type Database = {
         }
         Relationships: []
       }
+      mt5_connections: {
+        Row: {
+          account_number: string
+          broker_name: string
+          created_at: string
+          id: string
+          investor_password_encrypted: string | null
+          is_active: boolean
+          last_sync_at: string | null
+          server_name: string
+          sync_error: string | null
+          sync_status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_number: string
+          broker_name: string
+          created_at?: string
+          id?: string
+          investor_password_encrypted?: string | null
+          is_active?: boolean
+          last_sync_at?: string | null
+          server_name: string
+          sync_error?: string | null
+          sync_status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_number?: string
+          broker_name?: string
+          created_at?: string
+          id?: string
+          investor_password_encrypted?: string | null
+          is_active?: boolean
+          last_sync_at?: string | null
+          server_name?: string
+          sync_error?: string | null
+          sync_status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           ai_credits: number | null
@@ -312,6 +357,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      trade_insights: {
+        Row: {
+          ai_summary: string | null
+          behavior_comment: string | null
+          behavior_label: string | null
+          confidence_score: number | null
+          created_at: string
+          execution_grade: string | null
+          id: string
+          pattern_type: string | null
+          recommendations: string | null
+          trade_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_summary?: string | null
+          behavior_comment?: string | null
+          behavior_label?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          execution_grade?: string | null
+          id?: string
+          pattern_type?: string | null
+          recommendations?: string | null
+          trade_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_summary?: string | null
+          behavior_comment?: string | null
+          behavior_label?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          execution_grade?: string | null
+          id?: string
+          pattern_type?: string | null
+          recommendations?: string | null
+          trade_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_insights_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: true
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trade_screenshots: {
         Row: {

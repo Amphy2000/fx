@@ -1,4 +1,4 @@
-import { LayoutDashboard, MessageSquare, Calendar, Settings, Shield, TrendingUp, LogOut, Target, Sun, Moon, Calculator, CreditCard, MessagesSquare, Brain, Trophy, GraduationCap } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Calendar, Settings, Shield, TrendingUp, LogOut, Target, Sun, Moon, Calculator, CreditCard, MessagesSquare, Brain, Trophy, GraduationCap, Plug } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +33,10 @@ const generalNavItems = [{
   title: "Pricing",
   url: "/pricing",
   icon: CreditCard
+}, {
+  title: "Integrations",
+  url: "/integrations",
+  icon: Plug
 }, {
   title: "Settings",
   url: "/settings",

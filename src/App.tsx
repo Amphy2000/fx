@@ -20,6 +20,7 @@ import TradeCalendar from "./pages/TradeCalendar";
 import Pricing from "./pages/Pricing";
 import Feedback from "./pages/Feedback";
 import Privacy from "./pages/Privacy";
+import Integrations from "./pages/Integrations";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/ai-coach" element={<AICoach />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/integrations" element={<Integrations />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/targets" element={<Targets />} />
             <Route path="/trade-calendar" element={<TradeCalendar />} />

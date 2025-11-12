@@ -5,9 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Trash2, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, Filter, Image as ImageIcon } from "lucide-react";
 import { formatDistance, format } from "date-fns";
+import { TradeInsightBadge } from "@/components/TradeInsightBadge";
 
 interface TradesListProps {
   trades: any[];
@@ -21,6 +23,9 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
   const [filterDateFrom, setFilterDateFrom] = useState<string>("");
   const [filterDateTo, setFilterDateTo] = useState<string>("");
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+  const [tradeInsights, setTradeInsights] = useState<Record<string, any>>({});
+  const [selectedInsight, setSelectedInsight] = useState<any>(null);
+  const [showInsightModal, setShowInsightModal] = useState(false);
   
   const itemsPerPage = 10;
   const handleDelete = async (tradeId: string) => {
@@ -97,7 +102,6 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
           const { data, error } = await supabase.storage
             .from('trade-screenshots')
             .createSignedUrl(fileName, 3600); // 1 hour expiry
-
           if (!error && data) {
             newSignedUrls[url] = data.signedUrl;
           }
@@ -111,6 +115,35 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
 
     if (paginatedTrades.length > 0) {
       generateSignedUrls();
+    }
+  }, [paginatedTrades]);
+
+  // Fetch trade insights for current page trades
+  useEffect(() => {
+    const fetchTradeInsights = async () => {
+      const tradeIds = paginatedTrades.map(t => t.id);
+      if (tradeIds.length === 0) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('trade_insights')
+          .select('*')
+          .in('trade_id', tradeIds);
+
+        if (error) throw error;
+
+        const insightsMap: Record<string, any> = {};
+        data?.forEach(insight => {
+          insightsMap[insight.trade_id] = insight;
+        });
+        setTradeInsights(insightsMap);
+      } catch (error) {
+        console.error("Error fetching trade insights:", error);
+      }
+    };
+
+    if (paginatedTrades.length > 0) {
+      fetchTradeInsights();
     }
   }, [paginatedTrades]);
 
@@ -376,6 +409,25 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
                 </div>
               </div>
             )}
+
+            {/* AI Trade Insights */}
+            {tradeInsights[trade.id] && (
+              <div className="mt-3 pt-3 border-t border-border/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs text-muted-foreground">AI Analysis</span>
+                </div>
+                <TradeInsightBadge
+                  behaviorLabel={tradeInsights[trade.id].behavior_label}
+                  patternType={tradeInsights[trade.id].pattern_type}
+                  confidenceScore={tradeInsights[trade.id].confidence_score}
+                  executionGrade={tradeInsights[trade.id].execution_grade}
+                  onClick={() => {
+                    setSelectedInsight(tradeInsights[trade.id]);
+                    setShowInsightModal(true);
+                  }}
+                />
+              </div>
+            )}
           </div>
         ))}
 
@@ -410,6 +462,58 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
           </>
         )}
       </CardContent>
+
+      {/* AI Insight Detail Modal */}
+      <Dialog open={showInsightModal} onOpenChange={setShowInsightModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>AI Trade Analysis</DialogTitle>
+          </DialogHeader>
+          {selectedInsight && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground mb-1">Pattern Type</p>
+                  <p className="font-semibold capitalize">{selectedInsight.pattern_type || 'N/A'}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground mb-1">Execution Grade</p>
+                  <p className="font-semibold text-lg">{selectedInsight.execution_grade || 'N/A'}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground mb-1">Behavior Label</p>
+                  <p className="font-semibold capitalize">{selectedInsight.behavior_label?.replace(/_/g, ' ') || 'N/A'}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground mb-1">Confidence Score</p>
+                  <p className="font-semibold">{selectedInsight.confidence_score || 0}%</p>
+                </div>
+              </div>
+
+              {selectedInsight.behavior_comment && (
+                <div className="p-4 rounded-lg bg-accent/10 border border-accent/20">
+                  <p className="text-sm font-medium mb-2 text-accent-foreground">💬 AI Comment</p>
+                  <p className="text-sm text-foreground">{selectedInsight.behavior_comment}</p>
+                </div>
+              )}
+
+              {selectedInsight.ai_summary && (
+                <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+                  <p className="text-sm font-medium mb-2 text-primary">📊 Analysis Summary</p>
+                  <p className="text-sm text-foreground">{selectedInsight.ai_summary}</p>
+                </div>
+              )}
+
+              {selectedInsight.recommendations && (
+                <div className="p-4 rounded-lg bg-success/10 border border-success/20">
+                  <p className="text-sm font-medium mb-2 text-success">💡 Recommendations</p>
+                  <p className="text-sm text-foreground">{selectedInsight.recommendations}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
