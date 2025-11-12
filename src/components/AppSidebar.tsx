@@ -107,9 +107,10 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
+          <SidebarGroupLabel className="text-sidebar-foreground/70 text-xs uppercase">Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {/* Dashboard only */}
+              {/* Dashboard */}
               {(() => {
               const item = generalNavItems[0];
               return <SidebarMenuItem key={item.title}>
@@ -121,13 +122,8 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>;
             })()}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
+              {/* AI Tools */}
               {aiNavItems.map(item => <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)} className="transition-smooth hover:bg-sidebar-primary/10 data-[active=true]:bg-sidebar-primary/20 data-[active=true]:text-sidebar-primary" onClick={handleNavClick}>
                     <NavLink to={item.url}>
@@ -136,13 +132,8 @@ export function AppSidebar() {
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>)}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarGroup>
-          
-          <SidebarGroupContent>
-            <SidebarMenu>
+
+              {/* Other Navigation Items */}
               {generalNavItems.slice(1).map(item => <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)} className="transition-smooth hover:bg-sidebar-primary/10 data-[active=true]:bg-sidebar-primary/20 data-[active=true]:text-sidebar-primary" onClick={handleNavClick}>
                     <NavLink to={item.url}>
@@ -151,6 +142,8 @@ export function AppSidebar() {
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>)}
+
+              {/* Admin Items */}
               {isAdmin && <>
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild isActive={isActive("/admin")} className="transition-smooth hover:bg-sidebar-primary/10 data-[active=true]:bg-sidebar-primary/20 data-[active=true]:text-sidebar-primary" onClick={handleNavClick}>
