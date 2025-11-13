@@ -45,7 +45,7 @@ const CheckIn = () => {
     if (!user) return;
 
     const today = format(new Date(), 'yyyy-MM-dd');
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("daily_checkins")
       .select("*")
       .eq("user_id", user.id)
@@ -81,8 +81,8 @@ const CheckIn = () => {
     };
 
     const { error } = todayCheckIn
-      ? await supabase.from("daily_checkins").update(checkInData).eq("id", todayCheckIn.id)
-      : await supabase.from("daily_checkins").insert(checkInData);
+      ? await (supabase as any).from("daily_checkins").update(checkInData).eq("id", todayCheckIn.id)
+      : await (supabase as any).from("daily_checkins").insert(checkInData);
 
     if (error) {
       toast({

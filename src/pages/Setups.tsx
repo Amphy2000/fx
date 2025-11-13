@@ -44,7 +44,7 @@ const Setups = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("setups")
       .select("*")
       .eq("user_id", user.id)
@@ -72,8 +72,8 @@ const Setups = () => {
     };
 
     const { error } = editingSetup
-      ? await supabase.from("setups").update(setupData).eq("id", editingSetup.id)
-      : await supabase.from("setups").insert(setupData);
+      ? await (supabase as any).from("setups").update(setupData).eq("id", editingSetup.id)
+      : await (supabase as any).from("setups").insert(setupData);
 
     if (error) {
       toast({
@@ -107,7 +107,7 @@ const Setups = () => {
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from("setups").delete().eq("id", id);
+    const { error } = await (supabase as any).from("setups").delete().eq("id", id);
     
     if (error) {
       toast({
@@ -133,7 +133,7 @@ const Setups = () => {
   };
 
   const getSetupStats = async (setupId: string) => {
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from("trades")
       .select("result, profit_loss")
       .eq("setup_id", setupId);

@@ -36,7 +36,7 @@ const AdvancedAnalytics = () => {
       .eq("user_id", user.id)
       .order("created_at", { ascending: true });
 
-    const { data: checkInsData } = await supabase
+    const { data: checkInsData } = await (supabase as any)
       .from("daily_checkins")
       .select("*")
       .eq("user_id", user.id);

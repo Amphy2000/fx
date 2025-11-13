@@ -43,7 +43,7 @@ const Routine = () => {
     if (!user) return;
 
     const today = format(new Date(), 'yyyy-MM-dd');
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("routine_entries")
       .select("*")
       .eq("user_id", user.id)
@@ -81,8 +81,8 @@ const Routine = () => {
     };
 
     const { error } = todayRoutine
-      ? await supabase.from("routine_entries").update(routineData).eq("id", todayRoutine.id)
-      : await supabase.from("routine_entries").insert(routineData);
+      ? await (supabase as any).from("routine_entries").update(routineData).eq("id", todayRoutine.id)
+      : await (supabase as any).from("routine_entries").insert(routineData);
 
     if (error) {
       toast({
