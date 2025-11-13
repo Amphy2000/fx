@@ -205,13 +205,44 @@ const AdvancedAnalytics = () => {
             </CardHeader>
             <CardContent>
               {insights.dayData && insights.dayData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={insights.dayData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="day" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="winRate" fill="hsl(var(--primary))" />
+                <ResponsiveContainer width="100%" height={320}>
+                  <BarChart data={insights.dayData} margin={{ top: 10, right: 20, left: -10, bottom: 10 }}>
+                    <defs>
+                      <linearGradient id="dayWinRateGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.9} />
+                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} vertical={false} />
+                    <XAxis 
+                      dataKey="day" 
+                      fontSize={11}
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      axisLine={{ stroke: 'hsl(var(--border))' }}
+                      tickLine={false}
+                    />
+                    <YAxis 
+                      fontSize={11}
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      axisLine={false}
+                      tickLine={false}
+                      label={{ value: 'Win Rate %', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--popover))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      }}
+                      formatter={(value: any) => [`${value}%`, 'Win Rate']}
+                    />
+                    <Bar 
+                      dataKey="winRate" 
+                      fill="url(#dayWinRateGradient)" 
+                      radius={[8, 8, 0, 0]}
+                      animationDuration={800}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -230,13 +261,45 @@ const AdvancedAnalytics = () => {
             </CardHeader>
             <CardContent>
               {insights.rDistribution && insights.rDistribution.some((d: any) => d.count > 0) ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={insights.rDistribution}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="range" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="hsl(var(--chart-2))" />
+                <ResponsiveContainer width="100%" height={320}>
+                  <BarChart data={insights.rDistribution} margin={{ top: 10, right: 20, left: -10, bottom: 10 }}>
+                    <defs>
+                      <linearGradient id="rDistGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(var(--chart-2))" stopOpacity={0.9} />
+                        <stop offset="100%" stopColor="hsl(var(--chart-2))" stopOpacity={0.3} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} vertical={false} />
+                    <XAxis 
+                      dataKey="range" 
+                      fontSize={11}
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      axisLine={{ stroke: 'hsl(var(--border))' }}
+                      tickLine={false}
+                    />
+                    <YAxis 
+                      fontSize={11}
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      axisLine={false}
+                      tickLine={false}
+                      label={{ value: 'Trade Count', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--popover))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      }}
+                      formatter={(value: any) => [`${value} trades`, 'Count']}
+                    />
+                    <Bar 
+                      dataKey="count" 
+                      fill="url(#rDistGradient)" 
+                      radius={[8, 8, 0, 0]}
+                      animationDuration={800}
+                      animationBegin={100}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
