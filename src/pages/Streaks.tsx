@@ -30,7 +30,7 @@ const Streaks = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from("streaks")
       .select("*")
       .eq("user_id", user.id);
@@ -44,7 +44,7 @@ const Streaks = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from("achievements")
       .select("*")
       .eq("user_id", user.id)
@@ -63,13 +63,13 @@ const Streaks = () => {
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     
-    const { data: checkIns } = await supabase
+    const { data: checkIns } = await (supabase as any)
       .from("daily_checkins")
       .select("*")
       .eq("user_id", user.id)
       .gte("check_in_date", weekAgo.toISOString());
 
-    const { data: routines } = await supabase
+    const { data: routines } = await (supabase as any)
       .from("routine_entries")
       .select("*")
       .eq("user_id", user.id)
