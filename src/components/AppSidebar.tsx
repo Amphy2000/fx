@@ -1,4 +1,4 @@
-import { LayoutDashboard, MessageSquare, Calendar, Settings, Shield, TrendingUp, LogOut, Target, Sun, Moon, Calculator, CreditCard, MessagesSquare, Brain, Trophy, GraduationCap, Plug } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Calendar, Settings, Shield, TrendingUp, LogOut, Target, Sun, Moon, Calculator, CreditCard, MessagesSquare, Brain, Trophy, GraduationCap, Plug, Heart, ClipboardCheck, Lightbulb, BarChart3, Flame } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,6 +54,28 @@ const aiNavItems = [{
   title: "AI Trade Coach",
   url: "/ai-coach",
   icon: GraduationCap
+}];
+
+const performanceNavItems = [{
+  title: "Daily Check-In",
+  url: "/check-in",
+  icon: Heart
+}, {
+  title: "Routine",
+  url: "/routine",
+  icon: ClipboardCheck
+}, {
+  title: "Setups",
+  url: "/setups",
+  icon: Lightbulb
+}, {
+  title: "Advanced Analytics",
+  url: "/analytics/advanced",
+  icon: BarChart3
+}, {
+  title: "Streaks",
+  url: "/streaks",
+  icon: Flame
 }];
 export function AppSidebar() {
   const {
@@ -129,6 +151,16 @@ export function AppSidebar() {
 
               {/* AI Tools */}
               {aiNavItems.map(item => <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} className="transition-smooth hover:bg-sidebar-primary/10 data-[active=true]:bg-sidebar-primary/20 data-[active=true]:text-sidebar-primary" onClick={handleNavClick}>
+                    <NavLink to={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>)}
+
+              {/* Performance OS */}
+              {performanceNavItems.map(item => <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)} className="transition-smooth hover:bg-sidebar-primary/10 data-[active=true]:bg-sidebar-primary/20 data-[active=true]:text-sidebar-primary" onClick={handleNavClick}>
                     <NavLink to={item.url}>
                       <item.icon className="h-4 w-4" />
