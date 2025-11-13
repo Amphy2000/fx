@@ -22,6 +22,11 @@ import Feedback from "./pages/Feedback";
 import Privacy from "./pages/Privacy";
 import Integrations from "./pages/Integrations";
 import NotFound from "./pages/NotFound";
+import CheckIn from "./pages/CheckIn";
+import Routine from "./pages/Routine";
+import Setups from "./pages/Setups";
+import AdvancedAnalytics from "./pages/AdvancedAnalytics";
+import Streaks from "./pages/Streaks";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +55,11 @@ const App = () => (
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/feedback" element={<Feedback />} />
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="/check-in" element={<CheckIn />} />
+            <Route path="/routine" element={<Routine />} />
+            <Route path="/setups" element={<Setups />} />
+            <Route path="/analytics/advanced" element={<AdvancedAnalytics />} />
+            <Route path="/streaks" element={<Streaks />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
