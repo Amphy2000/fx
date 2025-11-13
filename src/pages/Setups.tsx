@@ -168,11 +168,11 @@ const Setups = () => {
                 New Setup
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingSetup ? "Edit Setup" : "Create New Setup"}</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4 pb-2">
                 <div className="space-y-2">
                   <Label>Setup Name</Label>
                   <Input

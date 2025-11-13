@@ -67,7 +67,8 @@ const EmotionalInsights = ({ trades }: EmotionalInsightsProps) => {
   const winRateData = Object.entries(emotionWinRates)
     .filter(([_, stats]) => stats.total >= 2)
     .map(([emotion, stats]) => ({
-      emotion: `${emotionEmojis[emotion] || ''} ${emotion.charAt(0).toUpperCase() + emotion.slice(1)}`,
+      emotion: emotion.charAt(0).toUpperCase() + emotion.slice(1),
+      emoji: emotionEmojis[emotion] || '',
       winRate: Math.round((stats.wins / stats.total) * 100),
       trades: stats.total,
     }));
@@ -84,7 +85,8 @@ const EmotionalInsights = ({ trades }: EmotionalInsightsProps) => {
   const losses = trades.filter(t => t.result === 'loss');
   const lossEmotionData = losses.length >= 3 
     ? Object.entries(lossEmotions).map(([emotion, count]) => ({
-        name: `${emotionEmojis[emotion] || ''} ${emotion.charAt(0).toUpperCase() + emotion.slice(1)}`,
+        name: emotion.charAt(0).toUpperCase() + emotion.slice(1),
+        emoji: emotionEmojis[emotion] || '',
         value: count,
       }))
     : [];
@@ -180,16 +182,57 @@ const EmotionalInsights = ({ trades }: EmotionalInsightsProps) => {
             {winRateData.length > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">Win Rate by Pre-Trade Emotion</h4>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={winRateData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                    <XAxis dataKey="emotion" tick={{ fill: '#999', fontSize: 11 }} />
-                    <YAxis tick={{ fill: '#999', fontSize: 11 }} />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
-                      labelStyle={{ color: '#d4af37' }}
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={winRateData} margin={{ top: 10, right: 10, left: -10, bottom: 20 }}>
+                    <defs>
+                      <linearGradient id="winRateGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.9} />
+                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} vertical={false} />
+                    <XAxis 
+                      dataKey="emotion" 
+                      fontSize={11}
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      axisLine={{ stroke: 'hsl(var(--border))' }}
+                      tickLine={false}
+                      tickFormatter={(value, index) => {
+                        const data = winRateData[index];
+                        return `${data?.emoji || ''} ${value}`;
+                      }}
+                      interval={0}
+                      angle={-15}
+                      textAnchor="end"
+                      height={60}
                     />
-                    <Bar dataKey="winRate" fill="#d4af37" radius={[4, 4, 0, 0]} />
+                    <YAxis 
+                      fontSize={11} 
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      axisLine={false}
+                      tickLine={false}
+                      label={{ value: 'Win Rate %', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--popover))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      }}
+                      labelStyle={{ color: 'hsl(var(--popover-foreground))', fontWeight: 600 }}
+                      formatter={(value: any, name: any, props: any) => {
+                        const emoji = props.payload?.emoji || '';
+                        return [`${value}% (${props.payload?.trades} trades)`, `${emoji} Win Rate`];
+                      }}
+                    />
+                    <Bar 
+                      dataKey="winRate" 
+                      fill="url(#winRateGradient)" 
+                      radius={[8, 8, 0, 0]}
+                      animationDuration={800}
+                      animationBegin={0}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -199,24 +242,70 @@ const EmotionalInsights = ({ trades }: EmotionalInsightsProps) => {
             {lossEmotionData.length > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">Post-Trade Emotions (Losses)</h4>
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={250}>
                   <PieChart>
+                    <defs>
+                      {lossEmotionData.map((_, index) => (
+                        <linearGradient key={`gradient-${index}`} id={`pieGradient${index}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={COLORS[index % COLORS.length]} stopOpacity={1} />
+                          <stop offset="100%" stopColor={COLORS[index % COLORS.length]} stopOpacity={0.6} />
+                        </linearGradient>
+                      ))}
+                    </defs>
                     <Pie
                       data={lossEmotionData}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }) => `${name.split(' ')[0]} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={70}
+                      label={({ name, percent, emoji, cx, cy, midAngle, innerRadius, outerRadius }) => {
+                        const RADIAN = Math.PI / 180;
+                        const radius = outerRadius + 25;
+                        const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                        const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                        const percentText = `${(percent * 100).toFixed(0)}%`;
+                        
+                        return (
+                          <text 
+                            x={x} 
+                            y={y} 
+                            fill="hsl(var(--foreground))" 
+                            textAnchor={x > cx ? 'start' : 'end'} 
+                            dominantBaseline="central"
+                            fontSize="11"
+                            className="select-none"
+                          >
+                            {`${emoji} ${name} ${percentText}`}
+                          </text>
+                        );
+                      }}
+                      outerRadius={90}
+                      innerRadius={40}
                       fill="#8884d8"
                       dataKey="value"
+                      paddingAngle={2}
+                      animationDuration={800}
+                      animationBegin={100}
                     >
                       {lossEmotionData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={`url(#pieGradient${index})`}
+                          stroke="hsl(var(--background))"
+                          strokeWidth={2}
+                        />
                       ))}
                     </Pie>
                     <Tooltip 
-                      contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--popover))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      }}
+                      formatter={(value: any, name: any, props: any) => {
+                        const emoji = props.payload?.emoji || '';
+                        return [`${value} times`, `${emoji} ${name}`];
+                      }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -228,19 +317,86 @@ const EmotionalInsights = ({ trades }: EmotionalInsightsProps) => {
           {weeklyData.some(d => d.stability > 0) && (
             <div className="space-y-2">
               <h4 className="text-sm font-medium">Weekly Emotional Stability Trend</h4>
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={weeklyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  <XAxis dataKey="week" tick={{ fill: '#999', fontSize: 11 }} />
-                  <YAxis tick={{ fill: '#999', fontSize: 11 }} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
-                    labelStyle={{ color: '#d4af37' }}
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={weeklyData} margin={{ top: 10, right: 20, left: -10, bottom: 10 }}>
+                  <defs>
+                    <linearGradient id="stabilityGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="calmGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="anxiousGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0} />
+                    </linearGradient>
+                    <filter id="shadow">
+                      <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.2"/>
+                    </filter>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} vertical={false} />
+                  <XAxis 
+                    dataKey="week" 
+                    fontSize={11}
+                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                    tickLine={false}
                   />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Line type="monotone" dataKey="stability" stroke="#d4af37" strokeWidth={2} name="Stability %" />
-                  <Line type="monotone" dataKey="calm" stroke="#4ade80" strokeWidth={2} name="Calm Trades" />
-                  <Line type="monotone" dataKey="anxious" stroke="#f87171" strokeWidth={2} name="Anxious Trades" />
+                  <YAxis 
+                    fontSize={11} 
+                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--popover))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                    }}
+                  />
+                  <Legend 
+                    wrapperStyle={{ paddingTop: '10px', fontSize: '11px' }}
+                    iconType="circle"
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="stability" 
+                    stroke="hsl(var(--primary))" 
+                    strokeWidth={3}
+                    name="Stability %" 
+                    dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4, filter: 'url(#shadow)' }}
+                    activeDot={{ r: 6, strokeWidth: 2 }}
+                    animationDuration={800}
+                    fill="url(#stabilityGradient)"
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="calm" 
+                    stroke="hsl(var(--success))" 
+                    strokeWidth={3}
+                    name="Calm Trades" 
+                    dot={{ fill: 'hsl(var(--success))', strokeWidth: 2, r: 4, filter: 'url(#shadow)' }}
+                    activeDot={{ r: 6, strokeWidth: 2 }}
+                    animationDuration={800}
+                    animationBegin={100}
+                    fill="url(#calmGradient)"
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="anxious" 
+                    stroke="hsl(var(--destructive))" 
+                    strokeWidth={3}
+                    name="Anxious Trades" 
+                    dot={{ fill: 'hsl(var(--destructive))', strokeWidth: 2, r: 4, filter: 'url(#shadow)' }}
+                    activeDot={{ r: 6, strokeWidth: 2 }}
+                    animationDuration={800}
+                    animationBegin={200}
+                    fill="url(#anxiousGradient)"
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
