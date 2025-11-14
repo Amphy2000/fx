@@ -8,93 +8,101 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+    /* TradingView Dark Theme */
+    --background: 219 20% 8%;
+    --foreground: 0 0% 95%;
 
-    --card: 217 33% 17%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 15% 12%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 224 71% 4%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 15% 10%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 48 96% 53%;
-    --primary-foreground: 222 47% 11%;
+    --primary: 213 94% 60%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 15% 15%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 220 15% 15%;
+    --muted-foreground: 0 0% 60%;
 
-    --accent: 48 96% 53%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 213 94% 60%;
+    --accent-foreground: 0 0% 100%;
 
-    --success: 142 76% 36%;
-    --success-foreground: 210 40% 98%;
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217 33% 25%;
-    --input: 217 33% 25%;
-    --ring: 48 96% 53%;
+    --border: 220 15% 18%;
+    --input: 220 15% 18%;
+    --ring: 213 94% 60%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --gradient-primary: linear-gradient(135deg, hsl(48 96% 53%), hsl(45 93% 47%));
-    --gradient-dark: linear-gradient(180deg, hsl(222 47% 11%), hsl(217 33% 17%));
+    /* Modern chart colors inspired by Tradzellar */
+    --chart-1: 213 94% 60%;
+    --chart-2: 142 70% 45%;
+    --chart-3: 0 72% 51%;
+    --chart-4: 45 93% 47%;
+    --chart-5: 280 65% 60%;
+    
+    /* Gauge chart colors */
+    --gauge-good: 142 70% 45%;
+    --gauge-warning: 45 93% 47%;
+    --gauge-danger: 0 72% 51%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(213 94% 60%), hsl(213 94% 50%));
+    --gradient-success: linear-gradient(135deg, hsl(142 70% 45%), hsl(142 70% 35%));
+    --gradient-danger: linear-gradient(135deg, hsl(0 72% 51%), hsl(0 72% 41%));
+    --gradient-dark: linear-gradient(180deg, hsl(219 20% 8%), hsl(220 15% 12%));
     
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-    /* Chart colors */
-    --chart-1: 48 96% 53%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-
     /* Sidebar tokens */
-    --sidebar-background: 0 0% 5%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 43 59% 52%;
-    --sidebar-primary-foreground: 0 0% 5%;
-    --sidebar-accent: 43 59% 52%;
-    --sidebar-accent-foreground: 0 0% 5%;
-    --sidebar-border: 217 33% 25%;
-    --sidebar-ring: 43 59% 52%;
+    --sidebar-background: 219 20% 6%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 213 94% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 213 94% 60%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 220 15% 15%;
+    --sidebar-ring: 213 94% 60%;
   }
 
   .light {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --background: 0 0% 98%;
+    --foreground: 219 20% 8%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 219 20% 8%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 219 20% 8%;
 
-    --primary: 48 96% 53%;
-    --primary-foreground: 222 47% 11%;
+    --primary: 213 94% 60%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary-foreground: 219 20% 8%;
 
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
 
     --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    --accent-foreground: 219 20% 8%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 48 96% 53%;
+    --ring: 213 94% 60%;
 
-    --success: 142 76% 36%;
-    --success-foreground: 210 40% 98%;
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
   }
 }
 
@@ -114,11 +122,23 @@ All colors MUST be HSL.
     background: var(--gradient-primary);
   }
   
+  .gradient-success {
+    background: var(--gradient-success);
+  }
+  
+  .gradient-danger {
+    background: var(--gradient-danger);
+  }
+  
   .gradient-dark {
     background: var(--gradient-dark);
   }
   
   .transition-smooth {
     transition: var(--transition-smooth);
+  }
+  
+  .tradingview-card {
+    @apply bg-card border border-border rounded-xl p-6 transition-smooth hover:border-primary/30;
   }
 }

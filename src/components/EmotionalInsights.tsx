@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Brain, TrendingUp } from "lucide-react";
-import { BarChart, Bar, PieChart, Pie, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
+import { ModernDonutChart } from './ModernDonutChart';
+import { ModernGaugeChart } from './ModernGaugeChart';
 
 interface Trade {
   result: string;
@@ -180,135 +182,43 @@ const EmotionalInsights = ({ trades }: EmotionalInsightsProps) => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Win Rate by Emotion */}
             {winRateData.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium">Win Rate by Pre-Trade Emotion</h4>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={winRateData} margin={{ top: 10, right: 10, left: -10, bottom: 20 }}>
-                    <defs>
-                      <linearGradient id="winRateGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.9} />
-                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} vertical={false} />
-                    <XAxis 
-                      dataKey="emotion" 
-                      fontSize={11}
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                      axisLine={{ stroke: 'hsl(var(--border))' }}
-                      tickLine={false}
-                      tickFormatter={(value, index) => {
-                        const data = winRateData[index];
-                        return `${data?.emoji || ''} ${value}`;
-                      }}
-                      interval={0}
-                      angle={-15}
-                      textAnchor="end"
-                      height={60}
-                    />
-                    <YAxis 
-                      fontSize={11} 
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                      axisLine={false}
-                      tickLine={false}
-                      label={{ value: 'Win Rate %', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-                    />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--popover))', 
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                      }}
-                      labelStyle={{ color: 'hsl(var(--popover-foreground))', fontWeight: 600 }}
-                      formatter={(value: any, name: any, props: any) => {
-                        const emoji = props.payload?.emoji || '';
-                        return [`${value}% (${props.payload?.trades} trades)`, `${emoji} Win Rate`];
-                      }}
-                    />
-                    <Bar 
-                      dataKey="winRate" 
-                      fill="url(#winRateGradient)" 
-                      radius={[8, 8, 0, 0]}
-                      animationDuration={800}
-                      animationBegin={0}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium mb-4">Win Rate by Pre-Trade Emotion</h4>
+                <div className="flex flex-wrap gap-6 justify-center">
+                  {winRateData.map((item, index) => (
+                    <div key={index} className="flex flex-col items-center gap-2">
+                      <ModernGaugeChart 
+                        value={item.winRate} 
+                        size={140}
+                        showLabels={false}
+                      />
+                      <span className="text-xs text-muted-foreground capitalize">{item.emoji} {item.emotion}</span>
+                      <span className="text-xs text-muted-foreground">({item.trades} trades)</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
             {/* Loss Emotions Distribution */}
             {lossEmotionData.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium">Post-Trade Emotions (Losses)</h4>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <defs>
-                      {lossEmotionData.map((_, index) => (
-                        <linearGradient key={`gradient-${index}`} id={`pieGradient${index}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={COLORS[index % COLORS.length]} stopOpacity={1} />
-                          <stop offset="100%" stopColor={COLORS[index % COLORS.length]} stopOpacity={0.6} />
-                        </linearGradient>
-                      ))}
-                    </defs>
-                    <Pie
-                      data={lossEmotionData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent, emoji, cx, cy, midAngle, innerRadius, outerRadius }) => {
-                        const RADIAN = Math.PI / 180;
-                        const radius = outerRadius + 25;
-                        const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                        const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                        const percentText = `${(percent * 100).toFixed(0)}%`;
-                        
-                        return (
-                          <text 
-                            x={x} 
-                            y={y} 
-                            fill="hsl(var(--foreground))" 
-                            textAnchor={x > cx ? 'start' : 'end'} 
-                            dominantBaseline="central"
-                            fontSize="11"
-                            className="select-none"
-                          >
-                            {`${emoji} ${name} ${percentText}`}
-                          </text>
-                        );
-                      }}
-                      outerRadius={90}
-                      innerRadius={40}
-                      fill="#8884d8"
-                      dataKey="value"
-                      paddingAngle={2}
-                      animationDuration={800}
-                      animationBegin={100}
-                    >
-                      {lossEmotionData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={`url(#pieGradient${index})`}
-                          stroke="hsl(var(--background))"
-                          strokeWidth={2}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--popover))', 
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                      }}
-                      formatter={(value: any, name: any, props: any) => {
-                        const emoji = props.payload?.emoji || '';
-                        return [`${value} times`, `${emoji} ${name}`];
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium mb-4">Post-Trade Emotions (Losses)</h4>
+                <div className="flex justify-center">
+                  <ModernDonutChart 
+                    data={lossEmotionData.map((item, index) => ({
+                      name: item.name,
+                      value: item.value,
+                      color: index === 0 ? 'hsl(var(--gauge-danger))' : 
+                             index === 1 ? 'hsl(var(--gauge-warning))' :
+                             `hsl(var(--chart-${(index % 5) + 1}))`
+                    }))}
+                    size={240}
+                    centerLabel="Total Losses"
+                    centerValue={lossEmotionData.reduce((sum, item) => sum + item.value, 0)}
+                    showPercentage
+                  />
+                </div>
               </div>
             )}
           </div>

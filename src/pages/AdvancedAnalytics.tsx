@@ -3,8 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { TrendingUp, DollarSign, Target, AlertTriangle, Calendar } from "lucide-react";
+import { ModernGaugeChart } from '@/components/ModernGaugeChart';
+import { ModernDonutChart } from '@/components/ModernDonutChart';
+import { ModernRadarChart } from '@/components/ModernRadarChart';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
