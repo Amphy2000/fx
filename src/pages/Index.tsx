@@ -2,75 +2,47 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
-import { 
-  TrendingUp, 
-  Brain, 
-  BarChart3, 
-  Target, 
-  Shield, 
-  Zap,
-  Check
-} from "lucide-react";
+import { TrendingUp, Brain, BarChart3, Target, Shield, Zap, Check } from "lucide-react";
 import heroImage from "@/assets/hero-bg.jpg";
-
 const Index = () => {
   const navigate = useNavigate();
-
-  const features = [
-    {
-      icon: <TrendingUp className="h-6 w-6" />,
-      title: "Track Every Trade",
-      description: "Log trades with detailed entries, stops, targets, and outcomes",
-    },
-    {
-      icon: <Brain className="h-6 w-6" />,
-      title: "AI-Powered Insights",
-      description: "Get personalized feedback and pattern recognition from AI",
-    },
-    {
-      icon: <BarChart3 className="h-6 w-6" />,
-      title: "Performance Analytics",
-      description: "Visualize win rates, profit/loss, and trading patterns",
-    },
-    {
-      icon: <Target className="h-6 w-6" />,
-      title: "Psychology Tracking",
-      description: "Monitor emotions and discover psychological patterns",
-    },
-    {
-      icon: <Shield className="h-6 w-6" />,
-      title: "Secure & Private",
-      description: "Your trading data is encrypted and completely private",
-    },
-    {
-      icon: <Zap className="h-6 w-6" />,
-      title: "Real-Time Updates",
-      description: "Instantly sync across all your devices",
-    },
-  ];
-
-  const benefits = [
-    "Discover your strongest trading pairs",
-    "Get AI feedback after every trade",
-    "Stay disciplined and consistent",
-    "Track your trading habits effectively",
-  ];
-
-  return (
-    <div className="min-h-screen bg-background">
+  const features = [{
+    icon: <TrendingUp className="h-6 w-6" />,
+    title: "Track Every Trade",
+    description: "Log trades with detailed entries, stops, targets, and outcomes"
+  }, {
+    icon: <Brain className="h-6 w-6" />,
+    title: "AI-Powered Insights",
+    description: "Get personalized feedback and pattern recognition from AI"
+  }, {
+    icon: <BarChart3 className="h-6 w-6" />,
+    title: "Performance Analytics",
+    description: "Visualize win rates, profit/loss, and trading patterns"
+  }, {
+    icon: <Target className="h-6 w-6" />,
+    title: "Psychology Tracking",
+    description: "Monitor emotions and discover psychological patterns"
+  }, {
+    icon: <Shield className="h-6 w-6" />,
+    title: "Secure & Private",
+    description: "Your trading data is encrypted and completely private"
+  }, {
+    icon: <Zap className="h-6 w-6" />,
+    title: "Real-Time Updates",
+    description: "Instantly sync across all your devices"
+  }];
+  const benefits = ["Discover your strongest trading pairs", "Get AI feedback after every trade", "Stay disciplined and consistent", "Track your trading habits effectively"];
+  return <div className="min-h-screen bg-background">
       <Navbar />
       
       {/* Hero Section */}
       <section className="relative overflow-hidden border-b border-border">
         <div className="absolute inset-0 bg-gradient-to-br from-chart-1/5 via-background to-chart-2/5" />
-        <div 
-          className="absolute inset-0 opacity-5"
-          style={{
-            backgroundImage: `url(${heroImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        />
+        <div className="absolute inset-0 opacity-5" style={{
+        backgroundImage: `url(${heroImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }} />
         <div className="container mx-auto px-4 py-16 md:py-24 relative">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-12">
@@ -80,7 +52,7 @@ const Index = () => {
               </div>
               <h1 className="text-5xl md:text-7xl font-bold mb-6 text-foreground tracking-tight">
                 Trade Smarter with
-                <span className="block mt-2 bg-gradient-to-r from-chart-1 via-chart-2 to-chart-1 bg-clip-text text-transparent">
+                <span className="block mt-2 bg-gradient-to-r from-chart-1 via-chart-2 to-chart-1 bg-clip-text text-transparent mx-0 my-0 px-0 py-[15px]">
                   AI Insights
                 </span>
               </h1>
@@ -88,19 +60,10 @@ const Index = () => {
                 Professional trading journal with AI-powered analytics, psychology tracking, and real-time performance insights. Built for serious traders.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-                <Button
-                  size="lg"
-                  onClick={() => navigate("/auth")}
-                  className="bg-chart-1 hover:bg-chart-1/90 text-white text-lg px-8 py-6 h-auto font-semibold shadow-lg hover:shadow-xl transition-all"
-                >
+                <Button size="lg" onClick={() => navigate("/auth")} className="bg-chart-1 hover:bg-chart-1/90 text-white text-lg px-8 py-6 h-auto font-semibold shadow-lg hover:shadow-xl transition-all">
                   Start Trading Journal
                 </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={() => navigate("/auth")}
-                  className="text-lg px-8 py-6 h-auto font-semibold border-2 hover:bg-accent"
-                >
+                <Button size="lg" variant="outline" onClick={() => navigate("/auth")} className="text-lg px-8 py-6 h-auto font-semibold border-2 hover:bg-accent">
                   View Live Demo
                 </Button>
               </div>
@@ -138,15 +101,10 @@ const Index = () => {
               </h2>
             </div>
             <div className="grid md:grid-cols-2 gap-4">
-              {benefits.map((benefit, index) => (
-                <div
-                  key={index}
-                  className="flex items-start gap-3 p-4 rounded-lg bg-card/50 border border-border/50"
-                >
+              {benefits.map((benefit, index) => <div key={index} className="flex items-start gap-3 p-4 rounded-lg bg-card/50 border border-border/50">
                   <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                   <p className="text-foreground">{benefit}</p>
-                </div>
-              ))}
+                </div>)}
             </div>
           </div>
         </div>
@@ -163,11 +121,7 @@ const Index = () => {
           </p>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, index) => (
-              <Card
-                key={index}
-                className="border-border/50 bg-card/50 backdrop-blur transition-smooth hover:bg-card hover:border-primary/20"
-              >
+            {features.map((feature, index) => <Card key={index} className="border-border/50 bg-card/50 backdrop-blur transition-smooth hover:bg-card hover:border-primary/20">
                 <CardContent className="pt-6">
                   <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
                     {feature.icon}
@@ -175,8 +129,7 @@ const Index = () => {
                   <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
                   <p className="text-muted-foreground">{feature.description}</p>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </section>
@@ -190,12 +143,7 @@ const Index = () => {
           <p className="text-lg text-primary-foreground/80 mb-8 max-w-2xl mx-auto">
             Join traders who are improving their discipline and consistency with AI-powered insights
           </p>
-          <Button
-            size="lg"
-            variant="secondary"
-            onClick={() => navigate("/auth")}
-            className="text-lg px-8"
-          >
+          <Button size="lg" variant="secondary" onClick={() => navigate("/auth")} className="text-lg px-8">
             Get Started Free
           </Button>
         </div>
@@ -215,8 +163,6 @@ const Index = () => {
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
