@@ -66,7 +66,7 @@ const Index = () => {
               {/* Main headline */}
               <h1 className="text-6xl font-bold mb-8 text-foreground tracking-tight leading-[1.1] md:text-6xl">
                 Master Your
-                <span className="block mt-3 bg-gradient-to-r from-chart-1 via-chart-2 to-chart-3 bg-clip-text text-transparent mx-0 my-0 px-px py-[20px]">
+                <span className="block mt-3 bg-gradient-to-r from-chart-1 via-chart-2 to-chart-3 bg-clip-text text-transparent mx-0 my-0 px-px py-[20px] text-5xl">
                   Trading Edge
                 </span>
               </h1>
