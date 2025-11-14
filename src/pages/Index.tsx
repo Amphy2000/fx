@@ -57,52 +57,69 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen gradient-dark">
+    <div className="min-h-screen bg-background">
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden border-b border-border">
+        <div className="absolute inset-0 bg-gradient-to-br from-chart-1/5 via-background to-chart-2/5" />
         <div 
-          className="absolute inset-0 opacity-20"
+          className="absolute inset-0 opacity-5"
           style={{
             backgroundImage: `url(${heroImage})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
         />
-        <div className="container mx-auto px-4 py-20 md:py-32 relative">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
-              Your AI Trading Coach
-            </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground mb-8">
-              Master Forex & Gold trading with AI-powered insights, psychology tracking, and personalized feedback
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                size="lg"
-                onClick={() => navigate("/auth")}
-                className="gradient-primary text-lg px-8"
-              >
-                Start Free Trial
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => navigate("/auth")}
-                className="text-lg px-8"
-              >
-                View Demo
-              </Button>
-            </div>
-            <div className="mt-6 p-4 rounded-lg bg-card/50 border border-primary/20">
-              <p className="text-sm font-semibold text-primary mb-2">💡 Beta Launch Offer</p>
-              <p className="text-sm text-muted-foreground mb-2">Start free and upgrade anytime.</p>
-              <ul className="text-sm space-y-1 text-foreground">
-                <li><strong>Free Plan</strong> → Log up to 10 trades/month</li>
-                <li><strong>Pro Plan</strong> → $4.99/month (or ₦7,500) — Unlimited journaling, AI insights & analytics</li>
-                <li><strong>Lifetime Access</strong> → $20 one-time — Get full Pro access forever (limited-time offer)</li>
-              </ul>
+        <div className="container mx-auto px-4 py-16 md:py-24 relative">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-chart-1/10 border border-chart-1/20 mb-6">
+                <Zap className="h-4 w-4 text-chart-1" />
+                <span className="text-sm font-medium text-foreground">AI-Powered Trading Journal</span>
+              </div>
+              <h1 className="text-5xl md:text-7xl font-bold mb-6 text-foreground tracking-tight">
+                Trade Smarter with
+                <span className="block mt-2 bg-gradient-to-r from-chart-1 via-chart-2 to-chart-1 bg-clip-text text-transparent">
+                  AI Insights
+                </span>
+              </h1>
+              <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
+                Professional trading journal with AI-powered analytics, psychology tracking, and real-time performance insights. Built for serious traders.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+                <Button
+                  size="lg"
+                  onClick={() => navigate("/auth")}
+                  className="bg-chart-1 hover:bg-chart-1/90 text-white text-lg px-8 py-6 h-auto font-semibold shadow-lg hover:shadow-xl transition-all"
+                >
+                  Start Trading Journal
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => navigate("/auth")}
+                  className="text-lg px-8 py-6 h-auto font-semibold border-2 hover:bg-accent"
+                >
+                  View Live Demo
+                </Button>
+              </div>
+              
+              {/* Stats Bar */}
+              <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto mt-12 p-6 rounded-xl bg-card/50 border border-border backdrop-blur-sm">
+                <div className="text-center">
+                  <div className="text-2xl md:text-3xl font-bold text-foreground">10K+</div>
+                  <div className="text-xs text-muted-foreground mt-1">Active Traders</div>
+                </div>
+                <div className="text-center border-x border-border">
+                  <div className="text-2xl md:text-3xl font-bold text-foreground">1M+</div>
+                  <div className="text-xs text-muted-foreground mt-1">Trades Analyzed</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl md:text-3xl font-bold text-foreground">98%</div>
+                  <div className="text-xs text-muted-foreground mt-1">Satisfaction</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
