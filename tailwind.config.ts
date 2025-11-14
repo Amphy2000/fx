@@ -68,6 +68,11 @@ export default {
           4: "hsl(var(--chart-4))",
           5: "hsl(var(--chart-5))",
         },
+        gauge: {
+          good: "hsl(var(--gauge-good))",
+          warning: "hsl(var(--gauge-warning))",
+          danger: "hsl(var(--gauge-danger))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          achievement_name: string
+          achievement_type: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          achievement_name: string
+          achievement_type: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          achievement_name?: string
+          achievement_type?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           created_at: string
@@ -96,6 +120,48 @@ export type Database = {
           feedback?: boolean
           id?: string
           trade_setup?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_checkins: {
+        Row: {
+          check_in_date: string
+          confidence: number
+          created_at: string
+          focus_level: number
+          id: string
+          mood: string
+          note: string | null
+          sleep_hours: number
+          stress: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          check_in_date?: string
+          confidence: number
+          created_at?: string
+          focus_level: number
+          id?: string
+          mood: string
+          note?: string | null
+          sleep_hours: number
+          stress: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          check_in_date?: string
+          confidence?: number
+          created_at?: string
+          focus_level?: number
+          id?: string
+          mood?: string
+          note?: string | null
+          sleep_hours?: number
+          stress?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -277,6 +343,114 @@ export type Database = {
           theme?: string | null
           trades_count?: number | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      routine_entries: {
+        Row: {
+          created_at: string
+          entry_date: string
+          id: string
+          key_levels: Json | null
+          market_bias: string | null
+          pre_session_ready: boolean | null
+          session_notes: string | null
+          trading_rules_checked: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entry_date?: string
+          id?: string
+          key_levels?: Json | null
+          market_bias?: string | null
+          pre_session_ready?: boolean | null
+          session_notes?: string | null
+          trading_rules_checked?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entry_date?: string
+          id?: string
+          key_levels?: Json | null
+          market_bias?: string | null
+          pre_session_ready?: boolean | null
+          session_notes?: string | null
+          trading_rules_checked?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      setups: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          keywords: string[] | null
+          name: string
+          rules: string
+          screenshot_url: string | null
+          tags: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          keywords?: string[] | null
+          name: string
+          rules: string
+          screenshot_url?: string | null
+          tags?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          keywords?: string[] | null
+          name?: string
+          rules?: string
+          screenshot_url?: string | null
+          tags?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      streaks: {
+        Row: {
+          best_count: number
+          created_at: string
+          current_count: number
+          id: string
+          last_updated: string
+          streak_type: string
+          user_id: string
+        }
+        Insert: {
+          best_count?: number
+          created_at?: string
+          current_count?: number
+          id?: string
+          last_updated?: string
+          streak_type: string
+          user_id: string
+        }
+        Update: {
+          best_count?: number
+          created_at?: string
+          current_count?: number
+          id?: string
+          last_updated?: string
+          streak_type?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -463,6 +637,7 @@ export type Database = {
           profit_loss: number | null
           result: string | null
           screenshot_url: string | null
+          setup_id: string | null
           stop_loss: number | null
           take_profit: number | null
           updated_at: string | null
@@ -481,6 +656,7 @@ export type Database = {
           profit_loss?: number | null
           result?: string | null
           screenshot_url?: string | null
+          setup_id?: string | null
           stop_loss?: number | null
           take_profit?: number | null
           updated_at?: string | null
@@ -499,12 +675,21 @@ export type Database = {
           profit_loss?: number | null
           result?: string | null
           screenshot_url?: string | null
+          setup_id?: string | null
           stop_loss?: number | null
           take_profit?: number | null
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "trades_setup_id_fkey"
+            columns: ["setup_id"]
+            isOneToOne: false
+            referencedRelation: "setups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
