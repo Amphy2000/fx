@@ -1,4 +1,4 @@
-import { LayoutDashboard, MessageSquare, Calendar, Settings, TrendingUp, LogOut, Target, Calculator, CreditCard, Trophy, GraduationCap, Plug, Heart, ClipboardCheck, Lightbulb, BarChart3, Flame } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Calendar, Settings, TrendingUp, LogOut, Target, Calculator, CreditCard, Trophy, GraduationCap, Plug, Heart, ClipboardCheck, Lightbulb, BarChart3, Flame, Award } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,6 +58,10 @@ const performanceNavItems = [{
   title: "Streaks",
   url: "/streaks",
   icon: Flame
+}, {
+  title: "Achievements",
+  url: "/achievements",
+  icon: Award
 }, {
   title: "Advanced Analytics",
   url: "/analytics/advanced",

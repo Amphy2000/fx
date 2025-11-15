@@ -125,20 +125,33 @@ const Integrations = () => {
     setUploading(true);
     
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Please sign in to upload files");
+        return;
+      }
 
       const formData = new FormData();
       formData.append("file", file);
 
-      const { data, error } = await supabase.functions.invoke("import-mt5-trades", {
-        body: formData
-      });
+      // Use direct fetch for FormData uploads
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-mt5-trades`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: formData
+        }
+      );
 
-      if (error) {
-        console.error("Edge function error:", error);
-        throw new Error(error.message || "Failed to process MT5 file. Please check the file format.");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Upload failed with status ${response.status}`);
       }
+
+      const data = await response.json();
 
       if (!data || !data.importedCount) {
         throw new Error("No trades found in the file. Please check the file format.");
