@@ -6,6 +6,7 @@ import TradeForm from "@/components/TradeForm";
 import TradesList from "@/components/TradesList";
 import EmotionalInsights from "@/components/EmotionalInsights";
 import TradingBadges from "@/components/TradingBadges";
+import AchievementProgressTracker from "@/components/AchievementProgressTracker";
 import { ConsentModal } from "@/components/ConsentModal";
 import { CreditsDisplay } from "@/components/CreditsDisplay";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -189,6 +190,9 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Achievement Progress Tracker */}
+            <AchievementProgressTracker trades={trades} />
 
             {/* Emotional Insights */}
             <EmotionalInsights trades={trades} />
