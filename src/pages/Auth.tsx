@@ -32,22 +32,28 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             full_name: fullName,
           },
+          emailRedirectTo: `${window.location.origin}/onboarding`
         },
       });
 
       if (error) throw error;
 
-      // Mark as fresh signup to prevent "Welcome back" toast
-      localStorage.setItem('just_logged_in', 'true');
-      
-      toast.success("Account created successfully! You can now log in.");
+      // If email confirmation is disabled, user is immediately signed in
+      if (data.session) {
+        toast.success("Account created! Let's get you started!");
+        navigate("/onboarding");
+      } else {
+        toast.success("Account created! Please check your email to confirm.", {
+          description: "Once confirmed, you'll be able to sign in."
+        });
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to create account");
     } finally {
@@ -60,20 +66,29 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
 
-      // Mark as fresh login to prevent "Welcome back" toast
-      localStorage.setItem('just_logged_in', 'true');
-      // Mark user as returning for future sessions
-      localStorage.setItem('userLastLogin', new Date().toISOString());
-      
-      toast.success("Logged in successfully!");
-      navigate("/dashboard");
+      // Check if user has completed onboarding
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('onboarding_completed')
+          .eq('id', data.user.id)
+          .single();
+
+        if (profile && !profile.onboarding_completed) {
+          toast.success("Welcome back! Let's continue your onboarding.");
+          navigate("/onboarding");
+        } else {
+          toast.success("Logged in successfully!");
+          navigate("/dashboard");
+        }
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to log in");
     } finally {
