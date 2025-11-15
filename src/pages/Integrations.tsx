@@ -248,8 +248,8 @@ const Integrations = () => {
                   </Button>
                 </div>
 
-                <div className="text-xs text-muted-foreground bg-muted/30 p-3 rounded">
-                  <strong>Note:</strong> Auto-sync is in development. Currently, you can upload trade reports manually below.
+                <div className="text-xs text-muted-foreground bg-primary/10 p-3 rounded border border-primary/20">
+                  <strong>Connected:</strong> Your MT5 account is connected. Upload trade reports below to sync your trading history automatically.
                 </div>
               </div>
             ) : (

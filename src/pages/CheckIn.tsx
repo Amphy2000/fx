@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Brain, Heart, Moon, Target, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
+import { updateStreak, awardAchievement } from "@/utils/streakManager";
 
 const CheckIn = () => {
   const navigate = useNavigate();
@@ -95,6 +96,22 @@ const CheckIn = () => {
         title: "Check-in saved!",
         description: "Your daily mental state has been recorded."
       });
+      
+      // Update streak and award achievement
+      await updateStreak(user.id, 'daily_checkin');
+      
+      // Award 7-day streak achievement
+      const { data: streakData } = await supabase
+        .from('streaks')
+        .select('current_count')
+        .eq('user_id', user.id)
+        .eq('streak_type', 'daily_checkin')
+        .single();
+      
+      if (streakData?.current_count >= 7) {
+        await awardAchievement(user.id, '7 Day Check-In Streak', 'streak');
+      }
+      
       fetchTodayCheckIn();
     }
 

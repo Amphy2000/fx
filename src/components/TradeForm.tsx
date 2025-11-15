@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Plus, Image as ImageIcon, X } from "lucide-react";
+import { updateStreak, checkTradeAchievements } from "@/utils/streakManager";
 
 interface TradeFormProps {
   onTradeAdded: () => void;
@@ -189,6 +190,11 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
       });
       setScreenshots([]);
       setScreenshotPreviews([]);
+      
+      // Update streak and check achievements
+      await updateStreak(user.id, 'trade_journal');
+      await checkTradeAchievements(user.id);
+      
       onTradeAdded();
     } catch (error: any) {
       toast.error(error.message || "Failed to log trade");

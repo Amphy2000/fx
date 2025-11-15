@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar, CheckCircle2, TrendingUp, Target, Plus, X } from "lucide-react";
 import { format } from "date-fns";
+import { updateStreak, awardAchievement } from "@/utils/streakManager";
 
 const Routine = () => {
   const navigate = useNavigate();
@@ -95,6 +96,24 @@ const Routine = () => {
         title: "Routine saved!",
         description: "Your daily trading routine has been recorded."
       });
+      
+      // Update streak if routine is completed
+      if (routineData.trading_rules_checked && routineData.pre_session_ready) {
+        await updateStreak(user.id, 'routine_completion');
+        
+        // Award 7-day streak achievement
+        const { data: streakData } = await supabase
+          .from('streaks')
+          .select('current_count')
+          .eq('user_id', user.id)
+          .eq('streak_type', 'routine_completion')
+          .single();
+        
+        if (streakData?.current_count >= 7) {
+          await awardAchievement(user.id, '7 Day Routine Streak', 'streak');
+        }
+      }
+      
       fetchTodayRoutine();
     }
 

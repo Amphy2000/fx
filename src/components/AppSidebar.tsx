@@ -1,10 +1,11 @@
-import { LayoutDashboard, MessageSquare, Calendar, Settings, Shield, TrendingUp, LogOut, Target, Sun, Moon, Calculator, CreditCard, MessagesSquare, Brain, Trophy, GraduationCap, Plug, Heart, ClipboardCheck, Lightbulb, BarChart3, Flame } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Calendar, Settings, TrendingUp, LogOut, Target, Calculator, CreditCard, Trophy, GraduationCap, Plug, Heart, ClipboardCheck, Lightbulb, BarChart3, Flame } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+
 const generalNavItems = [{
   title: "Dashboard",
   url: "/dashboard",
@@ -14,14 +15,6 @@ const generalNavItems = [{
   url: "/leaderboard",
   icon: Trophy
 }, {
-  title: "Calculators",
-  url: "/calculators",
-  icon: Calculator
-}, {
-  title: "Targets",
-  url: "/targets",
-  icon: Target
-}, {
   title: "Trade Calendar",
   url: "/trade-calendar",
   icon: Calendar
@@ -29,10 +22,6 @@ const generalNavItems = [{
   title: "Weekly Summary",
   url: "/weekly-summary",
   icon: TrendingUp
-}, {
-  title: "Pricing",
-  url: "/pricing",
-  icon: CreditCard
 }, {
   title: "Integrations",
   url: "/integrations",
@@ -42,22 +31,19 @@ const generalNavItems = [{
   url: "/settings",
   icon: Settings
 }];
+
 const aiNavItems = [{
   title: "AI Chat",
   url: "/ai-chat",
   icon: MessageSquare
 }, {
-  title: "AI Copilot",
-  url: "/trade-copilot",
-  icon: Brain
-}, {
-  title: "AI Trade Coach",
+  title: "AI Coach",
   url: "/ai-coach",
   icon: GraduationCap
 }];
 
 const performanceNavItems = [{
-  title: "Daily Check-In",
+  title: "Check-In",
   url: "/check-in",
   icon: Heart
 }, {
@@ -69,13 +55,27 @@ const performanceNavItems = [{
   url: "/setups",
   icon: Lightbulb
 }, {
-  title: "Advanced Analytics",
-  url: "/analytics/advanced",
-  icon: BarChart3
-}, {
   title: "Streaks",
   url: "/streaks",
   icon: Flame
+}, {
+  title: "Advanced Analytics",
+  url: "/analytics/advanced",
+  icon: BarChart3
+}];
+
+const toolsNavItems = [{
+  title: "Calculators",
+  url: "/calculators",
+  icon: Calculator
+}, {
+  title: "Targets",
+  url: "/targets",
+  icon: Target
+}, {
+  title: "Pricing",
+  url: "/pricing",
+  icon: CreditCard
 }];
 export function AppSidebar() {
   const {
@@ -133,71 +133,65 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/70 text-xs uppercase">Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {/* Dashboard */}
-              {(() => {
-              const item = generalNavItems[0];
-              return <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive(item.url)} className="transition-smooth hover:bg-sidebar-primary/10 data-[active=true]:bg-sidebar-primary/20 data-[active=true]:text-sidebar-primary" onClick={handleNavClick}>
-                      <NavLink to={item.url}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>;
-            })()}
+              {generalNavItems.map(item => <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} onClick={handleNavClick}>
+                    <NavLink to={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
-              {/* AI Tools */}
+        <SidebarGroup>
+          <SidebarGroupLabel>AI Features</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
               {aiNavItems.map(item => <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} className="transition-smooth hover:bg-sidebar-primary/10 data-[active=true]:bg-sidebar-primary/20 data-[active=true]:text-sidebar-primary" onClick={handleNavClick}>
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} onClick={handleNavClick}>
                     <NavLink to={item.url}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
-              {/* Performance OS */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Performance</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
               {performanceNavItems.map(item => <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} className="transition-smooth hover:bg-sidebar-primary/10 data-[active=true]:bg-sidebar-primary/20 data-[active=true]:text-sidebar-primary" onClick={handleNavClick}>
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} onClick={handleNavClick}>
                     <NavLink to={item.url}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
-              {/* Other Navigation Items */}
-              {generalNavItems.slice(1).map(item => <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} className="transition-smooth hover:bg-sidebar-primary/10 data-[active=true]:bg-sidebar-primary/20 data-[active=true]:text-sidebar-primary" onClick={handleNavClick}>
+        <SidebarGroup>
+          <SidebarGroupLabel>Tools</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {toolsNavItems.map(item => <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} onClick={handleNavClick}>
                     <NavLink to={item.url}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>)}
-
-              {/* Admin Items */}
-              {isAdmin && <>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={isActive("/admin")} className="transition-smooth hover:bg-sidebar-primary/10 data-[active=true]:bg-sidebar-primary/20 data-[active=true]:text-sidebar-primary" onClick={handleNavClick}>
-                      <NavLink to="/admin">
-                        <Shield className="h-4 w-4" />
-                        <span>Admin</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={isActive("/feedback")} className="transition-smooth hover:bg-sidebar-primary/10 data-[active=true]:bg-sidebar-primary/20 data-[active=true]:text-sidebar-primary" onClick={handleNavClick}>
-                      <NavLink to="/feedback">
-                        <MessagesSquare className="h-4 w-4" />
-                        <span>User Feedback</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </>}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

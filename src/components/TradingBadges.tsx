@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Award, Brain, TrendingUp } from "lucide-react";
+import { Award } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Trade {
   emotion_before: string | null;
@@ -14,7 +16,35 @@ interface TradingBadgesProps {
   longestStreak?: number;
 }
 
+interface Achievement {
+  id: string;
+  achievement_name: string;
+  achievement_type: string;
+  earned_at: string;
+}
+
 const TradingBadges = ({ trades, currentStreak, longestStreak }: TradingBadgesProps) => {
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+
+  useEffect(() => {
+    fetchAchievements();
+  }, [trades.length]);
+
+  const fetchAchievements = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from('achievements')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('earned_at', { ascending: false });
+
+    if (data) {
+      setAchievements(data);
+    }
+  };
+
   const badges = [];
 
   // Streak Badges
@@ -46,75 +76,28 @@ const TradingBadges = ({ trades, currentStreak, longestStreak }: TradingBadgesPr
     });
   }
 
-  // Zen Trader: 5 calm trades in a row
-  let consecutiveCalm = 0;
-  let maxConsecutiveCalm = 0;
-  const sortedTrades = [...trades].sort((a, b) => 
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
+  // Add achievements from database
+  achievements.forEach(achievement => {
+    const achievementIcons: { [key: string]: string } = {
+      'First Trade': '🎯',
+      '10 Trades': '📊',
+      '50 Trades': '💪',
+      '100 Trades': '🏆',
+      '70% Win Rate': '⭐',
+      '80% Win Rate': '🌟',
+      '7 Day Check-In Streak': '❤️',
+      '7 Day Routine Streak': '✅',
+    };
 
-  sortedTrades.forEach(trade => {
-    if (trade.emotion_before === 'calm' || trade.emotion_before === 'confident') {
-      consecutiveCalm++;
-      maxConsecutiveCalm = Math.max(maxConsecutiveCalm, consecutiveCalm);
-    } else {
-      consecutiveCalm = 0;
-    }
+    badges.push({
+      id: achievement.id,
+      icon: achievementIcons[achievement.achievement_name] || '🎖️',
+      title: achievement.achievement_name,
+      description: `Earned ${new Date(achievement.earned_at).toLocaleDateString()}`,
+      color: achievement.achievement_type === 'performance' ? 'text-green-500' : 
+             achievement.achievement_type === 'streak' ? 'text-blue-500' : 'text-primary',
+    });
   });
-
-  if (maxConsecutiveCalm >= 5) {
-    badges.push({
-      id: 'zen-trader',
-      icon: '🧘',
-      title: 'Zen Trader',
-      description: `${maxConsecutiveCalm} calm trades in a row`,
-      color: 'text-green-500',
-    });
-  }
-
-  // Emotionally Aware: 10+ emotional entries
-  const emotionalTrades = trades.filter(t => t.emotion_before || t.emotion_before);
-  if (emotionalTrades.length >= 10) {
-    badges.push({
-      id: 'emotionally-aware',
-      icon: '🧠',
-      title: 'Emotionally Aware',
-      description: `${emotionalTrades.length} emotional entries logged`,
-      color: 'text-primary',
-    });
-  }
-
-  // Self-Control Master: No impatient/anxious trades for 2 weeks
-  const twoWeeksAgo = new Date();
-  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-  const recentTrades = trades.filter(t => new Date(t.created_at) >= twoWeeksAgo);
-  const hasNegativeEmotions = recentTrades.some(t => 
-    t.emotion_before === 'anxious' || t.emotion_before === 'impatient'
-  );
-
-  if (recentTrades.length >= 5 && !hasNegativeEmotions) {
-    badges.push({
-      id: 'self-control',
-      icon: '💎',
-      title: 'Self-Control Master',
-      description: '2 weeks of disciplined trading',
-      color: 'text-blue-500',
-    });
-  }
-
-  // Consistent Performer: 70%+ win rate with 10+ trades
-  const wins = trades.filter(t => t.result === 'win').length;
-  const winRate = trades.length > 0 ? (wins / trades.length) * 100 : 0;
-  
-  if (trades.length >= 10 && winRate >= 70) {
-    badges.push({
-      id: 'consistent-performer',
-      icon: '🏆',
-      title: 'Consistent Performer',
-      description: `${Math.round(winRate)}% win rate over ${trades.length} trades`,
-      color: 'text-primary',
-    });
-  }
 
   if (badges.length === 0) {
     return null;
