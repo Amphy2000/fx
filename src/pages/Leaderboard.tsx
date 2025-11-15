@@ -75,12 +75,23 @@ export default function Leaderboard() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Fetch current profile or user's data
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', user.id)
+        .single();
+
+      const displayName = profile?.full_name || profile?.email || 'Anonymous Trader';
+
       const { error } = await supabase
         .from('leaderboard_profiles')
         .upsert({
           user_id: user.id,
           is_public: checked,
-          display_name: userProfile?.display_name || 'Anonymous Trader'
+          display_name: displayName
+        }, {
+          onConflict: 'user_id'
         });
 
       if (error) throw error;
@@ -88,8 +99,10 @@ export default function Leaderboard() {
       setIsPublic(checked);
       toast.success(checked ? "Profile is now public!" : "Profile is now private");
       
+      // Refresh both profiles
+      await fetchUserProfile();
       if (checked) {
-        fetchLeaderboard();
+        await fetchLeaderboard();
       }
     } catch (error) {
       console.error('Error updating profile:', error);
