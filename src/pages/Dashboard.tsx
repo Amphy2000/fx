@@ -46,6 +46,25 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Check if user needs onboarding
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      if (!user) return;
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('onboarding_completed')
+        .eq('id', user.id)
+        .single();
+
+      if (profile && !profile.onboarding_completed) {
+        navigate("/onboarding");
+      }
+    };
+    
+    checkOnboarding();
+  }, [user, navigate]);
+
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")

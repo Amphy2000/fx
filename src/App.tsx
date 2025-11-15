@@ -27,6 +27,7 @@ import Routine from "./pages/Routine";
 import Setups from "./pages/Setups";
 import AdvancedAnalytics from "./pages/AdvancedAnalytics";
 import Streaks from "./pages/Streaks";
+import Onboarding from "./pages/Onboarding";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="/setups" element={<Setups />} />
             <Route path="/analytics/advanced" element={<AdvancedAnalytics />} />
             <Route path="/streaks" element={<Streaks />} />
+            <Route path="/onboarding" element={<Onboarding />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

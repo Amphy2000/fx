@@ -109,6 +109,28 @@ const Settings = () => {
     }
   };
 
+  const restartOnboarding = async () => {
+    if (!profile) return;
+    
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ 
+          onboarding_completed: false,
+          onboarding_step: 0
+        })
+        .eq("id", profile.id);
+
+      if (error) throw error;
+      
+      toast.success("Restarting onboarding...");
+      navigate("/onboarding");
+    } catch (error) {
+      console.error("Error restarting onboarding:", error);
+      toast.error("Failed to restart onboarding");
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -207,6 +229,19 @@ const Settings = () => {
                 <Label className="text-muted-foreground">Total Trades</Label>
                 <p className="text-foreground">{profile?.trades_count || 0}</p>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Onboarding */}
+          <Card className="border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground">Onboarding</CardTitle>
+              <CardDescription>Review the app's key features</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={restartOnboarding} variant="outline" className="w-full">
+                Restart Onboarding Tour
+              </Button>
             </CardContent>
           </Card>
         </div>
