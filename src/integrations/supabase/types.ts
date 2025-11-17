@@ -502,6 +502,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          last_credit_check: string | null
           last_trade_date: string | null
           longest_streak: number | null
           monthly_trade_limit: number | null
@@ -526,6 +527,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          last_credit_check?: string | null
           last_trade_date?: string | null
           longest_streak?: number | null
           monthly_trade_limit?: number | null
@@ -550,6 +552,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          last_credit_check?: string | null
           last_trade_date?: string | null
           longest_streak?: number | null
           monthly_trade_limit?: number | null
@@ -1145,6 +1148,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_and_reset_limits: {
+        Args: { user_id_param: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
