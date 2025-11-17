@@ -134,24 +134,36 @@ const Integrations = () => {
       const formData = new FormData();
       formData.append("file", file);
 
-      // Use direct fetch for FormData uploads
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-mt5-trades`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: formData
-        }
-      );
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-mt5-trades`;
+      const makeReq = (token: string) => fetch(url, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Upload failed with status ${response.status}`);
+      let resp = await makeReq(session.access_token);
+
+      if (resp.status === 401) {
+        // Try to refresh the session once and retry
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        const newToken = refreshData?.session?.access_token;
+        if (newToken && !refreshError) {
+          resp = await makeReq(newToken);
+        }
       }
 
-      const data = await response.json();
+      if (!resp.ok) {
+        const errorText = await resp.text().catch(() => '');
+        let errorMsg = `Upload failed with status ${resp.status}`;
+        try {
+          const parsed = JSON.parse(errorText);
+          if (parsed?.error) errorMsg = parsed.error;
+        } catch {}
+        if (resp.status === 401) errorMsg = 'Your session has expired. Please sign in again.';
+        throw new Error(errorMsg);
+      }
+
+      const data = await resp.json();
 
       if (!data || !data.importedCount) {
         throw new Error("No trades found in the file. Please check the file format.");
