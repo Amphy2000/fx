@@ -33,6 +33,13 @@ serve(async (req) => {
 
     for (const profile of profiles || []) {
       try {
+        // Check if user has MT5 accounts
+        const { data: mt5Accounts } = await supabaseClient
+          .from('mt5_accounts')
+          .select('id, account_name, broker_name')
+          .eq('user_id', profile.id)
+          .eq('is_active', true);
+
         const { data: trades, error: tradesError } = await supabaseClient
           .from('trades')
           .select('*')
@@ -51,22 +58,28 @@ serve(async (req) => {
         const winRate = (wins / trades.length * 100).toFixed(1);
         const totalPnL = trades.reduce((sum, t) => sum + (t.profit_loss || 0), 0);
         const avgR = trades.reduce((sum, t) => sum + (t.r_multiple || 0), 0) / trades.length;
+        
+        const hasMT5 = mt5Accounts && mt5Accounts.length > 0;
+        const emotionTracked = trades.filter(t => t.emotion_before || t.emotion_after).length;
 
         const aiPrompt = `Analyze today's trading performance:
 
+${hasMT5 ? `MT5 Integration: Trades auto-synced from ${mt5Accounts.map(a => a.broker_name).join(', ')}` : 'Manual Trade Journal'}
 Trades: ${trades.length}
 Win Rate: ${winRate}%
 P/L: $${totalPnL.toFixed(2)}
 Avg R: ${avgR.toFixed(2)}
+Emotions Tracked: ${emotionTracked}/${trades.length} trades
 
 Trades:
-${trades.map(t => `${t.pair} ${t.direction}: $${t.profit_loss?.toFixed(2)}`).join('\n')}
+${trades.map(t => `${t.pair} ${t.direction}: $${t.profit_loss?.toFixed(2)} ${t.emotion_before ? `(${t.emotion_before})` : ''}`).join('\n')}
 
 Provide:
 1. Quick performance summary
 2. Top 2 things done well
 3. Top 2 areas to improve tomorrow
 4. One specific action for tomorrow
+${hasMT5 && emotionTracked < trades.length / 2 ? '\n5. Remind to track emotions for better insights' : ''}
 
 Be brief and actionable.`;
 

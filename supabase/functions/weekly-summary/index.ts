@@ -65,6 +65,13 @@ serve(async (req) => {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+    // Check if user has MT5 accounts
+    const { data: mt5Accounts } = await supabaseClient
+      .from('mt5_accounts')
+      .select('id, account_name, broker_name')
+      .eq('user_id', user.id)
+      .eq('is_active', true);
+
     const { data: trades, error } = await supabaseClient
       .from('trades')
       .select('*')
@@ -83,8 +90,11 @@ serve(async (req) => {
     }
 
     if (!trades || trades.length === 0) {
+      const hasMT5 = mt5Accounts && mt5Accounts.length > 0;
       return new Response(JSON.stringify({ 
-        summary: "No trades recorded this week. Start logging your trades to get AI insights!",
+        summary: hasMT5 
+          ? "No trades synced from your MT5 account this week. Make sure auto-sync is enabled in Integrations."
+          : "No trades recorded this week. Connect your MT5 account or manually log trades to get AI insights!",
         stats: {
           totalTrades: 0,
           winRate: 0,

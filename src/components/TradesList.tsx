@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Trash2, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, Filter, Image as ImageIcon } from "lucide-react";
+import { Trash2, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, Filter, Image as ImageIcon, Brain } from "lucide-react";
 import { formatDistance, format } from "date-fns";
 import { TradeInsightBadge } from "@/components/TradeInsightBadge";
+import { EmotionTrackingModal } from "./EmotionTrackingModal";
 
 interface TradesListProps {
   trades: any[];
@@ -26,6 +27,8 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
   const [tradeInsights, setTradeInsights] = useState<Record<string, any>>({});
   const [selectedInsight, setSelectedInsight] = useState<any>(null);
   const [showInsightModal, setShowInsightModal] = useState(false);
+  const [emotionModalOpen, setEmotionModalOpen] = useState(false);
+  const [selectedTradeForEmotion, setSelectedTradeForEmotion] = useState<any>(null);
   
   const itemsPerPage = 10;
   const handleDelete = async (tradeId: string) => {
