@@ -134,10 +134,12 @@ export default function Onboarding() {
       const today = new Date().toISOString().split('T')[0];
       const { error } = await supabase
         .from('daily_checkins')
-        .insert({
+        .upsert({
           user_id: userId,
           check_in_date: today,
           ...checkInData
+        }, {
+          onConflict: 'user_id,check_in_date'
         });
 
       if (error) throw error;
@@ -176,6 +178,13 @@ export default function Onboarding() {
     const next = currentStep + 1;
     setCurrentStep(next);
     updateOnboardingStep(next);
+  };
+
+  const skipStep = () => {
+    const next = currentStep + 1;
+    setCurrentStep(next);
+    updateOnboardingStep(next);
+    toast.info("Step skipped");
   };
 
   const progress = ((currentStep + 1) / 5) * 100;
@@ -222,8 +231,11 @@ export default function Onboarding() {
             </div>
           </div>
 
-          <div className="pt-4">
-            <Button onClick={nextStep} size="lg" className="w-full">
+          <div className="pt-4 flex gap-3">
+            <Button onClick={skipStep} variant="outline" size="lg" className="flex-1">
+              Skip
+            </Button>
+            <Button onClick={nextStep} size="lg" className="flex-1">
               Get Started
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -259,10 +271,15 @@ export default function Onboarding() {
                 <h3 className="text-xl font-semibold text-foreground mb-2">Trade Logged Successfully!</h3>
                 <p className="text-muted-foreground">You're building great trading habits already</p>
               </div>
-              <Button onClick={nextStep} size="lg">
-                Continue
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+              <div className="flex gap-3">
+                <Button onClick={skipStep} variant="outline" size="lg" className="flex-1">
+                  Skip
+                </Button>
+                <Button onClick={nextStep} size="lg" className="flex-1">
+                  Continue
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
@@ -361,10 +378,15 @@ export default function Onboarding() {
                 <h3 className="text-xl font-semibold text-foreground mb-2">Check-In Complete!</h3>
                 <p className="text-muted-foreground">Great! Daily check-ins will help you spot patterns over time</p>
               </div>
-              <Button onClick={nextStep} size="lg">
-                Continue
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+              <div className="flex gap-3">
+                <Button onClick={skipStep} variant="outline" size="lg" className="flex-1">
+                  Skip
+                </Button>
+                <Button onClick={nextStep} size="lg" className="flex-1">
+                  Continue
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
@@ -509,7 +531,7 @@ export default function Onboarding() {
       {/* Skip button */}
       <div className="absolute top-4 right-4 z-10">
         <Button onClick={skipOnboarding} variant="ghost" size="sm">
-          Skip
+          Skip All
           <X className="ml-2 h-4 w-4" />
         </Button>
       </div>
