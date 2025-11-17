@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.81.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,27 +17,36 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      throw new Error('No authorization header');
+      return new Response(JSON.stringify({ error: 'No authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
-    // Get user from auth header
-    const token = authHeader.replace('Bearer ', '');
-    const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const user = await userResponse.json();
-    if (!user?.id) throw new Error('Unauthorized');
-
-    // Check credits
-    const profileResponse = await fetch(
-      `${supabaseUrl}/rest/v1/profiles?id=eq.${user.id}&select=ai_credits`,
-      { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
     );
-    const profiles = await profileResponse.json();
-    const profile = profiles[0];
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    // Check credits using Supabase client
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('ai_credits')
+      .eq('id', user.id)
+      .single();
+    
+    const profile = profiles;
     
     if (!profile || profile.ai_credits < VOICE_PARSE_COST) {
       return new Response(JSON.stringify({ error: 'Insufficient credits' }), {
@@ -108,22 +118,17 @@ serve(async (req) => {
       tradeData = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
     }
 
-    // Deduct credit
-    await fetch(
-      `${supabaseUrl}/rest/v1/profiles?id=eq.${user.id}`,
-      {
-        method: 'PATCH',
-        headers: {
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({
-          ai_credits: profile.ai_credits - VOICE_PARSE_COST
-        })
-      }
+    // Deduct credit using service role client
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      supabaseServiceKey,
+      { auth: { persistSession: false } }
     );
+    
+    await supabaseAdmin
+      .from('profiles')
+      .update({ ai_credits: profile.ai_credits - VOICE_PARSE_COST })
+      .eq('id', user.id);
 
     return new Response(
       JSON.stringify({ 

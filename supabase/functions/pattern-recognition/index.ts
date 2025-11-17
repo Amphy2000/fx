@@ -7,6 +7,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const PATTERN_ANALYSIS_COST = 3;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
@@ -30,6 +32,20 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
         status: 401 
+      });
+    }
+
+    // Check credits
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('ai_credits')
+      .eq('id', user.id)
+      .single();
+    
+    if (!profile || profile.ai_credits < PATTERN_ANALYSIS_COST) {
+      return new Response(JSON.stringify({ error: 'Insufficient credits' }), {
+        status: 402,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
@@ -158,7 +174,22 @@ Format as JSON:
     // Sort by confidence and win rate
     patterns.sort((a, b) => (b.confidence * b.winRate) - (a.confidence * a.winRate));
 
-    return new Response(JSON.stringify({ patterns: patterns.slice(0, 10) }), {
+    // Deduct credits using service role
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false } }
+    );
+    
+    await supabaseAdmin
+      .from('profiles')
+      .update({ ai_credits: profile.ai_credits - PATTERN_ANALYSIS_COST })
+      .eq('id', user.id);
+
+    return new Response(JSON.stringify({ 
+      patterns: patterns.slice(0, 10),
+      creditsRemaining: profile.ai_credits - PATTERN_ANALYSIS_COST 
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
