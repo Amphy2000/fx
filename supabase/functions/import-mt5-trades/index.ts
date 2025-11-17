@@ -56,9 +56,17 @@ serve(async (req) => {
 
     console.log('import-mt5-trades: File received:', file.name, 'Size:', file.size);
 
-    const fileContent = await file.text();
+    // Decode with proper encoding (handles UTF-16 LE/BE MT5 exports)
+    const buf = new Uint8Array(await file.arrayBuffer());
+    let encoding: 'utf-8' | 'utf-16le' | 'utf-16be' = 'utf-8';
+    if (buf.length >= 2) {
+      if (buf[0] === 0xFF && buf[1] === 0xFE) encoding = 'utf-16le';
+      else if (buf[0] === 0xFE && buf[1] === 0xFF) encoding = 'utf-16be';
+    }
+    let fileContent = new TextDecoder(encoding).decode(buf).replace(/\u0000/g, '');
     const fileName = file.name.toLowerCase();
     
+    console.log('import-mt5-trades: Detected encoding:', encoding);
     console.log('import-mt5-trades: File content length:', fileContent.length);
     
     let trades: any[] = [];
