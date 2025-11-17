@@ -139,58 +139,95 @@ serve(async (req) => {
 
 function parseCSV(content: string): any[] {
   try {
-    const lines = content.split('\n').filter(line => line.trim());
+    // Normalize newlines and strip BOM
+    const raw = content.replace(/\r\n/g, "\n").replace(/^\uFEFF/, "");
+    const lines = raw.split("\n").filter(line => line.trim());
     console.log('parseCSV: Total lines:', lines.length);
-    
-    if (lines.length < 2) {
-      console.log('parseCSV: Not enough lines');
-      return [];
-    }
+    if (lines.length < 2) return [];
 
-    // Try different delimiters (comma, semicolon, tab)
+    // Determine best delimiter based on first 5 lines
     const delimiters = [',', ';', '\t'];
-    let bestDelimiter = ',';
-    let maxColumns = 0;
-
-    for (const delimiter of delimiters) {
-      const columnCount = lines[0].split(delimiter).length;
-      if (columnCount > maxColumns) {
-        maxColumns = columnCount;
-        bestDelimiter = delimiter;
+    const pickDelimiter = () => {
+      let best = ','; let bestScore = 0;
+      for (const d of delimiters) {
+        let total = 0; let count = 0;
+        for (let i = 0; i < Math.min(5, lines.length); i++) {
+          const line = lines[i];
+          const parts = d === '\t' ? line.split('\t') : splitCSVLine(line, d);
+          total += parts.length; count++;
+        }
+        const avg = total / Math.max(count, 1);
+        if (avg > bestScore) { bestScore = avg; best = d; }
       }
-    }
+      return best;
+    };
 
-    console.log('parseCSV: Using delimiter:', bestDelimiter === '\t' ? 'TAB' : bestDelimiter);
+    const delimiter = pickDelimiter();
+    console.log('parseCSV: Using delimiter:', delimiter === '\t' ? 'TAB' : delimiter);
 
-    const headers = lines[0].split(bestDelimiter).map(h => h.trim().toLowerCase());
+    const normalizeHeader = (h: string) => h.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    const headerParts = delimiter === '\t' ? lines[0].split('\t') : splitCSVLine(lines[0], delimiter);
+    const headers = headerParts.map(normalizeHeader);
     console.log('parseCSV: Headers:', headers);
-    
+
+    const getNum = (s: string): number => {
+      if (!s) return 0;
+      let x = ('' + s).replace(/\s/g, '');
+      // Remove currency symbols and letters
+      x = x.replace(/[^0-9.,\-]/g, '');
+      const hasComma = x.includes(',');
+      const hasDot = x.includes('.');
+      if (hasComma && hasDot) {
+        // Assume dot as thousand sep and comma as decimal
+        x = x.replace(/\./g, '').replace(/,/g, '.');
+      } else if (hasComma && !hasDot) {
+        x = x.replace(/,/g, '.');
+      }
+      const n = parseFloat(x);
+      return Number.isFinite(n) ? n : 0;
+    };
+
+    const symbolKeys = ['symbol','pair','currency','instrument','market','ticker','symbol_name','asset'];
+    const dirKeys = ['type','action','cmd','order_type','side'];
+    const openKeys = ['price','open','entry','open_price','open_price_','open_time_price'];
+    const closeKeys = ['close','exit','close_price','close_price_'];
+    const slKeys = ['sl','stop_loss','s_l'];
+    const tpKeys = ['tp','take_profit','t_p'];
+    const profitKeys = ['profit','pnl','pl','net_profit','result'];
+    const timeKeys = ['time','open_time','open_date','date'];
+
     const trades: any[] = [];
 
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(bestDelimiter).map(v => v.trim());
-      const trade: any = {};
+      const parts = delimiter === '\t' ? lines[i].split('\t') : splitCSVLine(lines[i], delimiter);
+      if (!parts.length) continue;
+      const row: Record<string,string> = {};
+      headers.forEach((h, idx) => { row[h] = (parts[idx] ?? '').trim().replace(/^"|"$/g, ''); });
 
-      headers.forEach((header, index) => {
-        trade[header] = values[index] || '';
-      });
+      const pick = (keys: string[]) => keys.map(k => row[k]).find(v => v && v.length > 0) || '';
 
-      // Map CSV columns to our schema - handle various MT5 export formats
-      const symbol = trade.symbol || trade.pair || trade.currency || trade.instrument || '';
-      
-      if (symbol && symbol.length >= 6) {
-        const cleanSymbol = symbol.replace(/[^A-Z]/gi, '').toUpperCase();
-        
+      const rawSymbol = pick(symbolKeys);
+      const cleanSymbol = (rawSymbol || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      const direction = detectDirection(pick(dirKeys));
+      const entry = getNum(pick(openKeys));
+      const exit = getNum(pick(closeKeys));
+      const sl = getNum(pick(slKeys));
+      const tp = getNum(pick(tpKeys));
+      const profit = getNum(pick(profitKeys));
+      const when = pick(timeKeys) || new Date().toISOString();
+
+      // Accept symbols with >=3 chars (to include indices like US30)
+      if (cleanSymbol && cleanSymbol.length >= 3 && direction && entry > 0) {
         trades.push({
-          pair: cleanSymbol.substring(0, 6), // Take first 6 characters (e.g., EURUSD)
-          direction: detectDirection(trade.type || trade.action || trade.cmd || trade.order_type || ''),
-          entry_price: parseFloat(trade.price || trade.open || trade.entry || trade.open_price || '0') || 0,
-          exit_price: parseFloat(trade.close || trade.exit || trade.close_price || '0') || 0,
-          stop_loss: parseFloat(trade.sl || trade.stop_loss || trade.s_l || '0') || 0,
-          take_profit: parseFloat(trade.tp || trade.take_profit || trade.t_p || '0') || 0,
-          result: detectResult(trade.profit || trade.pnl || trade.pl || trade.result || '0'),
-          profit_loss: parseFloat(trade.profit || trade.pnl || trade.pl || '0') || 0,
-          open_time: trade.time || trade.open_time || trade.date || new Date().toISOString()
+          pair: cleanSymbol,
+          direction,
+          entry_price: entry,
+          exit_price: exit || null,
+          stop_loss: sl || null,
+          take_profit: tp || null,
+          result: detectResult(profit),
+          profit_loss: profit || null,
+          open_time: when
         });
       }
     }
@@ -203,38 +240,86 @@ function parseCSV(content: string): any[] {
   }
 }
 
+// Split a CSV line by delimiter, ignoring delimiters inside quotes
+function splitCSVLine(line: string, delimiter: string): string[] {
+  const esc = delimiter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`${esc}(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)`);
+  return line.split(regex);
+}
+
 function parseHTML(content: string): any[] {
-  // Basic HTML table parsing for MT5 reports
   const trades: any[] = [];
-  
-  // Extract table rows (simplified parsing)
-  const rowMatches = content.match(/<tr[^>]*>.*?<\/tr>/gis);
-  if (!rowMatches) return trades;
+  if (!content) return trades;
 
-  for (const row of rowMatches.slice(1)) { // Skip header row
-    const cellMatches = row.match(/<td[^>]*>(.*?)<\/td>/gis);
-    if (!cellMatches || cellMatches.length < 5) continue;
+  // Normalize content
+  const html = content.replace(/\r\n/g, '\n');
 
-    const cells = cellMatches.map(cell => 
-      cell.replace(/<[^>]*>/g, '').trim()
-    );
+  // Try to detect header row (th)
+  const headerMatch = html.match(/<tr[^>]*>\s*([\s\S]*?)<\/tr>/i);
+  let headers: string[] = [];
+  if (headerMatch) {
+    const ths = headerMatch[1].match(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi) || [];
+    headers = ths.map((h) => h.replace(/<[^>]*>/g, '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_'));
+  }
 
-    // Attempt to parse trade data from cells
-    if (cells.length >= 8) {
-      const pair = cells[1].replace(/[^A-Z]/g, '');
-      if (pair.length >= 6) {
-        trades.push({
-          pair: pair,
-          direction: detectDirection(cells[2]),
-          entry_price: parseFloat(cells[3]) || 0,
-          exit_price: parseFloat(cells[4]) || 0,
-          stop_loss: parseFloat(cells[5]) || 0,
-          take_profit: parseFloat(cells[6]) || 0,
-          result: detectResult(cells[7]),
-          profit_loss: parseFloat(cells[7]) || 0,
-          open_time: cells[0] || new Date().toISOString()
-        });
-      }
+  const rows = html.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) || [];
+  if (rows.length <= 1) return trades;
+
+  const pickIdx = (obj: string[], idx: number) => (idx >= 0 && idx < obj.length ? obj[idx] : '');
+  const getNum = (s: string) => {
+    let x = (s || '').replace(/\s/g, '');
+    x = x.replace(/[^0-9.,\-]/g, '');
+    if (x.includes(',') && x.includes('.')) x = x.replace(/\./g, '').replace(/,/g, '.');
+    else if (x.includes(',') && !x.includes('.')) x = x.replace(/,/g, '.');
+    const n = parseFloat(x);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const findByHeader = (rowVals: string[], name: string[]): string => {
+    if (!headers.length) return '';
+    for (const key of name) {
+      const idx = headers.indexOf(key);
+      if (idx !== -1) return pickIdx(rowVals, idx);
+    }
+    return '';
+  };
+
+  const symbolKeys = ['symbol','pair','currency','instrument','market','ticker','symbol_name','asset'];
+  const dirKeys = ['type','action','cmd','order_type','side'];
+  const openKeys = ['price','open','entry','open_price'];
+  const closeKeys = ['close','exit','close_price'];
+  const slKeys = ['sl','stop_loss','s_l'];
+  const tpKeys = ['tp','take_profit','t_p'];
+  const profitKeys = ['profit','pnl','pl','net_profit','result'];
+  const timeKeys = ['time','open_time','open_date','date'];
+
+  for (let r = 1; r < rows.length; r++) {
+    const cells = (rows[r].match(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi) || [])
+      .map(c => c.replace(/<[^>]*>/g, '').trim());
+    if (!cells.length) continue;
+
+    const rawSymbol = headers.length ? findByHeader(cells, symbolKeys) : pickIdx(cells, 1);
+    const cleanSymbol = (rawSymbol || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    const direction = detectDirection(headers.length ? findByHeader(cells, dirKeys) : pickIdx(cells, 2));
+    const entry = getNum(headers.length ? findByHeader(cells, openKeys) : pickIdx(cells, 3));
+    const exit = getNum(headers.length ? findByHeader(cells, closeKeys) : pickIdx(cells, 4));
+    const sl = getNum(headers.length ? findByHeader(cells, slKeys) : pickIdx(cells, 5));
+    const tp = getNum(headers.length ? findByHeader(cells, tpKeys) : pickIdx(cells, 6));
+    const profit = getNum(headers.length ? findByHeader(cells, profitKeys) : pickIdx(cells, 7));
+    const when = headers.length ? findByHeader(cells, timeKeys) : pickIdx(cells, 0);
+
+    if (cleanSymbol && cleanSymbol.length >= 3 && direction && entry > 0) {
+      trades.push({
+        pair: cleanSymbol,
+        direction,
+        entry_price: entry,
+        exit_price: exit || null,
+        stop_loss: sl || null,
+        take_profit: tp || null,
+        result: detectResult(profit),
+        profit_loss: profit || null,
+        open_time: when || new Date().toISOString(),
+      });
     }
   }
 
