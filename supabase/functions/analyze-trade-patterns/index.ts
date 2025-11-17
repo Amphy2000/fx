@@ -66,19 +66,42 @@ serve(async (req) => {
       });
     }
 
-    // Fetch trades to analyze
-    console.log('analyze-trade-patterns: Fetching trades for user');
-    const { data: trades, error: tradesError } = await supabase
-      .from('trades')
-      .select('*')
-      .in('id', tradeIds)
-      .eq('user_id', user.id);
+    // Fetch trades to analyze (chunked to avoid URL length limits)
+    console.log('analyze-trade-patterns: Fetching trades for user in chunks');
 
-    if (tradesError) {
-      console.error('analyze-trade-patterns: trades query error', tradesError);
-      throw tradesError;
+    const chunk = <T,>(arr: T[], size: number) => {
+      const out: T[][] = [];
+      for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+      return out;
+    };
+
+    const idChunks = chunk(tradeIds, 100);
+    const tradesCombined: any[] = [];
+
+    for (const [idx, idChunk] of idChunks.entries()) {
+      console.log(`analyze-trade-patterns: fetching chunk ${idx + 1}/${idChunks.length} (size ${idChunk.length})`);
+      const { data: t, error: te } = await supabase
+        .from('trades')
+        .select('*')
+        .in('id', idChunk)
+        .eq('user_id', user.id);
+      if (te) {
+        console.error('analyze-trade-patterns: trades chunk query error', te);
+        throw te;
+      }
+      if (t?.length) tradesCombined.push(...t);
     }
-    console.log('analyze-trade-patterns: trades fetched:', trades?.length || 0);
+
+    console.log('analyze-trade-patterns: total trades fetched:', tradesCombined.length);
+
+    if (tradesCombined.length === 0) {
+      return new Response(JSON.stringify({ error: 'No trades found' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 404
+      });
+    }
+
+    const trades = tradesCombined;
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     if (!lovableApiKey) {
