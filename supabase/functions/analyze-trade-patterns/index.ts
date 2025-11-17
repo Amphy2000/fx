@@ -44,7 +44,20 @@ serve(async (req) => {
 
     console.log('analyze-trade-patterns: User authenticated:', user.id);
 
-    const { tradeIds } = await req.json();
+    console.log('analyze-trade-patterns: Parsing request body...');
+    let tradeIds: string[] = [];
+    try {
+      const body = await req.json();
+      tradeIds = body?.tradeIds ?? [];
+    } catch (e) {
+      console.error('analyze-trade-patterns: Failed to parse JSON body', e);
+      return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400
+      });
+    }
+    
+    console.log('analyze-trade-patterns: tradeIds received:', Array.isArray(tradeIds) ? tradeIds.length : 'invalid');
     
     if (!tradeIds || !Array.isArray(tradeIds) || tradeIds.length === 0) {
       return new Response(JSON.stringify({ error: 'No trade IDs provided' }), {
@@ -54,19 +67,18 @@ serve(async (req) => {
     }
 
     // Fetch trades to analyze
+    console.log('analyze-trade-patterns: Fetching trades for user');
     const { data: trades, error: tradesError } = await supabase
       .from('trades')
       .select('*')
       .in('id', tradeIds)
       .eq('user_id', user.id);
 
-    if (tradesError) throw tradesError;
-    if (!trades || trades.length === 0) {
-      return new Response(JSON.stringify({ error: 'No trades found' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 404
-      });
+    if (tradesError) {
+      console.error('analyze-trade-patterns: trades query error', tradesError);
+      throw tradesError;
     }
+    console.log('analyze-trade-patterns: trades fetched:', trades?.length || 0);
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     if (!lovableApiKey) {
