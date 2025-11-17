@@ -100,8 +100,8 @@ const Navbar = () => {
     label: "Settings",
     icon: Settings
   }];
-  return <nav className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between py-0">
+  return <nav className="flex-1 flex items-center justify-between">
+      <div className="flex items-center justify-between w-full">
         <Link to="/" className="flex items-center gap-2 font-bold text-xl">
           <TrendingUp className="h-6 w-6 text-primary" />
           <span>Amphy AI</span>
@@ -137,7 +137,6 @@ const Navbar = () => {
               </Button>
             </>}
         </div>
-      </div>
-    </nav>;
+      </div>;
 };
 export default Navbar;
