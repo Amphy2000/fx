@@ -258,7 +258,7 @@ const Dashboard = () => {
     }
   };
   return <Layout>
-      <div className="space-y-6 p-4 md:p-0 py-[2px]">
+      <div className="space-y-6 p-4 md:p-0 py-0 px-[30px] mx-0">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">Trading Dashboard</h1>
