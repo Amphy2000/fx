@@ -135,7 +135,7 @@ export function AppSidebar() {
     }
   };
   const isActive = (path: string) => location.pathname === path;
-  return <Sidebar collapsible="offcanvas" className="border-r border-sidebar-border bg-sidebar">
+  return <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center gap-2">
           <TrendingUp className="h-6 w-6 text-sidebar-primary" />
