@@ -19,8 +19,8 @@ export const ModernBarChart = ({ data, title = "Monthly Performance" }: ModernBa
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={data}>
+        <ResponsiveContainer width="100%" height={180}>
+          <BarChart data={data} barSize={30}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
             <XAxis 
               dataKey="month" 
