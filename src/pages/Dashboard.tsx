@@ -22,7 +22,6 @@ import { toast } from "@/hooks/use-toast";
 import { DailyChallengeCard } from "@/components/DailyChallengeCard";
 import { TradingScoreCard } from "@/components/TradingScoreCard";
 import { MilestoneNotification } from "@/components/MilestoneNotification";
-
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
@@ -39,11 +38,14 @@ const Dashboard = () => {
     totalPnL: 0,
     avgRMultiple: 0,
     bestTrade: 0,
-    worstTrade: 0,
+    worstTrade: 0
   });
-
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({
+      data: {
+        session
+      }
+    }) => {
       if (!session) {
         navigate("/auth");
         return;
@@ -53,30 +55,36 @@ const Dashboard = () => {
       fetchTrades(session.user.id);
       fetchMT5Accounts(session.user.id);
     });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) navigate("/auth");
-      else setUser(session.user);
+    const {
+      data: {
+        subscription
+      }
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) navigate("/auth");else setUser(session.user);
     });
-
     return () => subscription.unsubscribe();
   }, [navigate]);
-
   const fetchProfile = async (userId: string) => {
-    const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
+    const {
+      data
+    } = await supabase.from("profiles").select("*").eq("id", userId).single();
     if (data) {
       setProfile(data);
       if (data.data_collection_consent === null) setShowConsentModal(true);
     }
   };
-
   const fetchMT5Accounts = async (userId: string) => {
-    const { data } = await supabase.from("mt5_accounts").select("*").eq("user_id", userId).eq("is_active", true);
+    const {
+      data
+    } = await supabase.from("mt5_accounts").select("*").eq("user_id", userId).eq("is_active", true);
     if (data) setMt5Accounts(data);
   };
-
   const fetchTrades = async (userId: string) => {
-    const { data } = await supabase.from("trades").select("*").eq("user_id", userId).order("created_at", { ascending: false });
+    const {
+      data
+    } = await supabase.from("trades").select("*").eq("user_id", userId).order("created_at", {
+      ascending: false
+    });
     if (data) {
       setTrades(data);
       const wins = data.filter(t => t.result === "win").length;
@@ -84,40 +92,46 @@ const Dashboard = () => {
       const totalPnL = data.reduce((sum, t) => sum + (t.profit_loss || 0), 0);
       const totalWin = data.filter(t => t.result === "win").reduce((sum, t) => sum + (t.profit_loss || 0), 0);
       const totalLoss = Math.abs(data.filter(t => t.result === "loss").reduce((sum, t) => sum + (t.profit_loss || 0), 0));
-      
       setStats({
         totalTrades: data.length,
         wins,
         losses,
-        winRate: data.length > 0 ? Math.round((wins / data.length) * 100) : 0,
+        winRate: data.length > 0 ? Math.round(wins / data.length * 100) : 0,
         profitFactor: totalLoss > 0 ? Number((totalWin / totalLoss).toFixed(2)) : 0,
         totalPnL: Number(totalPnL.toFixed(2)),
         avgRMultiple: Number((data.reduce((sum, t) => sum + (t.r_multiple || 0), 0) / (data.length || 1)).toFixed(2)),
         bestTrade: Number(Math.max(...data.map(t => t.profit_loss || 0), 0).toFixed(2)),
-        worstTrade: Number(Math.min(...data.map(t => t.profit_loss || 0), 0).toFixed(2)),
+        worstTrade: Number(Math.min(...data.map(t => t.profit_loss || 0), 0).toFixed(2))
       });
     }
   };
-
   const handleTradeAdded = () => {
     if (user) {
       fetchTrades(user.id);
       fetchProfile(user.id);
     }
   };
-
   const getMonthlyData = () => {
-    const monthlyStats: Record<string, { pnl: number; trades: number }> = {};
+    const monthlyStats: Record<string, {
+      pnl: number;
+      trades: number;
+    }> = {};
     trades.forEach(trade => {
-      const month = new Date(trade.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      const month = new Date(trade.created_at).toLocaleDateString('en-US', {
+        month: 'short',
+        year: 'numeric'
+      });
       if (!monthlyStats[month]) {
-        monthlyStats[month] = { pnl: 0, trades: 0 };
+        monthlyStats[month] = {
+          pnl: 0,
+          trades: 0
+        };
       }
       monthlyStats[month].pnl += trade.profit_loss || 0;
       monthlyStats[month].trades += 1;
     });
-    return Object.entries(monthlyStats).map(([month, stats]) => ({ 
-      month, 
+    return Object.entries(monthlyStats).map(([month, stats]) => ({
+      month,
       pnl: Number(stats.pnl.toFixed(2)),
       trades: stats.trades
     })).slice(-6);
@@ -126,33 +140,29 @@ const Dashboard = () => {
   // Real-time equity curve updates
   useEffect(() => {
     if (!user) return;
-
-    const channel = supabase
-      .channel('trades-realtime')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'trades',
-        filter: `user_id=eq.${user.id}`
-      }, () => {
-        fetchTrades(user.id);
-      })
-      .subscribe();
-
+    const channel = supabase.channel('trades-realtime').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'trades',
+      filter: `user_id=eq.${user.id}`
+    }, () => {
+      fetchTrades(user.id);
+    }).subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
   }, [user]);
-
   const handleExportPDF = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('export-pdf', {
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('export-pdf', {
         body: {
           startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
           endDate: new Date().toISOString()
         }
       });
-
       if (error) throw error;
 
       // Create a temporary container to render the HTML
@@ -171,29 +181,35 @@ const Dashboard = () => {
 
       // Use html2pdf to convert HTML to PDF
       const html2pdf = (await import('html2pdf.js')).default;
-      
       const opt = {
         margin: [10, 10, 10, 10] as [number, number, number, number],
         filename: data.fileName,
-        image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { 
-          scale: 2, 
+        image: {
+          type: 'jpeg' as const,
+          quality: 0.98
+        },
+        html2canvas: {
+          scale: 2,
           backgroundColor: '#ffffff',
           useCORS: true,
           logging: false
         },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        jsPDF: {
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'portrait' as const
+        },
+        pagebreak: {
+          mode: ['avoid-all', 'css', 'legacy']
+        }
       };
-
       await html2pdf().set(opt).from(container).save();
-      
+
       // Clean up
       document.body.removeChild(container);
-
       toast({
         title: "Export Successful",
-        description: "Your trading report has been downloaded.",
+        description: "Your trading report has been downloaded."
       });
     } catch (error) {
       console.error('Export error:', error);
@@ -204,31 +220,33 @@ const Dashboard = () => {
       });
     }
   };
-
   const handleExportCSV = async (type: 'trades' | 'analytics') => {
     try {
-      const { data, error } = await supabase.functions.invoke('export-csv', {
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('export-csv', {
         body: {
           type,
           startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
           endDate: new Date().toISOString()
         }
       });
-
       if (error) throw error;
 
       // Create blob and download
-      const blob = new Blob([data.csv], { type: 'text/csv' });
+      const blob = new Blob([data.csv], {
+        type: 'text/csv'
+      });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = data.fileName;
       a.click();
       window.URL.revokeObjectURL(url);
-
       toast({
         title: "Export Successful",
-        description: `${type === 'trades' ? 'Trades' : 'Analytics'} data has been downloaded.`,
+        description: `${type === 'trades' ? 'Trades' : 'Analytics'} data has been downloaded.`
       });
     } catch (error) {
       console.error('Export error:', error);
@@ -239,10 +257,8 @@ const Dashboard = () => {
       });
     }
   };
-
-  return (
-    <Layout>
-      <div className="space-y-6 p-4 md:p-0">
+  return <Layout>
+      <div className="space-y-6 p-4 md:p-0 py-0">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">Trading Dashboard</h1>
@@ -382,21 +398,13 @@ const Dashboard = () => {
         </Tabs>
       </div>
 
-      {user && (
-        <>
-          <ConsentModal 
-            open={showConsentModal} 
-            onClose={() => {
-              setShowConsentModal(false);
-              fetchProfile(user.id);
-            }} 
-            userId={user.id}
-          />
+      {user && <>
+          <ConsentModal open={showConsentModal} onClose={() => {
+        setShowConsentModal(false);
+        fetchProfile(user.id);
+      }} userId={user.id} />
           <MilestoneNotification trades={trades} />
-        </>
-      )}
-    </Layout>
-  );
+        </>}
+    </Layout>;
 };
-
 export default Dashboard;
