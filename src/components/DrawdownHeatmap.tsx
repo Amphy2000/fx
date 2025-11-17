@@ -1,28 +1,48 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useMemo } from "react";
 
-interface DailyDrawdown {
-  date: string;
-  drawdown: number;
-  trades: number;
-}
-
 interface DrawdownHeatmapProps {
-  data: DailyDrawdown[];
-  onDayClick?: (date: string) => void;
+  trades: any[];
 }
 
-export const DrawdownHeatmap = ({ data, onDayClick }: DrawdownHeatmapProps) => {
+export const DrawdownHeatmap = ({ trades }: DrawdownHeatmapProps) => {
+  const data = useMemo(() => {
+    const dailyDrawdown: Record<string, { drawdown: number; trades: number }> = {};
+    let cumulativePnL = 0;
+    let peak = 0;
+    
+    trades.forEach(trade => {
+      if (trade.profit_loss) {
+        cumulativePnL += trade.profit_loss;
+        peak = Math.max(peak, cumulativePnL);
+        const drawdown = peak - cumulativePnL;
+        const date = new Date(trade.created_at).toISOString().split('T')[0];
+        
+        if (!dailyDrawdown[date]) {
+          dailyDrawdown[date] = { drawdown: 0, trades: 0 };
+        }
+        dailyDrawdown[date].drawdown = Math.max(dailyDrawdown[date].drawdown, drawdown);
+        dailyDrawdown[date].trades += 1;
+      }
+    });
+    
+    return Object.entries(dailyDrawdown).map(([date, stats]) => ({
+      date,
+      drawdown: -stats.drawdown,
+      trades: stats.trades
+    }));
+  }, [trades]);
+
   const months = useMemo(() => {
-    const monthMap = new Map<string, DailyDrawdown[]>();
+    const monthMap = new Map<string, any[]>();
     data.forEach(day => {
-      const monthKey = day.date.substring(0, 7); // YYYY-MM
+      const monthKey = day.date.substring(0, 7);
       if (!monthMap.has(monthKey)) {
         monthMap.set(monthKey, []);
       }
       monthMap.get(monthKey)!.push(day);
     });
-    return Array.from(monthMap.entries()).slice(-6); // Last 6 months
+    return Array.from(monthMap.entries()).slice(-6);
   }, [data]);
 
   const getColor = (drawdown: number) => {
@@ -49,7 +69,6 @@ export const DrawdownHeatmap = ({ data, onDayClick }: DrawdownHeatmapProps) => {
                 {days.map(day => (
                   <div
                     key={day.date}
-                    onClick={() => onDayClick?.(day.date)}
                     className="aspect-square rounded cursor-pointer hover:ring-2 hover:ring-primary transition-all"
                     style={{ backgroundColor: getColor(day.drawdown) }}
                     title={`${day.date}: ${day.drawdown.toFixed(2)}% (${day.trades} trades)`}
