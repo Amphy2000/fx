@@ -38,3 +38,6 @@ verify_jwt = true
 
 [functions.analyze-trade-patterns]
 verify_jwt = true
+
+[functions.admin-upgrade-user]
+verify_jwt = true
