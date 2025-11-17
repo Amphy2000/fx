@@ -19,26 +19,30 @@ export const ModernBarChart = ({ data, title = "Monthly Performance" }: ModernBa
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={200}>
           <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
             <XAxis 
               dataKey="month" 
-              stroke="hsl(var(--muted-foreground))"
-              fontSize={12}
+              stroke="hsl(var(--foreground))"
+              fontSize={11}
+              tick={{ fill: 'hsl(var(--foreground))' }}
             />
             <YAxis 
-              stroke="hsl(var(--muted-foreground))"
-              fontSize={12}
+              stroke="hsl(var(--foreground))"
+              fontSize={11}
+              tick={{ fill: 'hsl(var(--foreground))' }}
               tickFormatter={(value) => `$${value}`}
             />
             <Tooltip 
               contentStyle={{
-                backgroundColor: 'hsl(var(--background))',
+                backgroundColor: 'hsl(var(--popover))',
                 border: '1px solid hsl(var(--border))',
                 borderRadius: '8px',
+                color: 'hsl(var(--popover-foreground))',
               }}
               formatter={(value: number) => [`$${value.toFixed(2)}`, 'P/L']}
+              labelStyle={{ color: 'hsl(var(--popover-foreground))' }}
             />
             <Bar dataKey="pnl" radius={[8, 8, 0, 0]}>
               {data.map((entry, index) => (
