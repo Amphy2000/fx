@@ -291,18 +291,28 @@ const Dashboard = () => {
 
           <Card className="bg-gradient-to-br from-green-500/10 border-green-500/20">
             <CardContent className="p-4">
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground uppercase">Best</p>
-                <p className="text-xl md:text-2xl font-bold text-green-600 truncate">+${stats.bestTrade.toLocaleString()}</p>
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-muted-foreground uppercase">Best</p>
+                  <p className="text-xl md:text-2xl font-bold text-green-600 truncate">
+                    +${stats.bestTrade.toLocaleString()}
+                  </p>
+                </div>
+                <Target className="h-6 w-6 md:h-8 md:w-8 text-green-600 opacity-50 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-red-500/10 border-red-500/20">
             <CardContent className="p-4">
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground uppercase">Worst</p>
-                <p className="text-xl md:text-2xl font-bold text-red-600 truncate">${stats.worstTrade.toLocaleString()}</p>
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-muted-foreground uppercase">Worst</p>
+                  <p className="text-xl md:text-2xl font-bold text-red-600 truncate">
+                    ${stats.worstTrade.toLocaleString()}
+                  </p>
+                </div>
+                <TrendingDown className="h-6 w-6 md:h-8 md:w-8 text-red-600 opacity-50 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
