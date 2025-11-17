@@ -11,6 +11,10 @@ import { ConsentModal } from "@/components/ConsentModal";
 import { CreditsDisplay } from "@/components/CreditsDisplay";
 import { PerformanceMetrics } from "@/components/PerformanceMetrics";
 import { EquityCurve } from "@/components/EquityCurve";
+import { ModernBarChart } from "@/components/ModernBarChart";
+import { DrawdownHeatmap } from "@/components/DrawdownHeatmap";
+import { SessionAnalytics } from "@/components/SessionAnalytics";
+import { SetupPerformanceAnalyzer } from "@/components/SetupPerformanceAnalyzer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, TrendingDown, Target, FileText, BarChart3, LineChart } from "lucide-react";
@@ -119,6 +123,86 @@ const Dashboard = () => {
     }
   };
 
+  // Calculate analytics data
+  const monthlyData = trades.reduce((acc, trade) => {
+    const month = new Date(trade.created_at || '').toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+    const existing = acc.find(m => m.month === month);
+    if (existing) {
+      existing.pnl += trade.profit_loss || 0;
+      existing.trades += 1;
+    } else {
+      acc.push({ month, pnl: trade.profit_loss || 0, trades: 1 });
+    }
+    return acc;
+  }, [] as { month: string; pnl: number; trades: number }[]);
+
+  const drawdownData = trades.map(trade => ({
+    date: new Date(trade.created_at || '').toISOString().split('T')[0],
+    drawdown: (trade.profit_loss || 0) < 0 ? (trade.profit_loss || 0) / 100 : 0,
+    trades: 1,
+  }));
+
+  const sessionData = ['London', 'New York', 'Asian'].map(session => {
+    const sessionTrades = trades.filter(t => t.session === session);
+    const wins = sessionTrades.filter(t => t.result === 'win').length;
+    const totalPnL = sessionTrades.reduce((sum, t) => sum + (t.profit_loss || 0), 0);
+    const avgR = sessionTrades.length > 0 
+      ? sessionTrades.reduce((sum, t) => sum + (t.r_multiple || 0), 0) / sessionTrades.length 
+      : 0;
+    const totalWins = sessionTrades.filter(t => (t.profit_loss || 0) > 0).reduce((s, t) => s + (t.profit_loss || 0), 0);
+    const totalLosses = Math.abs(sessionTrades.filter(t => (t.profit_loss || 0) < 0).reduce((s, t) => s + (t.profit_loss || 0), 0));
+    
+    return {
+      session,
+      winRate: sessionTrades.length > 0 ? (wins / sessionTrades.length) * 100 : 0,
+      avgR,
+      profitFactor: totalLosses > 0 ? totalWins / totalLosses : 0,
+      trades: sessionTrades.length,
+      pnl: totalPnL,
+    };
+  });
+
+  const setupData = trades.reduce((acc, trade) => {
+    const setupName = trade.setup_id || 'No Setup';
+    const existing = acc.find((s: any) => s.setupName === setupName);
+    const isWin = trade.result === 'win';
+    
+    if (existing) {
+      existing.totalTrades += 1;
+      existing.totalPnL += trade.profit_loss || 0;
+      if (isWin) existing.wins += 1;
+      existing.totalR += trade.r_multiple || 0;
+    } else {
+      acc.push({
+        setupName,
+        totalTrades: 1,
+        wins: isWin ? 1 : 0,
+        totalPnL: trade.profit_loss || 0,
+        totalR: trade.r_multiple || 0,
+        winRate: 0,
+        profitFactor: 0,
+        avgR: 0,
+        expectancy: 0,
+      });
+    }
+    return acc;
+  }, [] as any[]).map((setup: any) => {
+    const winRate = (setup.wins / setup.totalTrades) * 100;
+    const avgR = setup.totalR / setup.totalTrades;
+    const wins = trades.filter(t => (t.setup_id || 'No Setup') === setup.setupName && (t.profit_loss || 0) > 0);
+    const losses = trades.filter(t => (t.setup_id || 'No Setup') === setup.setupName && (t.profit_loss || 0) < 0);
+    const totalWins = wins.reduce((s, t) => s + (t.profit_loss || 0), 0);
+    const totalLosses = Math.abs(losses.reduce((s, t) => s + (t.profit_loss || 0), 0));
+    
+    return {
+      ...setup,
+      winRate,
+      avgR,
+      profitFactor: totalLosses > 0 ? totalWins / totalLosses : 0,
+      expectancy: avgR,
+    };
+  });
+
   if (!user) {
     return null;
   }
@@ -126,33 +210,41 @@ const Dashboard = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-            <div className="mb-8">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-3xl font-bold mb-2">Welcome back, {profile?.full_name || "Trader"}!</h1>
-                  <p className="text-muted-foreground">Track your trades and improve your performance</p>
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Welcome back, {profile?.full_name || "Trader"}!</h1>
+              <p className="text-muted-foreground">Track your trades and improve your performance</p>
+            </div>
+            {profile && (
+              <div className="text-right">
+                <div className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-semibold">
+                  {profile.subscription_tier === 'lifetime' ? '👑 Lifetime' : 
+                   profile.subscription_tier === 'pro' ? '⚡ Pro' : '🆓 Free'}
                 </div>
-                {profile && (
-                  <div className="text-right">
-                    <div className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-semibold">
-                      {profile.subscription_tier === 'lifetime' ? '👑 Lifetime' : 
-                       profile.subscription_tier === 'pro' ? '⚡ Pro' : '🆓 Free'}
-                    </div>
-                    {profile.subscription_tier === 'free' && profile.monthly_trade_limit && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {profile.trades_count || 0}/{profile.monthly_trade_limit} trades this month
-                      </p>
-                    )}
-                  </div>
+                {profile.subscription_tier === 'free' && profile.monthly_trade_limit && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {profile.trades_count || 0}/{profile.monthly_trade_limit} trades this month
+                  </p>
                 )}
               </div>
-            </div>
+            )}
+          </div>
+        </div>
 
-            {/* Credits Display */}
-            <CreditsDisplay />
+        <CreditsDisplay />
 
+        <Tabs defaultValue="overview" className="mt-6">
+          <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="trades">Trades</TabsTrigger>
+            <TabsTrigger value="insights">Insights</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6 mt-6">
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 my-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="border-border/50">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Trades</CardTitle>
@@ -194,21 +286,25 @@ const Dashboard = () => {
               </Card>
             </div>
 
-            {/* Achievement Progress Tracker */}
+            <PerformanceMetrics userId={user?.id} />
+            <EquityCurve userId={user?.id} />
             <AchievementProgressTracker trades={trades} />
-
-            {/* Emotional Insights */}
             <EmotionalInsights trades={trades} />
-
-            {/* Trading Badges */}
             <TradingBadges 
               trades={trades}
               currentStreak={profile?.current_streak}
               longestStreak={profile?.longest_streak}
             />
+          </TabsContent>
 
-            {/* Trade Form & List */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+          <TabsContent value="analytics" className="space-y-6 mt-6">
+            <ModernBarChart data={monthlyData} />
+            <DrawdownHeatmap data={drawdownData} />
+            <SessionAnalytics data={sessionData} />
+          </TabsContent>
+
+          <TabsContent value="trades" className="mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-1">
                 <TradeForm onTradeAdded={handleTradeAdded} />
               </div>
@@ -216,7 +312,13 @@ const Dashboard = () => {
               <div className="lg:col-span-2">
                 <TradesList trades={trades} onTradeDeleted={handleTradeAdded} />
               </div>
-        </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="insights" className="space-y-6 mt-6">
+            <SetupPerformanceAnalyzer data={setupData} />
+          </TabsContent>
+        </Tabs>
       </div>
 
       <ConsentModal 
