@@ -234,6 +234,93 @@ export type Database = {
         }
         Relationships: []
       }
+      journal_entries: {
+        Row: {
+          created_at: string
+          energy_level: number | null
+          entry_date: string
+          goals_for_session: string | null
+          id: string
+          lessons_learned: string | null
+          market_conditions: string | null
+          mood: string
+          notes: string | null
+          tags: string[] | null
+          trading_mindset: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          energy_level?: number | null
+          entry_date?: string
+          goals_for_session?: string | null
+          id?: string
+          lessons_learned?: string | null
+          market_conditions?: string | null
+          mood: string
+          notes?: string | null
+          tags?: string[] | null
+          trading_mindset?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          energy_level?: number | null
+          entry_date?: string
+          goals_for_session?: string | null
+          id?: string
+          lessons_learned?: string | null
+          market_conditions?: string | null
+          mood?: string
+          notes?: string | null
+          tags?: string[] | null
+          trading_mindset?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      journal_insights: {
+        Row: {
+          analysis_period_end: string
+          analysis_period_start: string
+          confidence_score: number | null
+          created_at: string
+          emotional_patterns: Json | null
+          id: string
+          key_insights: string[] | null
+          performance_correlation: Json | null
+          recommendations: string[] | null
+          user_id: string
+        }
+        Insert: {
+          analysis_period_end: string
+          analysis_period_start: string
+          confidence_score?: number | null
+          created_at?: string
+          emotional_patterns?: Json | null
+          id?: string
+          key_insights?: string[] | null
+          performance_correlation?: Json | null
+          recommendations?: string[] | null
+          user_id: string
+        }
+        Update: {
+          analysis_period_end?: string
+          analysis_period_start?: string
+          confidence_score?: number | null
+          created_at?: string
+          emotional_patterns?: Json | null
+          id?: string
+          key_insights?: string[] | null
+          performance_correlation?: Json | null
+          recommendations?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       leaderboard_profiles: {
         Row: {
           best_pair: string | null
