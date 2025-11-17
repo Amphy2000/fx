@@ -158,20 +158,32 @@ const Dashboard = () => {
       // Create a temporary container to render the HTML
       const container = document.createElement('div');
       container.innerHTML = data.html;
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
       container.style.padding = '20px';
       container.style.backgroundColor = 'white';
       container.style.color = 'black';
+      container.style.width = '210mm'; // A4 width
       document.body.appendChild(container);
+
+      // Wait for fonts and images to load
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Use html2pdf to convert HTML to PDF
       const html2pdf = (await import('html2pdf.js')).default;
       
       const opt = {
-        margin: 10,
+        margin: [10, 10, 10, 10] as [number, number, number, number],
         filename: data.fileName,
         image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2, backgroundColor: '#ffffff' },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
+        html2canvas: { 
+          scale: 2, 
+          backgroundColor: '#ffffff',
+          useCORS: true,
+          logging: false
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
       await html2pdf().set(opt).from(container).save();

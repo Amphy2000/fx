@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Brain, GraduationCap, Loader2, TrendingUp } from "lucide-react";
+import { Brain, GraduationCap, Loader2, TrendingUp, Sparkles } from "lucide-react";
 import { CreditsDisplay } from "@/components/CreditsDisplay";
 import { Badge } from "@/components/ui/badge";
 
@@ -83,6 +83,10 @@ export default function AICoach() {
             <p className="text-muted-foreground mt-2">
               Your weekly mentorship: personalized insights, patterns, and a focused improvement task.
             </p>
+            <Badge variant="outline" className="gap-1 bg-primary/10 text-primary border-primary/20 mt-2">
+              <Sparkles className="h-3 w-3" />
+              5 credits per report
+            </Badge>
           </div>
           <Badge variant="default" className="text-lg px-4 py-2">
             <TrendingUp className="h-4 w-4 mr-2" />

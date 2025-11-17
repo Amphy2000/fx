@@ -72,6 +72,10 @@ const AIJournal = () => {
           <p className="text-muted-foreground">
             Automatically generated daily insights based on your trading activity
           </p>
+          <Badge variant="outline" className="gap-1 bg-primary/10 text-primary border-primary/20 mt-2">
+            <Brain className="h-3 w-3" />
+            2 credits per daily summary
+          </Badge>
         </div>
 
         {loading ? (

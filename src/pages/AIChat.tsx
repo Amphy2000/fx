@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreditsGuard } from "@/components/CreditsGuard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Bot, User } from "lucide-react";
+import { Send, Bot, User, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 interface Message {
   role: "user" | "assistant";
@@ -66,13 +67,21 @@ const AIChat = () => {
       <div className="container mx-auto px-4 py-8">
         <Card className="max-w-4xl mx-auto border-border/50">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bot className="h-5 w-5 text-primary" />
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Bot className="h-5 w-5 text-primary" />
               AI Trading Assistant
             </CardTitle>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground mt-1">
               Ask me about your trading performance, patterns, or get personalized advice
             </p>
+              </div>
+              <Badge variant="outline" className="gap-1 bg-primary/10 text-primary border-primary/20">
+                <Sparkles className="h-3 w-3" />
+                1 credit per message
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4 mb-4 min-h-[400px] max-h-[500px] overflow-y-auto">
