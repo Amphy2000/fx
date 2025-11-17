@@ -133,7 +133,8 @@ RECOMMENDATIONS: [One specific actionable recommendation]`;
         });
 
         if (!aiResp.ok) {
-          console.error(`AI analysis failed for trade ${trade.id}:`, aiResp.status);
+          const errorText = await aiResp.text();
+          console.error(`AI analysis failed for trade ${trade.id}:`, aiResp.status, errorText);
           continue;
         }
 
@@ -195,8 +196,13 @@ RECOMMENDATIONS: [One specific actionable recommendation]`;
 
   } catch (error) {
     console.error('analyze-trade-patterns error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorDetails = error instanceof Error ? error.stack : JSON.stringify(error);
+    console.error('Error details:', errorDetails);
+    
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+      error: errorMessage,
+      details: errorDetails
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
