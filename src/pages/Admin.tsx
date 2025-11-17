@@ -124,29 +124,22 @@ const Admin = () => {
 
   const handleUpdateSubscription = async (userId: string, tier: string) => {
     try {
-      const expiresAt = tier === 'lifetime' 
-        ? null 
-        : tier === 'monthly' 
-          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() 
-          : null;
+      console.log(`Admin upgrading user ${userId} to ${tier}`);
 
-      const { error } = await supabase
-        .from("profiles")
-        .update({ 
-          subscription_tier: tier,
-          subscription_status: 'active',
-          subscription_expires_at: expiresAt,
-          monthly_trade_limit: tier === 'free' ? 10 : null
-        })
-        .eq("id", userId);
+      const { data, error } = await supabase.functions.invoke('admin-upgrade-user', {
+        body: {
+          userId,
+          tier
+        }
+      });
 
       if (error) throw error;
 
-      toast.success(`Subscription updated to ${tier}`);
+      toast.success(`User upgraded to ${tier} successfully!`);
       await fetchAdminData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating subscription:", error);
-      toast.error("Failed to update subscription");
+      toast.error(error.message || "Failed to update subscription");
     }
   };
 

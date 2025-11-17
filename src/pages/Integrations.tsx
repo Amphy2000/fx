@@ -14,6 +14,8 @@ import { Separator } from "@/components/ui/separator";
 import { MT5AccountCard } from "@/components/MT5AccountCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+import { MT5IntegrationCard } from "@/components/MT5IntegrationCard";
+
 const Integrations = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -258,143 +260,7 @@ const Integrations = () => {
         </div>
 
         {/* MT5 Auto-Sync Section */}
-        <Card className="border-border mb-6">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <TrendingUp className="h-6 w-6 text-primary" />
-              <div>
-                <CardTitle className="text-foreground">MT5 Auto-Sync</CardTitle>
-                <CardDescription>Connect your MetaTrader 5 account for automatic trade synchronization</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {mt5Accounts.length > 0 ? (
-              <div className="space-y-4">
-                {mt5Accounts.map((account) => (
-                  <MT5AccountCard
-                    key={account.id}
-                    account={account}
-                    syncing={syncing}
-                    onSync={async () => {
-                      setSyncing(true);
-                      try {
-                        await supabase.functions.invoke("mt5-sync", {
-                          body: { accountId: account.id }
-                        });
-                        toast.success("Sync started");
-                        await fetchMT5Connection();
-                      } catch (error) {
-                        console.error("Sync error:", error);
-                        toast.error("Sync failed");
-                      } finally {
-                        setSyncing(false);
-                      }
-                    }}
-                    onDisconnect={() => handleDisconnect(account.id)}
-                  />
-                ))}
-
-                {!showAddForm && (
-                  <Button onClick={() => setShowAddForm(true)} variant="outline" className="w-full">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Another Account
-                  </Button>
-                )}
-              </div>
-            ) : showAddForm ? (
-              <form onSubmit={handleConnectMT5} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="accountName">Account Name (Optional)</Label>
-                  <Input
-                    id="accountName"
-                    placeholder="e.g., My Trading Account"
-                    value={formData.accountName}
-                    onChange={(e) => setFormData({ ...formData, accountName: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="brokerName">Broker Name</Label>
-                  <Input
-                    id="brokerName"
-                    placeholder="e.g., XM Global, FXTM, IC Markets"
-                    value={formData.brokerName}
-                    onChange={(e) => setFormData({ ...formData, brokerName: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="serverName">Server Name</Label>
-                  <Input
-                    id="serverName"
-                    placeholder="e.g., XMGlobal-MT5"
-                    value={formData.serverName}
-                    onChange={(e) => setFormData({ ...formData, serverName: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="accountNumber">Account Number</Label>
-                  <Input
-                    id="accountNumber"
-                    placeholder="Your MT5 account number"
-                    value={formData.accountNumber}
-                    onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="accountType">Account Type</Label>
-                  <Select
-                    value={formData.accountType}
-                    onValueChange={(value) => setFormData({ ...formData, accountType: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="live">Live</SelectItem>
-                      <SelectItem value="demo">Demo</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="text-xs text-muted-foreground bg-muted/30 p-3 rounded">
-                  <strong>Note:</strong> Manual import only. Upload your MT5 trade reports below after adding your account.
-                </div>
-
-                <Button type="submit" className="w-full" disabled={connecting}>
-                  {connecting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Connecting...
-                    </>
-                  ) : (
-                    "Connect MT5 Account"
-                  )}
-                </Button>
-
-                {showAddForm && mt5Accounts.length > 0 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => setShowAddForm(false)}
-                    className="w-full"
-                  >
-                    Cancel
-                  </Button>
-                )}
-              </form>
-            ) : (
-              <Button onClick={() => setShowAddForm(true)} className="w-full">
-                Connect MT5 Account
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+        <MT5IntegrationCard />
 
         <Separator className="my-6" />
 

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CreditsGuard } from "@/components/CreditsGuard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, Bot, User } from "lucide-react";
@@ -61,6 +62,7 @@ const AIChat = () => {
 
   return (
     <Layout>
+      <CreditsGuard requiredCredits={1} featureName="AI Chat">
       <div className="container mx-auto px-4 py-8">
         <Card className="max-w-4xl mx-auto border-border/50">
           <CardHeader>
@@ -140,6 +142,7 @@ const AIChat = () => {
           </CardContent>
         </Card>
       </div>
+      </CreditsGuard>
     </Layout>
   );
 };
