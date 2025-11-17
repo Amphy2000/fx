@@ -48,7 +48,7 @@ export function Layout({
             </div>}
           
           {/* Main Content */}
-          <main className="flex-1 mx-[15px] my-[5px]">
+          <main className="flex-1 my-[5px] mx-0">
             {children}
           </main>
           
