@@ -166,6 +166,50 @@ export type Database = {
         }
         Relationships: []
       }
+      equity_snapshots: {
+        Row: {
+          balance: number
+          created_at: string | null
+          equity: number
+          free_margin: number | null
+          id: string
+          margin_used: number | null
+          mt5_account_id: string | null
+          snapshot_time: string
+          user_id: string
+        }
+        Insert: {
+          balance: number
+          created_at?: string | null
+          equity: number
+          free_margin?: number | null
+          id?: string
+          margin_used?: number | null
+          mt5_account_id?: string | null
+          snapshot_time: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string | null
+          equity?: number
+          free_margin?: number | null
+          id?: string
+          margin_used?: number | null
+          mt5_account_id?: string | null
+          snapshot_time?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equity_snapshots_mt5_account_id_fkey"
+            columns: ["mt5_account_id"]
+            isOneToOne: false
+            referencedRelation: "mt5_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feedback: {
         Row: {
           created_at: string
@@ -232,6 +276,72 @@ export type Database = {
         }
         Relationships: []
       }
+      mt5_accounts: {
+        Row: {
+          account_name: string | null
+          account_number: string
+          account_type: string | null
+          api_key_encrypted: string | null
+          api_secret_encrypted: string | null
+          auto_sync_enabled: boolean | null
+          broker_name: string
+          created_at: string | null
+          currency: string | null
+          id: string
+          is_active: boolean | null
+          last_sync_at: string | null
+          last_sync_status: string | null
+          leverage: number | null
+          server_name: string
+          sync_error: string | null
+          sync_interval_minutes: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          account_name?: string | null
+          account_number: string
+          account_type?: string | null
+          api_key_encrypted?: string | null
+          api_secret_encrypted?: string | null
+          auto_sync_enabled?: boolean | null
+          broker_name: string
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          last_sync_status?: string | null
+          leverage?: number | null
+          server_name: string
+          sync_error?: string | null
+          sync_interval_minutes?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          account_name?: string | null
+          account_number?: string
+          account_type?: string | null
+          api_key_encrypted?: string | null
+          api_secret_encrypted?: string | null
+          auto_sync_enabled?: boolean | null
+          broker_name?: string
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          last_sync_status?: string | null
+          leverage?: number | null
+          server_name?: string
+          sync_error?: string | null
+          sync_interval_minutes?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       mt5_connections: {
         Row: {
           account_number: string
@@ -276,6 +386,110 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      performance_metrics: {
+        Row: {
+          average_loss: number | null
+          average_r: number | null
+          average_win: number | null
+          balance: number | null
+          consecutive_losses: number | null
+          consecutive_wins: number | null
+          created_at: string | null
+          daily_pnl: number | null
+          equity: number | null
+          expectancy: number | null
+          free_margin: number | null
+          id: string
+          largest_loss: number | null
+          largest_win: number | null
+          losing_trades: number | null
+          margin: number | null
+          margin_level: number | null
+          max_drawdown: number | null
+          max_drawdown_percent: number | null
+          metric_date: string
+          monthly_pnl: number | null
+          mt5_account_id: string | null
+          profit_factor: number | null
+          sharpe_ratio: number | null
+          total_trades: number | null
+          user_id: string
+          weekly_pnl: number | null
+          win_rate: number | null
+          winning_trades: number | null
+        }
+        Insert: {
+          average_loss?: number | null
+          average_r?: number | null
+          average_win?: number | null
+          balance?: number | null
+          consecutive_losses?: number | null
+          consecutive_wins?: number | null
+          created_at?: string | null
+          daily_pnl?: number | null
+          equity?: number | null
+          expectancy?: number | null
+          free_margin?: number | null
+          id?: string
+          largest_loss?: number | null
+          largest_win?: number | null
+          losing_trades?: number | null
+          margin?: number | null
+          margin_level?: number | null
+          max_drawdown?: number | null
+          max_drawdown_percent?: number | null
+          metric_date: string
+          monthly_pnl?: number | null
+          mt5_account_id?: string | null
+          profit_factor?: number | null
+          sharpe_ratio?: number | null
+          total_trades?: number | null
+          user_id: string
+          weekly_pnl?: number | null
+          win_rate?: number | null
+          winning_trades?: number | null
+        }
+        Update: {
+          average_loss?: number | null
+          average_r?: number | null
+          average_win?: number | null
+          balance?: number | null
+          consecutive_losses?: number | null
+          consecutive_wins?: number | null
+          created_at?: string | null
+          daily_pnl?: number | null
+          equity?: number | null
+          expectancy?: number | null
+          free_margin?: number | null
+          id?: string
+          largest_loss?: number | null
+          largest_win?: number | null
+          losing_trades?: number | null
+          margin?: number | null
+          margin_level?: number | null
+          max_drawdown?: number | null
+          max_drawdown_percent?: number | null
+          metric_date?: string
+          monthly_pnl?: number | null
+          mt5_account_id?: string | null
+          profit_factor?: number | null
+          sharpe_ratio?: number | null
+          total_trades?: number | null
+          user_id?: string
+          weekly_pnl?: number | null
+          win_rate?: number | null
+          winning_trades?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_metrics_mt5_account_id_fkey"
+            columns: ["mt5_account_id"]
+            isOneToOne: false
+            referencedRelation: "mt5_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -391,6 +605,80 @@ export type Database = {
         }
         Relationships: []
       }
+      setup_performance: {
+        Row: {
+          average_loss: number | null
+          average_r: number | null
+          average_win: number | null
+          created_at: string | null
+          id: string
+          losing_trades: number | null
+          max_consecutive_losses: number | null
+          max_consecutive_wins: number | null
+          period_end: string
+          period_start: string
+          profit_factor: number | null
+          setup_id: string | null
+          setup_name: string
+          total_pnl: number | null
+          total_trades: number | null
+          updated_at: string | null
+          user_id: string
+          win_rate: number | null
+          winning_trades: number | null
+        }
+        Insert: {
+          average_loss?: number | null
+          average_r?: number | null
+          average_win?: number | null
+          created_at?: string | null
+          id?: string
+          losing_trades?: number | null
+          max_consecutive_losses?: number | null
+          max_consecutive_wins?: number | null
+          period_end: string
+          period_start: string
+          profit_factor?: number | null
+          setup_id?: string | null
+          setup_name: string
+          total_pnl?: number | null
+          total_trades?: number | null
+          updated_at?: string | null
+          user_id: string
+          win_rate?: number | null
+          winning_trades?: number | null
+        }
+        Update: {
+          average_loss?: number | null
+          average_r?: number | null
+          average_win?: number | null
+          created_at?: string | null
+          id?: string
+          losing_trades?: number | null
+          max_consecutive_losses?: number | null
+          max_consecutive_wins?: number | null
+          period_end?: string
+          period_start?: string
+          profit_factor?: number | null
+          setup_id?: string | null
+          setup_name?: string
+          total_pnl?: number | null
+          total_trades?: number | null
+          updated_at?: string | null
+          user_id?: string
+          win_rate?: number | null
+          winning_trades?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "setup_performance_setup_id_fkey"
+            columns: ["setup_id"]
+            isOneToOne: false
+            referencedRelation: "setups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       setups: {
         Row: {
           created_at: string
@@ -495,6 +783,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      sync_logs: {
+        Row: {
+          completed_at: string | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          mt5_account_id: string
+          started_at: string | null
+          status: string
+          sync_type: string
+          trades_imported: number | null
+          trades_updated: number | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          mt5_account_id: string
+          started_at?: string | null
+          status: string
+          sync_type: string
+          trades_imported?: number | null
+          trades_updated?: number | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          mt5_account_id?: string
+          started_at?: string | null
+          status?: string
+          sync_type?: string
+          trades_imported?: number | null
+          trades_updated?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_logs_mt5_account_id_fkey"
+            columns: ["mt5_account_id"]
+            isOneToOne: false
+            referencedRelation: "mt5_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       targets: {
         Row: {
@@ -629,8 +970,49 @@ export type Database = {
           },
         ]
       }
+      trade_tags: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          id: string
+          tag_name: string
+          tag_type: string
+          trade_id: string
+          user_id: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          tag_name: string
+          tag_type: string
+          trade_id: string
+          user_id: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          tag_name?: string
+          tag_type?: string
+          trade_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_tags_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trades: {
         Row: {
+          close_time: string | null
+          comment: string | null
+          commission: number | null
           created_at: string | null
           direction: string
           emotion_after: string | null
@@ -638,18 +1020,30 @@ export type Database = {
           entry_price: number
           exit_price: number | null
           id: string
+          is_auto_synced: boolean | null
+          magic_number: number | null
+          mt5_account_id: string | null
           notes: string | null
+          open_time: string | null
           pair: string
           profit_loss: number | null
+          r_multiple: number | null
           result: string | null
           screenshot_url: string | null
+          session: string | null
           setup_id: string | null
           stop_loss: number | null
+          swap: number | null
           take_profit: number | null
+          ticket_number: string | null
           updated_at: string | null
           user_id: string
+          volume: number | null
         }
         Insert: {
+          close_time?: string | null
+          comment?: string | null
+          commission?: number | null
           created_at?: string | null
           direction: string
           emotion_after?: string | null
@@ -657,18 +1051,30 @@ export type Database = {
           entry_price: number
           exit_price?: number | null
           id?: string
+          is_auto_synced?: boolean | null
+          magic_number?: number | null
+          mt5_account_id?: string | null
           notes?: string | null
+          open_time?: string | null
           pair: string
           profit_loss?: number | null
+          r_multiple?: number | null
           result?: string | null
           screenshot_url?: string | null
+          session?: string | null
           setup_id?: string | null
           stop_loss?: number | null
+          swap?: number | null
           take_profit?: number | null
+          ticket_number?: string | null
           updated_at?: string | null
           user_id: string
+          volume?: number | null
         }
         Update: {
+          close_time?: string | null
+          comment?: string | null
+          commission?: number | null
           created_at?: string | null
           direction?: string
           emotion_after?: string | null
@@ -676,18 +1082,34 @@ export type Database = {
           entry_price?: number
           exit_price?: number | null
           id?: string
+          is_auto_synced?: boolean | null
+          magic_number?: number | null
+          mt5_account_id?: string | null
           notes?: string | null
+          open_time?: string | null
           pair?: string
           profit_loss?: number | null
+          r_multiple?: number | null
           result?: string | null
           screenshot_url?: string | null
+          session?: string | null
           setup_id?: string | null
           stop_loss?: number | null
+          swap?: number | null
           take_profit?: number | null
+          ticket_number?: string | null
           updated_at?: string | null
           user_id?: string
+          volume?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "trades_mt5_account_id_fkey"
+            columns: ["mt5_account_id"]
+            isOneToOne: false
+            referencedRelation: "mt5_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "trades_setup_id_fkey"
             columns: ["setup_id"]
