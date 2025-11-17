@@ -37,10 +37,6 @@ const aiNavItems = [{
   url: "/ai-chat",
   icon: MessageSquare
 }, {
-  title: "AI Coach",
-  url: "/ai-coach",
-  icon: GraduationCap
-}, {
   title: "AI Journal",
   url: "/ai-journal",
   icon: BookOpen
