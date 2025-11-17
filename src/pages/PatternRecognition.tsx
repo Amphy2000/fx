@@ -7,6 +7,8 @@ import { Target, TrendingUp, AlertTriangle, CheckCircle2, XCircle } from "lucide
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CreditCostBadge } from "@/components/CreditCostBadge";
+import { toast } from "sonner";
 
 interface TradePattern {
   setupName: string;
@@ -44,10 +46,20 @@ const PatternRecognition = () => {
         body: { userId }
       });
 
-      if (error) throw error;
+      if (error) {
+        if ((error as any)?.status === 402) {
+          toast.error("Insufficient credits", {
+            description: "You need 3 credits to analyze patterns. Upgrade to continue.",
+            action: { label: "Upgrade", onClick: () => navigate("/pricing") }
+          });
+          return;
+        }
+        throw error;
+      }
       setPatterns(data.patterns || []);
     } catch (error) {
       console.error('Failed to load patterns:', error);
+      toast.error("Failed to load patterns");
     } finally {
       setLoading(false);
     }
@@ -66,11 +78,14 @@ const PatternRecognition = () => {
   return (
     <Layout>
       <div className="container mx-auto p-4 md:p-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Pattern Recognition</h1>
-          <p className="text-muted-foreground">
-            AI-identified successful trade setups from your historical data
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Pattern Recognition</h1>
+            <p className="text-muted-foreground">
+              AI-identified successful trade setups from your historical data
+            </p>
+          </div>
+          <CreditCostBadge cost={3} />
         </div>
 
         {loading ? (
