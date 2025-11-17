@@ -6,23 +6,32 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Upload, TrendingUp, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
+import { Loader2, Upload, TrendingUp, CheckCircle, AlertCircle, RefreshCw, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { MT5AccountCard } from "@/components/MT5AccountCard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Integrations = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [mt5Connection, setMt5Connection] = useState<any>(null);
+  const [mt5Accounts, setMt5Accounts] = useState<any[]>([]);
   const [connecting, setConnecting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
   
   const [formData, setFormData] = useState({
+    accountName: "",
     brokerName: "",
     serverName: "",
     accountNumber: "",
-    investorPassword: ""
+    accountType: "live",
+    currency: "USD",
+    leverage: "",
+    autoSyncEnabled: true
   });
 
   useEffect(() => {
@@ -48,15 +57,15 @@ const Integrations = () => {
   const fetchMT5Connection = async () => {
     try {
       const { data, error } = await supabase
-        .from("mt5_connections")
+        .from("mt5_accounts")
         .select("*")
         .eq("is_active", true)
-        .maybeSingle();
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setMt5Connection(data);
+      setMt5Accounts(data || []);
     } catch (error) {
-      console.error("Error fetching MT5 connection:", error);
+      console.error("Error fetching MT5 accounts:", error);
     }
   };
 
@@ -68,21 +77,34 @@ const Integrations = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Note: In production, encrypt the password before storing
-      const { error } = await supabase.from("mt5_connections").insert({
+      const { error } = await supabase.from("mt5_accounts").insert({
         user_id: user.id,
+        account_name: formData.accountName || formData.accountNumber,
         broker_name: formData.brokerName,
         server_name: formData.serverName,
         account_number: formData.accountNumber,
-        investor_password_encrypted: formData.investorPassword, // Should be encrypted
-        sync_status: "pending"
+        account_type: formData.accountType,
+        currency: formData.currency,
+        leverage: formData.leverage ? parseInt(formData.leverage) : null,
+        auto_sync_enabled: formData.autoSyncEnabled,
+        last_sync_status: "pending"
       });
 
       if (error) throw error;
 
       toast.success("MT5 account connected successfully!");
       await fetchMT5Connection();
-      setFormData({ brokerName: "", serverName: "", accountNumber: "", investorPassword: "" });
+      setFormData({ 
+        accountName: "",
+        brokerName: "",
+        serverName: "",
+        accountNumber: "",
+        accountType: "live",
+        currency: "USD",
+        leverage: "",
+        autoSyncEnabled: true
+      });
+      setShowAddForm(false);
     } catch (error: any) {
       console.error("Error connecting MT5:", error);
       toast.error(error.message || "Failed to connect MT5 account");

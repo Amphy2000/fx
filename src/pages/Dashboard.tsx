@@ -9,8 +9,11 @@ import TradingBadges from "@/components/TradingBadges";
 import AchievementProgressTracker from "@/components/AchievementProgressTracker";
 import { ConsentModal } from "@/components/ConsentModal";
 import { CreditsDisplay } from "@/components/CreditsDisplay";
+import { PerformanceMetrics } from "@/components/PerformanceMetrics";
+import { EquityCurve } from "@/components/EquityCurve";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Target, FileText } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TrendingUp, TrendingDown, Target, FileText, BarChart3, LineChart } from "lucide-react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
