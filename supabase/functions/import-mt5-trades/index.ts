@@ -13,6 +13,7 @@ serve(async (req) => {
     console.log('import-mt5-trades: Request received');
     
     const authHeader = req.headers.get('Authorization');
+    console.log('import-mt5-trades: Auth header present:', Boolean(authHeader));
     if (!authHeader) {
       console.error('import-mt5-trades: No authorization header');
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
