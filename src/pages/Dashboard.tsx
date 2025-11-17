@@ -155,14 +155,18 @@ const Dashboard = () => {
 
       if (error) throw error;
 
-      // Create blob and download
-      const blob = new Blob([data.html], { type: 'text/html' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = data.fileName;
-      a.click();
-      window.URL.revokeObjectURL(url);
+      // Use html2pdf to convert HTML to PDF
+      const html2pdf = (await import('html2pdf.js')).default;
+      
+      const opt = {
+        margin: 10,
+        filename: data.fileName,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
+      };
+
+      html2pdf().set(opt).from(data.html).save();
 
       toast({
         title: "Export Successful",
