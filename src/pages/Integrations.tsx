@@ -113,19 +113,17 @@ const Integrations = () => {
     }
   };
 
-  const handleDisconnect = async () => {
-    if (!mt5Connection) return;
-
+  const handleDisconnect = async (accountId: string) => {
     try {
       const { error } = await supabase
-        .from("mt5_connections")
+        .from("mt5_accounts")
         .update({ is_active: false })
-        .eq("id", mt5Connection.id);
+        .eq("id", accountId);
 
       if (error) throw error;
 
       toast.success("MT5 account disconnected");
-      setMt5Connection(null);
+      await fetchMT5Connection();
     } catch (error) {
       console.error("Error disconnecting:", error);
       toast.error("Failed to disconnect MT5 account");
@@ -271,43 +269,50 @@ const Integrations = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {mt5Connection ? (
+            {mt5Accounts.length > 0 ? (
               <div className="space-y-4">
-                <div className="bg-muted/50 p-4 rounded-lg space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Status</span>
-                    {getSyncStatusBadge(mt5Connection.sync_status)}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Broker</span>
-                    <span className="text-foreground font-medium">{mt5Connection.broker_name}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Account</span>
-                    <span className="text-foreground font-medium">{mt5Connection.account_number}</span>
-                  </div>
-                  {mt5Connection.last_sync_at && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Last Sync</span>
-                      <span className="text-foreground font-medium">
-                        {new Date(mt5Connection.last_sync_at).toLocaleString()}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleDisconnect} className="w-full">
-                    Disconnect
-                  </Button>
-                </div>
+                {mt5Accounts.map((account) => (
+                  <MT5AccountCard
+                    key={account.id}
+                    account={account}
+                    syncing={syncing}
+                    onSync={async () => {
+                      setSyncing(true);
+                      try {
+                        await supabase.functions.invoke("mt5-sync", {
+                          body: { accountId: account.id }
+                        });
+                        toast.success("Sync started");
+                        await fetchMT5Connection();
+                      } catch (error) {
+                        console.error("Sync error:", error);
+                        toast.error("Sync failed");
+                      } finally {
+                        setSyncing(false);
+                      }
+                    }}
+                    onDisconnect={() => handleDisconnect(account.id)}
+                  />
+                ))}
 
-                <div className="text-xs text-muted-foreground bg-primary/10 p-3 rounded border border-primary/20">
-                  <strong>Connected:</strong> Your MT5 account is connected. Upload trade reports below to sync your trading history automatically.
-                </div>
+                {!showAddForm && (
+                  <Button onClick={() => setShowAddForm(true)} variant="outline" className="w-full">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Another Account
+                  </Button>
+                )}
               </div>
-            ) : (
+            ) : showAddForm ? (
               <form onSubmit={handleConnectMT5} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="accountName">Account Name (Optional)</Label>
+                  <Input
+                    id="accountName"
+                    placeholder="e.g., My Trading Account"
+                    value={formData.accountName}
+                    onChange={(e) => setFormData({ ...formData, accountName: e.target.value })}
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="brokerName">Broker Name</Label>
                   <Input
@@ -342,18 +347,23 @@ const Integrations = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="investorPassword">Investor (Read-Only) Password</Label>
-                  <Input
-                    id="investorPassword"
-                    type="password"
-                    placeholder="Read-only password"
-                    value={formData.investorPassword}
-                    onChange={(e) => setFormData({ ...formData, investorPassword: e.target.value })}
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Investor password provides read-only access. We cannot execute trades.
-                  </p>
+                  <Label htmlFor="accountType">Account Type</Label>
+                  <Select
+                    value={formData.accountType}
+                    onValueChange={(value) => setFormData({ ...formData, accountType: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="live">Live</SelectItem>
+                      <SelectItem value="demo">Demo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="text-xs text-muted-foreground bg-muted/30 p-3 rounded">
+                  <strong>Note:</strong> Manual import only. Upload your MT5 trade reports below after adding your account.
                 </div>
 
                 <Button type="submit" className="w-full" disabled={connecting}>
@@ -366,7 +376,22 @@ const Integrations = () => {
                     "Connect MT5 Account"
                   )}
                 </Button>
+
+                {showAddForm && mt5Accounts.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setShowAddForm(false)}
+                    className="w-full"
+                  >
+                    Cancel
+                  </Button>
+                )}
               </form>
+            ) : (
+              <Button onClick={() => setShowAddForm(true)} className="w-full">
+                Connect MT5 Account
+              </Button>
             )}
           </CardContent>
         </Card>
