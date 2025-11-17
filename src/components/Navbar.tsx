@@ -100,7 +100,8 @@ const Navbar = () => {
     label: "Settings",
     icon: Settings
   }];
-  return <nav className="flex-1 flex items-center justify-between">
+  return (
+    <nav className="flex-1 flex items-center justify-between">
       <div className="flex items-center justify-between w-full">
         <Link to="/" className="flex items-center gap-2 font-bold text-xl">
           <TrendingUp className="h-6 w-6 text-primary" />
@@ -137,6 +138,8 @@ const Navbar = () => {
               </Button>
             </>}
         </div>
-      </div>;
+      </div>
+    </nav>
+  );
 };
 export default Navbar;

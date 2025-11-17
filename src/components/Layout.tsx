@@ -19,7 +19,7 @@ export function Layout({ children }: LayoutProps) {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        <AppSidebar collapsible="icon" />
+        <AppSidebar />
         
         <div className="flex-1 flex flex-col min-h-screen bg-background">
           {/* Mobile Header with Hamburger */}
