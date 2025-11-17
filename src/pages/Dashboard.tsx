@@ -120,11 +120,11 @@ const Dashboard = () => {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
+      <div className="space-y-6 p-4 md:p-0">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Trading Dashboard</h1>
-            <p className="text-muted-foreground">Professional analytics {mt5Accounts.length > 0 ? 'powered by MT5' : ''}</p>
+            <h1 className="text-2xl md:text-3xl font-bold">Trading Dashboard</h1>
+            <p className="text-sm md:text-base text-muted-foreground">Professional analytics {mt5Accounts.length > 0 ? 'powered by MT5' : ''}</p>
           </div>
           <CreditsDisplay />
         </div>
@@ -145,13 +145,13 @@ const Dashboard = () => {
           <Card className={`bg-gradient-to-br ${stats.totalPnL >= 0 ? 'from-green-500/10 border-green-500/20' : 'from-red-500/10 border-red-500/20'}`}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="text-xs text-muted-foreground uppercase">P/L</p>
-                  <p className={`text-2xl font-bold ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    ${stats.totalPnL >= 0 ? '+' : ''}{stats.totalPnL}
+                  <p className={`text-xl md:text-2xl font-bold truncate ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    ${stats.totalPnL >= 0 ? '+' : ''}{stats.totalPnL.toLocaleString()}
                   </p>
                 </div>
-                {stats.totalPnL >= 0 ? <TrendingUp className="h-8 w-8 text-green-600 opacity-50" /> : <TrendingDown className="h-8 w-8 text-red-600 opacity-50" />}
+                {stats.totalPnL >= 0 ? <TrendingUp className="h-6 w-6 md:h-8 md:w-8 text-green-600 opacity-50 flex-shrink-0" /> : <TrendingDown className="h-6 w-6 md:h-8 md:w-8 text-red-600 opacity-50 flex-shrink-0" />}
               </div>
             </CardContent>
           </Card>
@@ -187,18 +187,18 @@ const Dashboard = () => {
 
           <Card className="bg-gradient-to-br from-green-500/10 border-green-500/20">
             <CardContent className="p-4">
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs text-muted-foreground uppercase">Best</p>
-                <p className="text-2xl font-bold text-green-600">+${stats.bestTrade}</p>
+                <p className="text-xl md:text-2xl font-bold text-green-600 truncate">+${stats.bestTrade.toLocaleString()}</p>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-red-500/10 border-red-500/20">
             <CardContent className="p-4">
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs text-muted-foreground uppercase">Worst</p>
-                <p className="text-2xl font-bold text-red-600">${stats.worstTrade}</p>
+                <p className="text-xl md:text-2xl font-bold text-red-600 truncate">${stats.worstTrade.toLocaleString()}</p>
               </div>
             </CardContent>
           </Card>
