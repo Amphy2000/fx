@@ -1,4 +1,4 @@
-import { LayoutDashboard, MessageSquare, Calendar, Settings, TrendingUp, LogOut, Target, Calculator, CreditCard, Trophy, GraduationCap, Plug, Heart, ClipboardCheck, Lightbulb, BarChart3, Flame, Award } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Calendar, Settings, TrendingUp, LogOut, Target, Calculator, CreditCard, Trophy, GraduationCap, Plug, Heart, ClipboardCheck, Lightbulb, BarChart3, Flame, Award, BookOpen, Zap } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +40,14 @@ const aiNavItems = [{
   title: "AI Coach",
   url: "/ai-coach",
   icon: GraduationCap
+}, {
+  title: "AI Journal",
+  url: "/ai-journal",
+  icon: BookOpen
+}, {
+  title: "Pattern Recognition",
+  url: "/pattern-recognition",
+  icon: Zap
 }];
 
 const performanceNavItems = [{

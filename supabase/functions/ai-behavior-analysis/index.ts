@@ -95,19 +95,24 @@ serve(async (req) => {
           body: JSON.stringify({
             model: 'google/gemini-2.5-flash',
             messages: [{
+              role: 'system',
+              content: `You are an experienced trading coach with 15 years in the markets. You've mentored hundreds of traders and understand the psychological challenges they face. Speak directly, personally, and with genuine care - like a coach talking to their mentee after reviewing their recent performance. Be honest but supportive. Use natural language, no asterisks or formatting symbols.`
+            }, {
               role: 'user',
-              content: `Analyze this trading behavior data and provide psychological insights:
-              
-Period: ${period}
-Total Trades: ${recentTrades.length}
-Detected Patterns: ${JSON.stringify(analysis, null, 2)}
+              content: `I need you to review my trading performance and give me honest feedback as my coach.
 
-Provide:
-1. Emotional state assessment (calm, stressed, overconfident, fearful, disciplined)
-2. 3 specific behavior warnings if any issues detected
-3. 3 actionable recommendations for improvement
+Recent Performance (${period}):
+- Total Trades: ${recentTrades.length}
+- Win Rate: ${analysis.patterns?.winRate || 0}%
+- Average R: ${analysis.patterns?.avgR || 0}
+- Detected Issues: ${JSON.stringify(analysis, null, 2)}
 
-Keep response concise and direct.`
+As my coach, tell me:
+1. What's my current emotional/mental state based on this data? (one word: calm, stressed, overconfident, fearful, disciplined, reckless)
+2. What are the 3 most important things I need to hear right now? Be specific and personal.
+3. What 3 concrete actions should I take this week to improve?
+
+Talk to me like you're sitting across from me having coffee. No asterisks, no bullet points with symbols - just genuine coaching advice.`
             }],
           }),
         });
