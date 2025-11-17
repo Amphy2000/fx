@@ -12,7 +12,7 @@ import AIChat from "./pages/AIChat";
 import WeeklySummary from "./pages/WeeklySummary";
 import AIJournal from "./pages/AIJournal";
 import PatternRecognition from "./pages/PatternRecognition";
-import AICoach from "./pages/AICoach";
+
 import Leaderboard from "./pages/Leaderboard";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
@@ -49,7 +49,7 @@ const App = () => (
             <Route path="/weekly-summary" element={<WeeklySummary />} />
             <Route path="/ai-journal" element={<AIJournal />} />
             <Route path="/pattern-recognition" element={<PatternRecognition />} />
-            <Route path="/ai-coach" element={<AICoach />} />
+            
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/integrations" element={<Integrations />} />
