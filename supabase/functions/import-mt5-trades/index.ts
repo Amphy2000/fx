@@ -252,26 +252,12 @@ function parseHTML(content: string): any[] {
   if (!content) return trades;
 
   console.log('parseHTML: Starting HTML parse');
-  
+
   // Normalize content
   const html = content.replace(/\r\n/g, '\n');
 
-  // Try to detect header row (th)
-  const headerMatch = html.match(/<tr[^>]*>\s*([\s\S]*?)<\/tr>/i);
-  let headers: string[] = [];
-  if (headerMatch) {
-    const ths = headerMatch[1].match(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi) || [];
-    headers = ths.map((h) => h.replace(/<[^>]*>/g, '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_'));
-    console.log('parseHTML: Found headers:', headers);
-  }
-
-  const rows = html.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) || [];
-  console.log('parseHTML: Total rows found:', rows.length);
-  if (rows.length <= 1) {
-    console.log('parseHTML: Not enough rows');
-    return trades;
-  }
-
+  // Utilities
+  const cleanText = (s: string) => (s || '').replace(/<[^>]*>/g, '').trim();
   const pickIdx = (obj: string[], idx: number) => (idx >= 0 && idx < obj.length ? obj[idx] : '');
   const getNum = (s: string) => {
     let x = (s || '').replace(/\s/g, '');
@@ -281,15 +267,7 @@ function parseHTML(content: string): any[] {
     const n = parseFloat(x);
     return Number.isFinite(n) ? n : 0;
   };
-
-  const findByHeader = (rowVals: string[], name: string[]): string => {
-    if (!headers.length) return '';
-    for (const key of name) {
-      const idx = headers.indexOf(key);
-      if (idx !== -1) return pickIdx(rowVals, idx);
-    }
-    return '';
-  };
+  const isDateLike = (s: string) => /\d{4}-\d{2}-\d{2}|\d{2}\.\d{2}\.\d{4}|\d{2}\/\d{2}\/\d{4}/.test(s) || /\d{2}:\d{2}/.test(s);
 
   const symbolKeys = ['symbol','pair','currency','instrument','market','ticker','symbol_name','asset'];
   const dirKeys = ['type','action','cmd','order_type','side'];
@@ -300,44 +278,141 @@ function parseHTML(content: string): any[] {
   const profitKeys = ['profit','pnl','pl','net_profit','result'];
   const timeKeys = ['time','open_time','open_date','date'];
 
-  for (let r = 1; r < rows.length; r++) {
-    const cells = (rows[r].match(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi) || [])
-      .map(c => c.replace(/<[^>]*>/g, '').trim());
-    
-    if (!cells.length) continue;
+  // Helper: parse a table string to trades using header mapping
+  const parseTableWithHeaders = (tableHtml: string): any[] => {
+    const rows = tableHtml.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) || [];
+    if (rows.length <= 1) return [];
 
-    // Log first few rows for debugging
-    if (r <= 3) {
-      console.log(`parseHTML: Row ${r} cells (${cells.length}):`, cells.slice(0, 10));
+    const headerRow = rows[0] ?? '';
+    const headerCells = (headerRow.match(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi) || []).map(c => cleanText(c).toLowerCase().replace(/[^a-z0-9]+/g, '_'));
+    if (!headerCells.length) return [];
+
+    const idxOf = (keys: string[]) => {
+      for (const k of keys) {
+        const i = headerCells.indexOf(k);
+        if (i !== -1) return i;
+      }
+      return -1;
+    };
+
+    const idx = {
+      symbol: idxOf(symbolKeys),
+      dir: idxOf(dirKeys),
+      open: idxOf(openKeys),
+      close: idxOf(closeKeys),
+      sl: idxOf(slKeys),
+      tp: idxOf(tpKeys),
+      profit: idxOf(profitKeys),
+      time: idxOf(timeKeys),
+    };
+
+    // If essential columns missing, skip
+    if (idx.symbol === -1 || idx.dir === -1 || (idx.open === -1 && idx.close === -1)) return [];
+
+    const parsed: any[] = [];
+    for (let r = 1; r < rows.length; r++) {
+      const cells = (rows[r].match(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi) || []).map(c => cleanText(c));
+      if (!cells.length) continue;
+
+      const rawSymbol = pickIdx(cells, idx.symbol);
+      const cleanSymbol = (rawSymbol || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      const direction = detectDirection(pickIdx(cells, idx.dir));
+      const entry = getNum(pickIdx(cells, idx.open));
+      const exit = getNum(pickIdx(cells, idx.close));
+      const sl = getNum(pickIdx(cells, idx.sl));
+      const tp = getNum(pickIdx(cells, idx.tp));
+      const profit = getNum(pickIdx(cells, idx.profit));
+      const whenRaw = pickIdx(cells, idx.time);
+      const when = isDateLike(whenRaw) ? whenRaw : '';
+
+      if (cleanSymbol && cleanSymbol.length >= 3 && direction && (entry > 0 || exit > 0)) {
+        parsed.push({
+          pair: cleanSymbol,
+          direction,
+          entry_price: entry || exit || null,
+          exit_price: exit || null,
+          stop_loss: sl || null,
+          take_profit: tp || null,
+          result: detectResult(profit),
+          profit_loss: profit || null,
+          open_time: when || new Date().toISOString(),
+        });
+      }
     }
 
-    const rawSymbol = headers.length ? findByHeader(cells, symbolKeys) : pickIdx(cells, 1);
-    const cleanSymbol = (rawSymbol || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-    const direction = detectDirection(headers.length ? findByHeader(cells, dirKeys) : pickIdx(cells, 2));
-    const entry = getNum(headers.length ? findByHeader(cells, openKeys) : pickIdx(cells, 3));
-    const exit = getNum(headers.length ? findByHeader(cells, closeKeys) : pickIdx(cells, 4));
-    const sl = getNum(headers.length ? findByHeader(cells, slKeys) : pickIdx(cells, 5));
-    const tp = getNum(headers.length ? findByHeader(cells, tpKeys) : pickIdx(cells, 6));
-    const profit = getNum(headers.length ? findByHeader(cells, profitKeys) : pickIdx(cells, 7));
-    const when = headers.length ? findByHeader(cells, timeKeys) : pickIdx(cells, 0);
+    return parsed;
+  };
 
-    // Log parsing for first few rows
-    if (r <= 3) {
-      console.log(`parseHTML: Row ${r} - Symbol: ${cleanSymbol}, Direction: ${direction}, Entry: ${entry}`);
+  // 1) Try tables that look like trade tables (contain both symbol and type headers)
+  const tables = html.match(/<table[^>]*>[\s\S]*?<\/table>/gi) || [];
+  console.log('parseHTML: Tables found:', tables.length);
+
+  for (let ti = 0; ti < tables.length; ti++) {
+    const t = tables[ti];
+    const headersRow = t.match(/<tr[^>]*>[\s\S]*?<\/tr>/i)?.[0] || '';
+    const headers = (headersRow.match(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi) || []).map(c => cleanText(c).toLowerCase());
+    const hasSymbol = headers.some(h => symbolKeys.includes(h.replace(/[^a-z0-9]+/g, '_')));
+    const hasType = headers.some(h => dirKeys.includes(h.replace(/[^a-z0-9]+/g, '_')));
+
+    if (hasSymbol && hasType) {
+      const parsed = parseTableWithHeaders(t);
+      console.log(`parseHTML: Table ${ti} parsed trades:`, parsed.length);
+      trades.push(...parsed);
     }
+  }
 
-    if (cleanSymbol && cleanSymbol.length >= 3 && direction && entry > 0) {
-      trades.push({
-        pair: cleanSymbol,
-        direction,
-        entry_price: entry,
-        exit_price: exit || null,
-        stop_loss: sl || null,
-        take_profit: tp || null,
-        result: detectResult(profit),
-        profit_loss: profit || null,
-        open_time: when || new Date().toISOString(),
-      });
+  // 2) Fallback: scan all rows across all tables using heuristics
+  if (trades.length === 0 && tables.length) {
+    console.log('parseHTML: Running heuristic fallback');
+    const pairRegex = /^(?:[A-Z]{3,6}\d{0,2}|[A-Z]{2,}\d{0,2})$/; // EURUSD, XAUUSD, US30, GER40
+
+    for (const t of tables) {
+      const rows = t.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) || [];
+      for (let r = 1; r < rows.length; r++) {
+        const cells = (rows[r].match(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi) || []).map(c => cleanText(c));
+        if (cells.length < 4) continue;
+
+        // Find direction cell
+        const dirIdx = cells.findIndex(c => /buy|sell|long|short/i.test(c));
+        if (dirIdx === -1) continue;
+
+        // Try to find symbol near the direction cell
+        let sym = '';
+        const candidates = [dirIdx - 1, dirIdx + 1, dirIdx - 2, dirIdx + 2].filter(i => i >= 0 && i < cells.length);
+        for (const i of candidates) {
+          const cs = cells[i].replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+          if (pairRegex.test(cs) && cs.length >= 3) { sym = cs; break; }
+        }
+        if (!sym) continue;
+
+        // Entry price: first numeric after direction
+        let entry = 0; let exit = 0; let profit = 0; let when = '';
+        for (let i = dirIdx + 1; i < cells.length; i++) {
+          const n = getNum(cells[i]);
+          if (n > 0 && entry === 0) { entry = n; continue; }
+          if (n > 0 && entry > 0 && exit === 0) { exit = n; continue; }
+          if (isDateLike(cells[i]) && !when) when = cells[i];
+        }
+        // Profit as last numeric in row
+        for (let i = cells.length - 1; i >= 0; i--) {
+          const n = getNum(cells[i]);
+          if (n !== 0) { profit = n; break; }
+        }
+
+        if (sym && entry > 0) {
+          trades.push({
+            pair: sym,
+            direction: detectDirection(cells[dirIdx]),
+            entry_price: entry,
+            exit_price: exit || null,
+            stop_loss: null,
+            take_profit: null,
+            result: detectResult(profit),
+            profit_loss: profit || null,
+            open_time: when || new Date().toISOString(),
+          });
+        }
+      }
     }
   }
 
