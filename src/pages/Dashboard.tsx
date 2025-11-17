@@ -155,6 +155,14 @@ const Dashboard = () => {
 
       if (error) throw error;
 
+      // Create a temporary container to render the HTML
+      const container = document.createElement('div');
+      container.innerHTML = data.html;
+      container.style.padding = '20px';
+      container.style.backgroundColor = 'white';
+      container.style.color = 'black';
+      document.body.appendChild(container);
+
       // Use html2pdf to convert HTML to PDF
       const html2pdf = (await import('html2pdf.js')).default;
       
@@ -162,11 +170,14 @@ const Dashboard = () => {
         margin: 10,
         filename: data.fileName,
         image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2 },
+        html2canvas: { scale: 2, backgroundColor: '#ffffff' },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
       };
 
-      html2pdf().set(opt).from(data.html).save();
+      await html2pdf().set(opt).from(container).save();
+      
+      // Clean up
+      document.body.removeChild(container);
 
       toast({
         title: "Export Successful",

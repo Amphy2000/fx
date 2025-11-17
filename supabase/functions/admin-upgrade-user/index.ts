@@ -81,6 +81,7 @@ Deno.serve(async (req) => {
         ai_credits: credits,
         credits_reset_date: expiryDate,
         monthly_trade_limit: tier === 'free' ? 10 : 999999,
+        updated_at: new Date().toISOString(),
         // Prevent BEFORE UPDATE trigger from running heavy logic by marking last check now
         last_credit_check: new Date().toISOString()
       })
