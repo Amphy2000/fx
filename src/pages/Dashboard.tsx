@@ -8,15 +8,19 @@ import { ConsentModal } from "@/components/ConsentModal";
 import { CreditsDisplay } from "@/components/CreditsDisplay";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, TrendingDown, Target, BarChart3, LineChart, Activity, Brain } from "lucide-react";
+import { TrendingUp, TrendingDown, Target, BarChart3, LineChart, Activity, Brain, FileDown } from "lucide-react";
 import { EquityCurve } from "@/components/EquityCurve";
 import { ModernBarChart } from "@/components/ModernBarChart";
 import { DrawdownHeatmap } from "@/components/DrawdownHeatmap";
 import { SessionAnalytics } from "@/components/SessionAnalytics";
 import { SetupPerformanceAnalyzer } from "@/components/SetupPerformanceAnalyzer";
 import EmotionalInsights from "@/components/EmotionalInsights";
+import { AICoachDashboard } from "@/components/AICoachDashboard";
+import { PeriodComparison } from "@/components/PeriodComparison";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -118,15 +122,115 @@ const Dashboard = () => {
     })).slice(-6);
   };
 
+  // Real-time equity curve updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('trades-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'trades',
+        filter: `user_id=eq.${user.id}`
+      }, () => {
+        fetchTrades(user.id);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  const handleExportPDF = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('export-pdf', {
+        body: {
+          startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          endDate: new Date().toISOString()
+        }
+      });
+
+      if (error) throw error;
+
+      // Create blob and download
+      const blob = new Blob([data.html], { type: 'text/html' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = data.fileName;
+      a.click();
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Export Successful",
+        description: "Your trading report has been downloaded.",
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Unable to generate report. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleExportCSV = async (type: 'trades' | 'analytics') => {
+    try {
+      const { data, error } = await supabase.functions.invoke('export-csv', {
+        body: {
+          type,
+          startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          endDate: new Date().toISOString()
+        }
+      });
+
+      if (error) throw error;
+
+      // Create blob and download
+      const blob = new Blob([data.csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = data.fileName;
+      a.click();
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Export Successful",
+        description: `${type === 'trades' ? 'Trades' : 'Analytics'} data has been downloaded.`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Unable to export data. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <Layout>
       <div className="space-y-6 p-4 md:p-0">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">Trading Dashboard</h1>
-            <p className="text-sm md:text-base text-muted-foreground">Professional analytics {mt5Accounts.length > 0 ? 'powered by MT5' : ''}</p>
+            <p className="text-sm md:text-base text-muted-foreground">AI-Powered Analytics {mt5Accounts.length > 0 ? '• MT5 Synced' : ''}</p>
           </div>
-          <CreditsDisplay />
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportPDF}>
+              <FileDown className="h-4 w-4 mr-2" />
+              PDF
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => handleExportCSV('trades')}>
+              <FileDown className="h-4 w-4 mr-2" />
+              CSV
+            </Button>
+            <CreditsDisplay />
+          </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
@@ -205,11 +309,12 @@ const Dashboard = () => {
         </div>
 
         <Tabs defaultValue="overview">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-5 lg:w-auto">
             <TabsTrigger value="overview"><BarChart3 className="h-4 w-4 mr-2" />Overview</TabsTrigger>
             <TabsTrigger value="analytics"><LineChart className="h-4 w-4 mr-2" />Analytics</TabsTrigger>
+            <TabsTrigger value="aicoach"><Brain className="h-4 w-4 mr-2" />AI Coach</TabsTrigger>
             <TabsTrigger value="trades"><Activity className="h-4 w-4 mr-2" />Trades</TabsTrigger>
-            <TabsTrigger value="insights"><Brain className="h-4 w-4 mr-2" />Insights</TabsTrigger>
+            <TabsTrigger value="comparison"><Target className="h-4 w-4 mr-2" />Compare</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6 mt-6">
@@ -230,8 +335,13 @@ const Dashboard = () => {
             <TradesList trades={trades} onTradeDeleted={handleTradeAdded} />
           </TabsContent>
 
-          <TabsContent value="insights" className="space-y-6 mt-6">
+          <TabsContent value="aicoach" className="space-y-6 mt-6">
+            {user && <AICoachDashboard userId={user.id} />}
             <EmotionalInsights trades={trades} />
+          </TabsContent>
+
+          <TabsContent value="comparison" className="space-y-6 mt-6">
+            <PeriodComparison trades={trades} />
           </TabsContent>
         </Tabs>
       </div>
