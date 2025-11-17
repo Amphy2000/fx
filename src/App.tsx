@@ -12,6 +12,7 @@ import AIChat from "./pages/AIChat";
 import WeeklySummary from "./pages/WeeklySummary";
 import AIJournal from "./pages/AIJournal";
 import PatternRecognition from "./pages/PatternRecognition";
+import Journal from "./pages/Journal";
 
 import Leaderboard from "./pages/Leaderboard";
 import Settings from "./pages/Settings";
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/weekly-summary" element={<WeeklySummary />} />
             <Route path="/ai-journal" element={<AIJournal />} />
             <Route path="/pattern-recognition" element={<PatternRecognition />} />
+            <Route path="/journal" element={<Journal />} />
             
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/settings" element={<Settings />} />
