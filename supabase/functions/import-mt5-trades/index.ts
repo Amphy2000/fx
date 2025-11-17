@@ -251,6 +251,8 @@ function parseHTML(content: string): any[] {
   const trades: any[] = [];
   if (!content) return trades;
 
+  console.log('parseHTML: Starting HTML parse');
+  
   // Normalize content
   const html = content.replace(/\r\n/g, '\n');
 
@@ -260,10 +262,15 @@ function parseHTML(content: string): any[] {
   if (headerMatch) {
     const ths = headerMatch[1].match(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi) || [];
     headers = ths.map((h) => h.replace(/<[^>]*>/g, '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_'));
+    console.log('parseHTML: Found headers:', headers);
   }
 
   const rows = html.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) || [];
-  if (rows.length <= 1) return trades;
+  console.log('parseHTML: Total rows found:', rows.length);
+  if (rows.length <= 1) {
+    console.log('parseHTML: Not enough rows');
+    return trades;
+  }
 
   const pickIdx = (obj: string[], idx: number) => (idx >= 0 && idx < obj.length ? obj[idx] : '');
   const getNum = (s: string) => {
@@ -296,7 +303,13 @@ function parseHTML(content: string): any[] {
   for (let r = 1; r < rows.length; r++) {
     const cells = (rows[r].match(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi) || [])
       .map(c => c.replace(/<[^>]*>/g, '').trim());
+    
     if (!cells.length) continue;
+
+    // Log first few rows for debugging
+    if (r <= 3) {
+      console.log(`parseHTML: Row ${r} cells (${cells.length}):`, cells.slice(0, 10));
+    }
 
     const rawSymbol = headers.length ? findByHeader(cells, symbolKeys) : pickIdx(cells, 1);
     const cleanSymbol = (rawSymbol || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
@@ -307,6 +320,11 @@ function parseHTML(content: string): any[] {
     const tp = getNum(headers.length ? findByHeader(cells, tpKeys) : pickIdx(cells, 6));
     const profit = getNum(headers.length ? findByHeader(cells, profitKeys) : pickIdx(cells, 7));
     const when = headers.length ? findByHeader(cells, timeKeys) : pickIdx(cells, 0);
+
+    // Log parsing for first few rows
+    if (r <= 3) {
+      console.log(`parseHTML: Row ${r} - Symbol: ${cleanSymbol}, Direction: ${direction}, Entry: ${entry}`);
+    }
 
     if (cleanSymbol && cleanSymbol.length >= 3 && direction && entry > 0) {
       trades.push({
@@ -323,6 +341,7 @@ function parseHTML(content: string): any[] {
     }
   }
 
+  console.log('parseHTML: Successfully parsed', trades.length, 'trades');
   return trades;
 }
 
