@@ -39,10 +39,11 @@ export const ModernBarChart = ({ data, title = "Monthly Performance" }: ModernBa
                 backgroundColor: 'hsl(var(--popover))',
                 border: '1px solid hsl(var(--border))',
                 borderRadius: '8px',
-                color: 'hsl(var(--popover-foreground))',
+                color: 'hsl(0 0% 100%)',
               }}
               formatter={(value: number) => [`$${value.toFixed(2)}`, 'P/L']}
-              labelStyle={{ color: 'hsl(var(--popover-foreground))' }}
+              labelStyle={{ color: 'hsl(0 0% 100%)' }}
+              itemStyle={{ color: 'hsl(0 0% 100%)' }}
             />
             <Bar dataKey="pnl" radius={[8, 8, 0, 0]}>
               {data.map((entry, index) => (

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Plus, Image as ImageIcon, X } from "lucide-react";
 import { updateStreak, checkTradeAchievements } from "@/utils/streakManager";
+import { VoiceTradeLogger } from "@/components/VoiceTradeLogger";
 
 interface TradeFormProps {
   onTradeAdded: () => void;
@@ -18,6 +19,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [screenshots, setScreenshots] = useState<File[]>([]);
   const [screenshotPreviews, setScreenshotPreviews] = useState<string[]>([]);
+  const [showVoiceLogger, setShowVoiceLogger] = useState(false);
   const [formData, setFormData] = useState({
     pair: "",
     direction: "buy",
@@ -31,6 +33,18 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
     emotion_before: "",
     emotion_after: "",
   });
+
+  const handleVoiceData = (voiceData: any) => {
+    setFormData(prev => ({
+      ...prev,
+      pair: voiceData.pair || prev.pair,
+      direction: voiceData.direction || prev.direction,
+      entry_price: voiceData.entry_price || prev.entry_price,
+      stop_loss: voiceData.stop_loss || prev.stop_loss,
+      take_profit: voiceData.take_profit || prev.take_profit,
+    }));
+    setShowVoiceLogger(false);
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -206,12 +220,27 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
   return (
     <Card className="border-border/50">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Plus className="h-5 w-5" />
-          Log New Trade
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Plus className="h-5 w-5" />
+            Log New Trade
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setShowVoiceLogger(!showVoiceLogger)}
+          >
+            {showVoiceLogger ? "Hide" : "Voice Logger"}
+          </Button>
         </CardTitle>
       </CardHeader>
       <CardContent>
+        {showVoiceLogger && (
+          <div className="mb-6">
+            <VoiceTradeLogger onTradeDataParsed={handleVoiceData} />
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="pair">Pair</Label>

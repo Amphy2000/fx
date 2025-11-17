@@ -22,6 +22,7 @@ import { toast } from "@/hooks/use-toast";
 import { DailyChallengeCard } from "@/components/DailyChallengeCard";
 import { TradingScoreCard } from "@/components/TradingScoreCard";
 import { MilestoneNotification } from "@/components/MilestoneNotification";
+import { GamificationOverlay } from "@/components/GamificationOverlay";
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
@@ -404,6 +405,7 @@ const Dashboard = () => {
         fetchProfile(user.id);
       }} userId={user.id} />
           <MilestoneNotification trades={trades} />
+          <GamificationOverlay />
         </>}
     </Layout>;
 };
