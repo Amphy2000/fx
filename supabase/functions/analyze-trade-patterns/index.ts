@@ -117,19 +117,23 @@ COMMENT: [One sentence about execution quality]
 SUMMARY: [2-3 sentences analyzing the trade]
 RECOMMENDATIONS: [One specific actionable recommendation]`;
 
+        const aiPayload = {
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: 'You are an expert forex trading analyst. Provide concise, actionable trade analysis.' },
+            { role: 'user', content: prompt }
+          ],
+        };
+        
+        console.log(`Calling AI for trade ${trade.id} with model: ${aiPayload.model}`);
+        
         const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: 'POST',
           headers: { 
             Authorization: `Bearer ${lovableApiKey}`, 
             'Content-Type': 'application/json' 
           },
-          body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
-            messages: [
-              { role: 'system', content: 'You are an expert forex trading analyst. Provide concise, actionable trade analysis.' },
-              { role: 'user', content: prompt }
-            ],
-          }),
+          body: JSON.stringify(aiPayload),
         });
 
         if (!aiResp.ok) {
