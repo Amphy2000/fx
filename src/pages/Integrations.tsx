@@ -162,6 +162,13 @@ const Integrations = () => {
       // Trigger AI analysis for imported trades
       if (data.tradeIds && data.tradeIds.length > 0) {
         toast.info("AI is analyzing your trades...");
+        
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          toast.warning("Trades imported but AI analysis requires login");
+          return;
+        }
+
         const { error: analysisError } = await supabase.functions.invoke("analyze-trade-patterns", {
           body: { tradeIds: data.tradeIds }
         });

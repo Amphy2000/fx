@@ -1,6 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.81.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,20 +11,38 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
+    console.log('analyze-trade-patterns: Request received');
+    
     const authHeader = req.headers.get('Authorization');
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader! } } }
-    );
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
+    if (!authHeader) {
+      console.error('analyze-trade-patterns: No authorization header');
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
         status: 401 
       });
     }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      global: { 
+        headers: { 
+          Authorization: authHeader 
+        } 
+      }
+    });
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('analyze-trade-patterns: Auth error', userError);
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 401 
+      });
+    }
+
+    console.log('analyze-trade-patterns: User authenticated:', user.id);
 
     const { tradeIds } = await req.json();
     
