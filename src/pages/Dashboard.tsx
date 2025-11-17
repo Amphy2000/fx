@@ -102,12 +102,20 @@ const Dashboard = () => {
   };
 
   const getMonthlyData = () => {
-    const monthlyPnL: Record<string, number> = {};
+    const monthlyStats: Record<string, { pnl: number; trades: number }> = {};
     trades.forEach(trade => {
       const month = new Date(trade.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-      monthlyPnL[month] = (monthlyPnL[month] || 0) + (trade.profit_loss || 0);
+      if (!monthlyStats[month]) {
+        monthlyStats[month] = { pnl: 0, trades: 0 };
+      }
+      monthlyStats[month].pnl += trade.profit_loss || 0;
+      monthlyStats[month].trades += 1;
     });
-    return Object.entries(monthlyPnL).map(([month, pnl]) => ({ month, pnl: Number(pnl.toFixed(2)) })).slice(-6);
+    return Object.entries(monthlyStats).map(([month, stats]) => ({ 
+      month, 
+      pnl: Number(stats.pnl.toFixed(2)),
+      trades: stats.trades
+    })).slice(-6);
   };
 
   return (
@@ -118,7 +126,7 @@ const Dashboard = () => {
             <h1 className="text-3xl font-bold">Trading Dashboard</h1>
             <p className="text-muted-foreground">Professional analytics {mt5Accounts.length > 0 ? 'powered by MT5' : ''}</p>
           </div>
-          {profile && <CreditsDisplay credits={profile.ai_credits || 0} />}
+          <CreditsDisplay />
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
@@ -206,7 +214,7 @@ const Dashboard = () => {
 
           <TabsContent value="overview" className="space-y-6 mt-6">
             <div className="grid md:grid-cols-2 gap-6">
-              <EquityCurve trades={trades} />
+              {user && <EquityCurve userId={user.id} />}
               <ModernBarChart data={getMonthlyData()} />
             </div>
             <DrawdownHeatmap trades={trades} />
@@ -214,7 +222,7 @@ const Dashboard = () => {
 
           <TabsContent value="analytics" className="space-y-6 mt-6">
             <SessionAnalytics trades={trades} />
-            <SetupPerformanceAnalyzer trades={trades} userId={user?.id} />
+            {user && <SetupPerformanceAnalyzer trades={trades} userId={user.id} />}
           </TabsContent>
 
           <TabsContent value="trades" className="space-y-6 mt-6">
@@ -228,13 +236,16 @@ const Dashboard = () => {
         </Tabs>
       </div>
 
-      <ConsentModal open={showConsentModal} onClose={() => setShowConsentModal(false)} onConsent={async (consent) => {
-        if (user) {
-          await supabase.from("profiles").update({ data_collection_consent: consent, consent_date: new Date().toISOString() }).eq("id", user.id);
-          setShowConsentModal(false);
-          fetchProfile(user.id);
-        }
-      }} />
+      {user && (
+        <ConsentModal 
+          open={showConsentModal} 
+          onClose={() => {
+            setShowConsentModal(false);
+            fetchProfile(user.id);
+          }} 
+          userId={user.id}
+        />
+      )}
     </Layout>
   );
 };

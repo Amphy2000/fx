@@ -3,22 +3,63 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "./ui/badge";
 import { ArrowUpCircle, ArrowDownCircle, TrendingUp } from "lucide-react";
 import { ModernDonutChart } from "./ModernDonutChart";
-
-interface SetupData {
-  setupName: string;
-  totalTrades: number;
-  winRate: number;
-  profitFactor: number;
-  avgR: number;
-  expectancy: number;
-  totalPnL: number;
-}
+import { useMemo } from "react";
 
 interface SetupPerformanceAnalyzerProps {
-  data: SetupData[];
+  trades: any[];
+  userId: string;
 }
 
-export const SetupPerformanceAnalyzer = ({ data }: SetupPerformanceAnalyzerProps) => {
+export const SetupPerformanceAnalyzer = ({ trades, userId }: SetupPerformanceAnalyzerProps) => {
+  const data = useMemo(() => {
+    const setupStats: Record<string, any> = {};
+    
+    trades.forEach(trade => {
+      const setupName = trade.setup_id || 'No Setup';
+      if (!setupStats[setupName]) {
+        setupStats[setupName] = {
+          totalTrades: 0,
+          wins: 0,
+          totalWin: 0,
+          totalLoss: 0,
+          totalR: 0,
+          totalPnL: 0
+        };
+      }
+      
+      const stats = setupStats[setupName];
+      stats.totalTrades++;
+      stats.totalPnL += trade.profit_loss || 0;
+      stats.totalR += trade.r_multiple || 0;
+      
+      if (trade.result === 'win') {
+        stats.wins++;
+        stats.totalWin += trade.profit_loss || 0;
+      } else if (trade.result === 'loss') {
+        stats.totalLoss += Math.abs(trade.profit_loss || 0);
+      }
+    });
+    
+    return Object.entries(setupStats).map(([setupName, stats]) => {
+      const winRate = stats.totalTrades > 0 ? (stats.wins / stats.totalTrades) * 100 : 0;
+      const profitFactor = stats.totalLoss > 0 ? stats.totalWin / stats.totalLoss : 0;
+      const avgR = stats.totalTrades > 0 ? stats.totalR / stats.totalTrades : 0;
+      const avgWin = stats.wins > 0 ? stats.totalWin / stats.wins : 0;
+      const avgLoss = (stats.totalTrades - stats.wins) > 0 ? stats.totalLoss / (stats.totalTrades - stats.wins) : 0;
+      const expectancy = (winRate / 100 * avgWin) - ((1 - winRate / 100) * avgLoss);
+      
+      return {
+        setupName,
+        totalTrades: stats.totalTrades,
+        winRate,
+        profitFactor,
+        avgR,
+        expectancy,
+        totalPnL: stats.totalPnL
+      };
+    });
+  }, [trades]);
+  
   const sortedByPnL = [...data].sort((a, b) => b.totalPnL - a.totalPnL);
   const topSetups = sortedByPnL.slice(0, 5);
 

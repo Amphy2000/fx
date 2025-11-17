@@ -1,21 +1,32 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ModernRadarChart } from "./ModernRadarChart";
 import { Badge } from "./ui/badge";
-
-interface SessionData {
-  session: string;
-  winRate: number;
-  avgR: number;
-  profitFactor: number;
-  trades: number;
-  pnl: number;
-}
+import { useMemo } from "react";
 
 interface SessionAnalyticsProps {
-  data: SessionData[];
+  trades: any[];
 }
 
-export const SessionAnalytics = ({ data }: SessionAnalyticsProps) => {
+export const SessionAnalytics = ({ trades }: SessionAnalyticsProps) => {
+  const data = useMemo(() => {
+    const sessions = ['London', 'New York', 'Asian'];
+    return sessions.map(session => {
+      const sessionTrades = trades.filter(t => t.session === session);
+      const wins = sessionTrades.filter(t => t.result === 'win').length;
+      const totalWin = sessionTrades.filter(t => t.result === 'win').reduce((sum, t) => sum + (t.profit_loss || 0), 0);
+      const totalLoss = Math.abs(sessionTrades.filter(t => t.result === 'loss').reduce((sum, t) => sum + (t.profit_loss || 0), 0));
+      
+      return {
+        session,
+        winRate: sessionTrades.length > 0 ? (wins / sessionTrades.length) * 100 : 0,
+        avgR: sessionTrades.reduce((sum, t) => sum + (t.r_multiple || 0), 0) / (sessionTrades.length || 1),
+        profitFactor: totalLoss > 0 ? totalWin / totalLoss : 0,
+        trades: sessionTrades.length,
+        pnl: sessionTrades.reduce((sum, t) => sum + (t.profit_loss || 0), 0)
+      };
+    });
+  }, [trades]);
+  
   const radarData = data.flatMap(s => [
     { metric: `${s.session} WR`, value: s.winRate, fullMark: 100 },
     { metric: `${s.session} R`, value: Math.abs(s.avgR) * 20, fullMark: 100 },
