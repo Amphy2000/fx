@@ -177,7 +177,7 @@ function generateHTMLReport(data: any): string {
       </tr>
     </thead>
     <tbody>
-      ${trades.map(trade => `
+      ${trades.map((trade: any) => `
         <tr>
           <td>${new Date(trade.created_at).toLocaleDateString()}</td>
           <td>${trade.pair}</td>

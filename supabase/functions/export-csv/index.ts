@@ -84,6 +84,11 @@ serve(async (req) => {
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    } else {
+      return new Response(JSON.stringify({ error: 'Invalid export type' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
   } catch (error) {
