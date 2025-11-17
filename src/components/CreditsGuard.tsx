@@ -49,26 +49,8 @@ export const CreditsGuard = ({
 
       setProfile(profileData);
 
-      // Check if monthly reset is needed
-      const resetDate = new Date(profileData.credits_reset_date);
-      const now = new Date();
-      
-      if (resetDate <= now) {
-        console.log('Credits reset needed, triggering reset...');
-        await supabase.rpc('check_and_reset_limits', { user_id_param: session.user.id });
-        
-        // Refetch profile after reset
-        const { data: updatedProfile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        
-        setProfile(updatedProfile);
-        setHasCredits((updatedProfile?.ai_credits || 0) >= requiredCredits);
-      } else {
-        setHasCredits((profileData.ai_credits || 0) >= requiredCredits);
-      }
+      // Simply check current credits
+      setHasCredits((profileData.ai_credits || 0) >= requiredCredits);
 
       // Show upgrade modal if no credits
       if ((profileData.ai_credits || 0) < requiredCredits) {
