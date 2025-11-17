@@ -7,7 +7,7 @@ const corsHeaders = {
 
 interface UpgradeRequest {
   userId: string;
-  tier: 'free' | 'monthly' | 'premium';
+  tier: 'free' | 'monthly' | 'premium' | 'lifetime';
   expiresAt?: string;
 }
 
@@ -63,14 +63,15 @@ Deno.serve(async (req) => {
     }
 
     // Calculate credits based on tier
-    const credits = tier === 'free' ? 50 : tier === 'premium' ? 500 : 200;
+    const credits = tier === 'free' ? 50 : tier === 'premium' ? 500 : tier === 'lifetime' ? 999999 : 200;
     
-    // Calculate expiry date (30 days from now if not provided)
-    const expiryDate = expiresAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    // Calculate expiry date (null for lifetime, 30 days for others if not provided)
+    const expiryDate = tier === 'lifetime' ? null : (expiresAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString());
 
     console.log(`Admin ${user.id} upgrading user ${userId} to ${tier}`);
 
     // Update user profile with service role (bypasses RLS)
+    // Don't set updated_at explicitly - let the trigger handle it to avoid conflicts
     const { data, error } = await supabaseAdmin
       .from('profiles')
       .update({
@@ -79,8 +80,7 @@ Deno.serve(async (req) => {
         subscription_expires_at: expiryDate,
         ai_credits: credits,
         credits_reset_date: expiryDate,
-        monthly_trade_limit: tier === 'free' ? 10 : 999999,
-        updated_at: new Date().toISOString()
+        monthly_trade_limit: tier === 'free' ? 10 : 999999
       })
       .eq('id', userId)
       .select()
