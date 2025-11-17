@@ -14,13 +14,14 @@ import { ModernBarChart } from "@/components/ModernBarChart";
 import { DrawdownHeatmap } from "@/components/DrawdownHeatmap";
 import { SessionAnalytics } from "@/components/SessionAnalytics";
 import { SetupPerformanceAnalyzer } from "@/components/SetupPerformanceAnalyzer";
-import EmotionalInsights from "@/components/EmotionalInsights";
-import { AICoachDashboard } from "@/components/AICoachDashboard";
 import { PeriodComparison } from "@/components/PeriodComparison";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { DailyChallengeCard } from "@/components/DailyChallengeCard";
+import { TradingScoreCard } from "@/components/TradingScoreCard";
+import { MilestoneNotification } from "@/components/MilestoneNotification";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -248,14 +249,14 @@ const Dashboard = () => {
 
           <Card className={`bg-gradient-to-br ${stats.totalPnL >= 0 ? 'from-green-500/10 border-green-500/20' : 'from-red-500/10 border-red-500/20'}`}>
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-muted-foreground uppercase">P/L</p>
-                  <p className={`text-xl md:text-2xl font-bold truncate ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <p className={`text-2xl font-bold ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     ${stats.totalPnL >= 0 ? '+' : ''}{stats.totalPnL.toLocaleString()}
                   </p>
                 </div>
-                {stats.totalPnL >= 0 ? <TrendingUp className="h-6 w-6 md:h-8 md:w-8 text-green-600 opacity-50 flex-shrink-0" /> : <TrendingDown className="h-6 w-6 md:h-8 md:w-8 text-red-600 opacity-50 flex-shrink-0" />}
+                {stats.totalPnL >= 0 ? <TrendingUp className="h-8 w-8 text-green-600 opacity-50 flex-shrink-0" /> : <TrendingDown className="h-8 w-8 text-red-600 opacity-50 flex-shrink-0" />}
               </div>
             </CardContent>
           </Card>
@@ -294,11 +295,11 @@ const Dashboard = () => {
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-muted-foreground uppercase">Best</p>
-                  <p className="text-xl md:text-2xl font-bold text-green-600 truncate">
+                  <p className="text-2xl font-bold text-green-600">
                     +${stats.bestTrade.toLocaleString()}
                   </p>
                 </div>
-                <Target className="h-6 w-6 md:h-8 md:w-8 text-green-600 opacity-50 flex-shrink-0" />
+                <Target className="h-8 w-8 text-green-600 opacity-50 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
@@ -308,26 +309,29 @@ const Dashboard = () => {
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-muted-foreground uppercase">Worst</p>
-                  <p className="text-xl md:text-2xl font-bold text-red-600 truncate">
+                  <p className="text-2xl font-bold text-red-600">
                     ${stats.worstTrade.toLocaleString()}
                   </p>
                 </div>
-                <TrendingDown className="h-6 w-6 md:h-8 md:w-8 text-red-600 opacity-50 flex-shrink-0" />
+                <TrendingDown className="h-8 w-8 text-red-600 opacity-50 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
         </div>
 
         <Tabs defaultValue="overview">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto">
             <TabsTrigger value="overview"><BarChart3 className="h-4 w-4 mr-2" />Overview</TabsTrigger>
             <TabsTrigger value="analytics"><LineChart className="h-4 w-4 mr-2" />Analytics</TabsTrigger>
-            <TabsTrigger value="aicoach"><Brain className="h-4 w-4 mr-2" />AI Coach</TabsTrigger>
             <TabsTrigger value="trades"><Activity className="h-4 w-4 mr-2" />Trades</TabsTrigger>
             <TabsTrigger value="comparison"><Target className="h-4 w-4 mr-2" />Compare</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6 mt-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <DailyChallengeCard trades={trades} />
+              <TradingScoreCard trades={trades} />
+            </div>
             <div className="grid md:grid-cols-2 gap-6">
               {user && <EquityCurve userId={user.id} />}
               <ModernBarChart data={getMonthlyData()} />
@@ -345,11 +349,6 @@ const Dashboard = () => {
             <TradesList trades={trades} onTradeDeleted={handleTradeAdded} />
           </TabsContent>
 
-          <TabsContent value="aicoach" className="space-y-6 mt-6">
-            {user && <AICoachDashboard userId={user.id} />}
-            <EmotionalInsights trades={trades} />
-          </TabsContent>
-
           <TabsContent value="comparison" className="space-y-6 mt-6">
             <PeriodComparison trades={trades} />
           </TabsContent>
@@ -357,14 +356,17 @@ const Dashboard = () => {
       </div>
 
       {user && (
-        <ConsentModal 
-          open={showConsentModal} 
-          onClose={() => {
-            setShowConsentModal(false);
-            fetchProfile(user.id);
-          }} 
-          userId={user.id}
-        />
+        <>
+          <ConsentModal 
+            open={showConsentModal} 
+            onClose={() => {
+              setShowConsentModal(false);
+              fetchProfile(user.id);
+            }} 
+            userId={user.id}
+          />
+          <MilestoneNotification trades={trades} />
+        </>
       )}
     </Layout>
   );
