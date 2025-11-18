@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mic, MicOff, X, Minimize2, Maximize2, Volume2 } from "lucide-react";
+import { Mic, MicOff, X, Minimize2, Maximize2, Volume2, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 declare global {
   interface Window {
     SpeechRecognition: any;
@@ -23,6 +24,7 @@ export const GlobalVoiceAssistant = () => {
     timestamp: Date;
   }>>([]);
   const [isSupported, setIsSupported] = useState(true);
+  const [isRecentCommandsOpen, setIsRecentCommandsOpen] = useState(false);
   const recognitionRef = useRef<any>(null);
   const navigate = useNavigate();
   useEffect(() => {
@@ -192,52 +194,57 @@ export const GlobalVoiceAssistant = () => {
         </CardContent>
       </Card>;
   }
-  return <Card className="fixed bottom-24 right-6 w-96 max-h-[600px] shadow-2xl z-50 flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+  return <Card className="fixed bottom-24 right-6 w-[95vw] max-w-96 max-h-[85vh] md:max-h-[600px] shadow-2xl z-50 flex flex-col">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 px-4 py-3">
         <div>
-          <CardTitle className="flex items-center gap-2">
-            <Volume2 className="h-5 w-5 text-primary" />
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Volume2 className="h-4 w-4 text-primary" />
             Voice Assistant
           </CardTitle>
-          <CardDescription>Control your app with voice commands</CardDescription>
+          <CardDescription className="text-xs">Control your app with voice commands</CardDescription>
         </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsMinimized(true)}>
-            <Minimize2 className="h-4 w-4" />
+        <div className="flex gap-1">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsMinimized(true)}>
+            <Minimize2 className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsOpen(false)}>
-            <X className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsOpen(false)}>
+            <X className="h-3.5 w-3.5" />
           </Button>
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 overflow-y-auto space-y-4">
+      <CardContent className="flex-1 overflow-y-auto space-y-3 px-4 pb-4">
         <div className="space-y-2">
-          <Button onClick={isListening ? stopListening : startListening} disabled={isProcessing} className="w-full h-16" variant={isListening ? "destructive" : "default"} size="lg">
+          <Button onClick={isListening ? stopListening : startListening} disabled={isProcessing} className="w-full h-14" variant={isListening ? "destructive" : "default"} size="lg">
             {isListening ? <>
-                <MicOff className="h-6 w-6 mr-2 animate-pulse" />
+                <MicOff className="h-5 w-5 mr-2 animate-pulse" />
                 Listening...
               </> : <>
-                <Mic className="h-6 w-6 mr-2" />
+                <Mic className="h-5 w-5 mr-2" />
                 {isProcessing ? "Processing..." : "Tap to Speak"}
               </>}
           </Button>
 
-          {transcript && <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
-              <p className="text-sm font-medium mb-1">You said:</p>
-              <p className="text-sm">{transcript}</p>
+          {transcript && <div className="p-2.5 bg-primary/10 border border-primary/20 rounded-lg">
+              <p className="text-xs font-medium mb-1">You said:</p>
+              <p className="text-xs">{transcript}</p>
             </div>}
         </div>
 
-        {commandHistory.length > 0 && <div className="space-y-2">
-            <p className="text-sm font-medium">Recent Commands:</p>
-            <div className="space-y-2 max-h-48 overflow-y-auto scrollbar-thin">
-              {commandHistory.map((item, idx) => <div key={idx} className="p-2 bg-muted/50 rounded-lg text-xs space-y-1">
-                  <p className="font-medium">{item.command}</p>
-                  <p className="text-muted-foreground">{item.result}</p>
-                </div>)}
-            </div>
-          </div>}
+        {commandHistory.length > 0 && <Collapsible open={isRecentCommandsOpen} onOpenChange={setIsRecentCommandsOpen}>
+            <CollapsibleTrigger className="flex items-center justify-between w-full text-sm font-medium hover:text-primary transition-colors">
+              <span>Recent Commands ({commandHistory.length})</span>
+              <ChevronDown className={`h-4 w-4 transition-transform ${isRecentCommandsOpen ? 'rotate-180' : ''}`} />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2">
+              <div className="space-y-2 max-h-40 overflow-y-auto scrollbar-thin">
+                {commandHistory.map((item, idx) => <div key={idx} className="p-2 bg-muted/50 rounded-lg text-xs space-y-1">
+                    <p className="font-medium">{item.command}</p>
+                    <p className="text-muted-foreground">{item.result}</p>
+                  </div>)}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>}
 
         <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
           <p className="font-medium">Example commands:</p>
