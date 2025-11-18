@@ -9,7 +9,7 @@
 #property strict
 
 // Input parameters
-input string WebhookURL = "YOUR_WEBHOOK_URL_HERE";  // Webhook URL from your dashboard
+input string WebhookURL = "https://yvclpmdgrwugayrvjtqg.supabase.co/functions/v1/mt5-sync";  // Webhook URL (copy from dashboard)
 input string APIKey = "YOUR_API_KEY_HERE";          // API Key from your dashboard
 input int CheckIntervalSeconds = 30;                // Check for new trades every N seconds
 
@@ -26,9 +26,9 @@ int OnInit()
    Print("Webhook URL: ", WebhookURL);
    Print("Check interval: ", CheckIntervalSeconds, " seconds");
    
-   if(WebhookURL == "YOUR_WEBHOOK_URL_HERE" || APIKey == "YOUR_API_KEY_HERE")
+   if(APIKey == "YOUR_API_KEY_HERE")
    {
-      Alert("Please configure Webhook URL and API Key in EA settings!");
+      Alert("Please configure your API Key in EA settings!");
       return(INIT_FAILED);
    }
    

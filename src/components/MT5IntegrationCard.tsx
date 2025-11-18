@@ -278,32 +278,51 @@ export const MT5IntegrationCard = () => {
                   </div>
                   
                   {accounts.map((account) => (
-                    <div key={account.id} className="space-y-3 p-3 bg-background rounded border">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <p className="font-medium text-sm">{account.account_number}</p>
-                          <p className="text-xs text-muted-foreground">{account.broker_name}</p>
-                          {account.last_sync_at && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Last sync: {new Date(account.last_sync_at).toLocaleString()}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2 text-sm">
-                            {getSyncStatusIcon(account.last_sync_status, account.last_sync_at)}
-                            <span>{getSyncStatusText(account.last_sync_status, account.last_sync_at)}</span>
+                      <div key={account.id} className="space-y-3 p-3 bg-background rounded border">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{account.account_number}</p>
+                            <p className="text-xs text-muted-foreground">{account.broker_name}</p>
+                            {account.last_sync_at && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Last sync: {new Date(account.last_sync_at).toLocaleString()}
+                              </p>
+                            )}
                           </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDelete(account.id)}
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 text-sm">
+                              {getSyncStatusIcon(account.last_sync_status, account.last_sync_at)}
+                              <span>{getSyncStatusText(account.last_sync_status, account.last_sync_at)}</span>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDelete(account.id)}
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                      </div>
+                        
+                        {/* Connection Status Alert */}
+                        {!account.last_sync_at && (
+                          <Alert className="bg-yellow-500/10 border-yellow-500/20">
+                            <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                            <AlertDescription className="text-xs text-yellow-700 dark:text-yellow-400">
+                              <strong>EA Not Connected Yet</strong> - Follow the setup steps below and paste both Webhook URL and API Key in your MT5 EA settings.
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                        
+                        {account.last_sync_at && account.last_sync_status === 'success' && (
+                          <Alert className="bg-green-500/10 border-green-500/20">
+                            <CheckCircle2 className="h-4 w-4 text-green-500" />
+                            <AlertDescription className="text-xs text-green-700 dark:text-green-400">
+                              <strong>EA Connected Successfully!</strong> Your trades are syncing automatically.
+                            </AlertDescription>
+                          </Alert>
+                        )}
                       
                       <div className="space-y-2">
                         <p className="text-xs font-medium">Quick Setup:</p>
@@ -312,7 +331,8 @@ export const MT5IntegrationCard = () => {
                           <li>In MT5: File → Open Data Folder → MQL5 → Experts</li>
                           <li>Paste the EA file there and restart MT5</li>
                           <li>Drag the EA onto any chart</li>
-                          <li>Copy your API Key below and paste it in the EA settings</li>
+                          <li>Copy your Webhook URL and API Key below and paste them in the EA settings</li>
+                          <li>Enable "Allow Algo Trading" in MT5 and click OK</li>
                         </ol>
                       </div>
 
@@ -327,26 +347,46 @@ export const MT5IntegrationCard = () => {
                       
                       <Alert className="bg-muted/30">
                         <AlertDescription className="text-xs">
-                          Once you've installed the EA in MT5 and added your API key, the EA will automatically start syncing trades. The status above will change to "Connected" after the first successful sync.
+                          Once you've installed the EA in MT5 and added both the Webhook URL and API Key, the EA will automatically start syncing trades. The status above will change to "Connected" after the first successful sync.
                         </AlertDescription>
                       </Alert>
 
                       {account.api_key_encrypted && (
-                        <div className="space-y-2 pt-2 border-t">
-                          <Label className="text-xs font-medium">Your API Key (paste this in EA):</Label>
-                          <div className="flex gap-2">
-                            <Input 
-                              value={account.api_key_encrypted} 
-                              readOnly 
-                              className="text-xs font-mono"
-                            />
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => copyToClipboard(account.api_key_encrypted, 'API Key')}
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
+                        <div className="space-y-3 pt-2 border-t">
+                          <div className="space-y-2">
+                            <Label className="text-xs font-medium">Webhook URL (paste this in EA):</Label>
+                            <div className="flex gap-2">
+                              <Input 
+                                value={`https://yvclpmdgrwugayrvjtqg.supabase.co/functions/v1/mt5-sync`}
+                                readOnly 
+                                className="text-xs font-mono"
+                              />
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => copyToClipboard(`https://yvclpmdgrwugayrvjtqg.supabase.co/functions/v1/mt5-sync`, 'Webhook URL')}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label className="text-xs font-medium">API Key (paste this in EA):</Label>
+                            <div className="flex gap-2">
+                              <Input 
+                                value={account.api_key_encrypted} 
+                                readOnly 
+                                className="text-xs font-mono"
+                              />
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => copyToClipboard(account.api_key_encrypted, 'API Key')}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       )}
