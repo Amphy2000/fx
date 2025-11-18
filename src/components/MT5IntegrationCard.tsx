@@ -145,7 +145,42 @@ export const MT5IntegrationCard = () => {
     }
   };
 
-  // Removed manual sync - only EA should trigger syncs
+  const handleManualSync = async (accountId: string) => {
+    setSyncing(accountId);
+    try {
+      const account = accounts.find(acc => acc.id === accountId);
+      if (!account) {
+        toast.error("Account not found");
+        return;
+      }
+
+      toast.info("Starting manual sync...");
+
+      // Call the mt5-sync function directly
+      const { data, error } = await supabase.functions.invoke('mt5-sync', {
+        body: {
+          accountId: accountId,
+          trades: [] // Empty trades array to trigger a sync check
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast.success(
+          `Sync completed! ${data.imported || 0} trades imported, ${data.updated || 0} updated`
+        );
+        await fetchAccounts();
+      } else {
+        toast.warning("Sync completed but no new trades found");
+      }
+    } catch (error: any) {
+      console.error('Manual sync error:', error);
+      toast.error(error.message || "Failed to sync trades");
+    } finally {
+      setSyncing(null);
+    }
+  };
 
   const getSyncStatusIcon = (status: string, lastSyncAt: string | null) => {
     // Only show success if there was an actual sync
@@ -294,6 +329,19 @@ export const MT5IntegrationCard = () => {
                               {getSyncStatusIcon(account.last_sync_status, account.last_sync_at)}
                               <span>{getSyncStatusText(account.last_sync_status, account.last_sync_at)}</span>
                             </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleManualSync(account.id)}
+                              disabled={syncing === account.id}
+                              className="h-8 px-3"
+                            >
+                              {syncing === account.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <RefreshCw className="h-3 w-3" />
+                              )}
+                            </Button>
                             <Button
                               size="sm"
                               variant="ghost"
