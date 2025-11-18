@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { NotificationPermission } from "@/components/NotificationPermission";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -304,6 +305,9 @@ const Settings = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Push Notifications */}
+          <NotificationPermission />
 
           {/* Profile Info */}
           <Card className="border-border">

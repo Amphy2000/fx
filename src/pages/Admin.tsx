@@ -7,10 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Loader2, Download, Search, Eye, Crown } from "lucide-react";
+import { Loader2, Download, Search, Eye, Crown, Bell } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AdminNotificationSender } from "@/components/AdminNotificationSender";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -198,44 +200,54 @@ const Admin = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card className="border-border bg-card">
-            <CardHeader>
-              <CardTitle className="text-foreground">Total Users</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-4xl font-bold text-primary">{stats.totalUsers}</p>
-            </CardContent>
-          </Card>
+        <Tabs defaultValue="users" className="w-full">
+          <TabsList className="mb-6">
+            <TabsTrigger value="users">Users Management</TabsTrigger>
+            <TabsTrigger value="notifications">
+              <Bell className="mr-2 h-4 w-4" />
+              Push Notifications
+            </TabsTrigger>
+          </TabsList>
 
-          <Card className="border-border bg-card">
-            <CardHeader>
-              <CardTitle className="text-foreground">Total Trades</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-4xl font-bold text-primary">{stats.totalTrades}</p>
-            </CardContent>
-          </Card>
-        </div>
+          <TabsContent value="users" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="border-border bg-card">
+                <CardHeader>
+                  <CardTitle className="text-foreground">Total Users</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-4xl font-bold text-primary">{stats.totalUsers}</p>
+                </CardContent>
+              </Card>
 
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search by name or email..."
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
+              <Card className="border-border bg-card">
+                <CardHeader>
+                  <CardTitle className="text-foreground">Total Trades</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-4xl font-bold text-primary">{stats.totalTrades}</p>
+                </CardContent>
+              </Card>
+            </div>
 
-        {/* Users Table */}
-        <Card className="border-border">
-          <CardHeader>
-            <CardTitle className="text-foreground">All Users</CardTitle>
-          </CardHeader>
+            {/* Search Bar */}
+            <div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search by name or email..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Users Table */}
+            <Card className="border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">All Users</CardTitle>
+              </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
@@ -295,9 +307,15 @@ const Admin = () => {
                   ))}
                 </TableBody>
               </Table>
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+            </CardContent>
+          </Card>
+          </TabsContent>
+
+          <TabsContent value="notifications">
+            <AdminNotificationSender />
+          </TabsContent>
+        </Tabs>
 
         {/* User Details Modal */}
         <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
