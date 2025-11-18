@@ -106,38 +106,26 @@ export const MT5IntegrationCard = () => {
     }
   };
 
-  const handleSync = async (accountId: string) => {
-    setSyncing(accountId);
-    try {
-      // Call MT5 sync edge function
-      const { data, error } = await supabase.functions.invoke('mt5-sync', {
-        body: { accountId }
-      });
+  // Removed manual sync - only EA should trigger syncs
 
-      if (error) throw error;
-
-      if (data?.imported > 0 || data?.updated > 0) {
-        toast.success(`Synced ${data.imported} new and ${data.updated} updated trades`);
-      } else {
-        toast.success("Account synced - ready to receive trades");
-      }
-      await fetchAccounts();
-    } catch (error: any) {
-      console.error('Error syncing:', error);
-      toast.error("Failed to sync MT5 account");
-    } finally {
-      setSyncing(null);
+  const getSyncStatusIcon = (status: string, lastSyncAt: string | null) => {
+    // Only show success if there was an actual sync
+    if (status === 'success' && lastSyncAt) {
+      return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+    } else if (status === 'error') {
+      return <XCircle className="h-4 w-4 text-red-500" />;
+    } else {
+      return <RefreshCw className="h-4 w-4 text-yellow-500" />;
     }
   };
 
-  const getSyncStatusIcon = (status: string) => {
-    switch (status) {
-      case 'success':
-        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
-      case 'error':
-        return <XCircle className="h-4 w-4 text-red-500" />;
-      default:
-        return <RefreshCw className="h-4 w-4 text-yellow-500" />;
+  const getSyncStatusText = (status: string, lastSyncAt: string | null) => {
+    if (status === 'success' && lastSyncAt) {
+      return 'Connected';
+    } else if (status === 'error') {
+      return 'Error';
+    } else {
+      return 'Waiting for EA';
     }
   };
 
@@ -256,11 +244,16 @@ export const MT5IntegrationCard = () => {
                         <div className="flex-1">
                           <p className="font-medium text-sm">{account.account_number}</p>
                           <p className="text-xs text-muted-foreground">{account.broker_name}</p>
+                          {account.last_sync_at && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Last sync: {new Date(account.last_sync_at).toLocaleString()}
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-2 text-sm">
-                            {getSyncStatusIcon(account.last_sync_status)}
-                            <span className="capitalize">{account.last_sync_status}</span>
+                            {getSyncStatusIcon(account.last_sync_status, account.last_sync_at)}
+                            <span>{getSyncStatusText(account.last_sync_status, account.last_sync_at)}</span>
                           </div>
                           <Button
                             size="sm"
@@ -291,25 +284,13 @@ export const MT5IntegrationCard = () => {
                             Download EA
                           </a>
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleSync(account.id)}
-                          disabled={syncing === account.id}
-                        >
-                          {syncing === account.id ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Testing
-                            </>
-                          ) : (
-                            <>
-                              <RefreshCw className="h-4 w-4 mr-2" />
-                              Test Connection
-                            </>
-                          )}
-                        </Button>
                       </div>
+                      
+                      <Alert className="bg-muted/30">
+                        <AlertDescription className="text-xs">
+                          Once you've installed the EA in MT5 and added your API key, the EA will automatically start syncing trades. The status above will change to "Connected" after the first successful sync.
+                        </AlertDescription>
+                      </Alert>
 
                       {account.api_key_encrypted && (
                         <div className="space-y-2 pt-2 border-t">
