@@ -144,8 +144,9 @@ export const MT5IntegrationCard = () => {
       <CardContent className="space-y-6">
         <Alert>
           <AlertDescription>
-            After connecting, configure the Expert Advisor (EA) in your MT5 terminal using the webhook URL and API key shown below. 
-            <a href="/MT5_Trade_Sync_EA.mq5" download className="underline ml-1">Download MT5 EA</a>
+            After connecting, configure the Expert Advisor (EA) in your MT5 terminal. 
+            <a href="/integrations/mt5-setup" className="underline ml-1">View setup guide</a> • 
+            <a href="/MT5_Trade_Sync_EA.mq5" download className="underline ml-1">Download EA</a>
           </AlertDescription>
         </Alert>
 
