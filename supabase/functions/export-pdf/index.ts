@@ -74,7 +74,7 @@ serve(async (req) => {
       });
     }
 
-    // Calculate stats
+    // Calculate stats (use all trades for stats)
     const wins = trades.filter(t => t.result === 'win').length;
     const losses = trades.filter(t => t.result === 'loss').length;
     const winRate = (wins / trades.length) * 100;
@@ -83,10 +83,18 @@ serve(async (req) => {
     const totalLoss = Math.abs(trades.filter(t => t.result === 'loss').reduce((sum, t) => sum + (t.profit_loss || 0), 0));
     const profitFactor = totalLoss > 0 ? (totalWin / totalLoss).toFixed(2) : '0';
 
+    // Limit trades for display (show most recent 50 to prevent PDF generation issues)
+    const displayTrades = trades.slice(0, 50);
+    const isLimited = trades.length > 50;
+
+    console.log(`Generating report with ${displayTrades.length} of ${trades.length} trades`);
+
     // Generate HTML report
     const htmlReport = generateHTMLReport({
       profile,
-      trades,
+      trades: displayTrades,
+      allTradesCount: trades.length,
+      isLimited,
       stats: {
         totalTrades: trades.length,
         wins,
@@ -117,7 +125,7 @@ serve(async (req) => {
 });
 
 function generateHTMLReport(data: any): string {
-  const { profile, trades, stats } = data;
+  const { profile, trades, allTradesCount, isLimited, stats } = data;
   
   return `
 <!DOCTYPE html>
@@ -181,6 +189,7 @@ function generateHTMLReport(data: any): string {
   </div>
 
   <h2>📋 Trade History</h2>
+  ${isLimited ? `<p style="color: #666; font-style: italic; margin-bottom: 10px;">Showing most recent 50 of ${allTradesCount} trades for display purposes. Stats above reflect all ${allTradesCount} trades.</p>` : ''}
   <table>
     <thead>
       <tr>

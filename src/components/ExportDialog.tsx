@@ -51,6 +51,13 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
 
       console.log('PDF data received, HTML length:', data.html.length);
 
+      // Validate HTML content
+      if (data.html.length < 100) {
+        throw new Error('Invalid HTML received - content too short');
+      }
+
+      console.log('Creating PDF container...');
+
       // Create a temporary container
       const container = document.createElement('div');
       container.innerHTML = data.html;
@@ -64,6 +71,8 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
 
       // Wait for rendering
       await new Promise(resolve => setTimeout(resolve, 1000));
+
+      console.log('Starting PDF generation with html2pdf...');
 
       // Use html2pdf
       const html2pdf = (await import('html2pdf.js')).default;
@@ -82,7 +91,15 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
       };
 
       console.log('Starting PDF generation...');
-      await html2pdf().set(opt).from(container).save();
+      
+      // Add timeout to PDF generation
+      const pdfPromise = html2pdf().set(opt).from(container).save();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('PDF generation timed out after 30 seconds')), 30000)
+      );
+      
+      await Promise.race([pdfPromise, timeoutPromise]);
+      
       console.log('PDF generation complete');
 
       // Clean up
