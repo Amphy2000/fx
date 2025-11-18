@@ -33,7 +33,46 @@ export const MT5IntegrationCard = () => {
 
   useEffect(() => {
     fetchAccounts();
-  }, []);
+    
+    // Listen for account sync updates via realtime
+    const channel = supabase
+      .channel('mt5-account-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'mt5_accounts'
+        },
+        (payload) => {
+          const updated = payload.new as any;
+          
+          // Check if this is a first sync (status changed from pending to success with last_sync_at)
+          if (updated.last_sync_status === 'success' && updated.last_sync_at) {
+            const oldAccount = accounts.find(acc => acc.id === updated.id);
+            
+            // If old account didn't have last_sync_at, this is first sync
+            if (oldAccount && !oldAccount.last_sync_at) {
+              toast.success(
+                `🎉 MT5 Account Connected!`,
+                {
+                  description: `${updated.account_number} is now syncing automatically. Check your email for details!`,
+                  duration: 6000,
+                }
+              );
+            }
+          }
+          
+          // Refresh accounts list
+          fetchAccounts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [accounts]);
 
   const fetchAccounts = async () => {
     const { data: { session } } = await supabase.auth.getSession();

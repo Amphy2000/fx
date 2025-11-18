@@ -36,7 +36,7 @@ serve(async (req) => {
       // Verify API key and get account
       const { data: account, error: accountError } = await supabase
         .from('mt5_accounts')
-        .select('id, user_id, api_key_encrypted')
+        .select('id, user_id, api_key_encrypted, last_sync_at, account_number, broker_name')
         .eq('api_key_encrypted', apiKey)
         .eq('is_active', true)
         .single();
@@ -52,6 +52,9 @@ serve(async (req) => {
       accountId = account.id;
       user = { id: account.user_id };
       newTrades = body.trades;
+      
+      // Store for first sync detection
+      (account as any).isFirstSync = !account.last_sync_at;
       
     } else if (authHeader) {
       // Browser call - use user auth
@@ -237,6 +240,14 @@ serve(async (req) => {
     }
 
     // Update account sync status
+    const { data: accountData } = await supabase
+      .from('mt5_accounts')
+      .select('last_sync_at, account_number, broker_name')
+      .eq('id', accountId)
+      .single();
+    
+    const isFirstSync = accountData && !accountData.last_sync_at;
+
     await supabase
       .from('mt5_accounts')
       .update({
@@ -245,6 +256,35 @@ serve(async (req) => {
         sync_error: null
       })
       .eq('id', accountId);
+
+    // Send first sync notification if this is the first successful sync with trades
+    if (isFirstSync && (imported > 0 || updated > 0)) {
+      console.log('mt5-sync: First sync detected, sending notification');
+      
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('email, full_name')
+          .eq('id', user.id)
+          .single();
+
+        if (profile?.email) {
+          // Fire-and-forget notification email
+          supabase.functions.invoke('send-first-sync-notification', {
+            body: {
+              email: profile.email,
+              name: profile.full_name || 'Trader',
+              accountNumber: accountData?.account_number || 'Unknown',
+              brokerName: accountData?.broker_name || 'Unknown',
+              tradesCount: imported + updated
+            }
+          }).catch(err => console.error('Failed to send notification:', err));
+        }
+      } catch (notifError) {
+        console.error('Error preparing notification:', notifError);
+        // Don't fail the sync if notification fails
+      }
+    }
 
     // Calculate and store performance metrics
     await calculatePerformanceMetrics(supabase, user.id, accountId);
