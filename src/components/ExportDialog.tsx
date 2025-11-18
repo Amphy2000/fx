@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Download, FileText, Table } from "lucide-react";
+import { CalendarIcon, Download, Table } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,93 +27,6 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
   );
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [isExporting, setIsExporting] = useState(false);
-
-  const handleExportPDF = async () => {
-    setIsExporting(true);
-    try {
-      console.log('Starting PDF export with dates:', { startDate, endDate });
-      
-      const { data, error } = await supabase.functions.invoke('export-pdf', {
-        body: {
-          startDate: startDate.toISOString(),
-          endDate: endDate.toISOString()
-        }
-      });
-
-      if (error) {
-        console.error('PDF export error:', error);
-        throw error;
-      }
-
-      if (!data?.html) {
-        throw new Error('No HTML data received from server');
-      }
-
-      console.log('PDF data received, HTML length:', data.html.length);
-
-      // Validate HTML content
-      if (data.html.length < 100) {
-        throw new Error('Invalid HTML received - content too short');
-      }
-
-      console.log('Creating PDF container...');
-
-      // Create a temporary container
-      const container = document.createElement('div');
-      container.innerHTML = data.html;
-      container.style.position = 'absolute';
-      container.style.left = '-9999px';
-      container.style.padding = '20px';
-      container.style.backgroundColor = 'white';
-      container.style.color = 'black';
-      container.style.width = '210mm';
-      document.body.appendChild(container);
-
-      // Wait for rendering
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      console.log('Starting PDF generation with html2pdf...');
-
-      // Use html2pdf
-      const html2pdf = (await import('html2pdf.js')).default;
-      const opt = {
-        margin: 10,
-        filename: data.fileName || `trading-report-${format(startDate, 'yyyy-MM-dd')}-${format(endDate, 'yyyy-MM-dd')}.pdf`,
-        image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { 
-          scale: 2, 
-          backgroundColor: '#ffffff',
-          useCORS: true,
-          logging: true
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] as const }
-      };
-
-      console.log('Starting PDF generation...');
-      
-      // Add timeout to PDF generation
-      const pdfPromise = html2pdf().set(opt).from(container).save();
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('PDF generation timed out after 30 seconds')), 30000)
-      );
-      
-      await Promise.race([pdfPromise, timeoutPromise]);
-      
-      console.log('PDF generation complete');
-
-      // Clean up
-      document.body.removeChild(container);
-
-      toast.success("PDF exported successfully!");
-      onOpenChange(false);
-    } catch (error: any) {
-      console.error('PDF Export failed:', error);
-      toast.error(error.message || "Failed to export PDF. Please try a smaller date range.");
-    } finally {
-      setIsExporting(false);
-    }
-  };
 
   const handleExportCSV = async (type: 'trades' | 'analytics') => {
     setIsExporting(true);
@@ -227,33 +140,26 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
 
           <div className="pt-4 space-y-2">
             <Label>Export Format</Label>
-            <div className="grid grid-cols-3 gap-2">
-              <Button
-                onClick={handleExportPDF}
-                disabled={isExporting}
-                variant="outline"
-                className="h-auto flex-col gap-2 py-4"
-              >
-                <FileText className="h-6 w-6" />
-                <span className="text-xs">PDF Report</span>
-              </Button>
+            <div className="grid grid-cols-2 gap-3">
               <Button
                 onClick={() => handleExportCSV('trades')}
                 disabled={isExporting}
                 variant="outline"
-                className="h-auto flex-col gap-2 py-4"
+                className="h-auto flex-col gap-2 py-6"
               >
-                <Table className="h-6 w-6" />
-                <span className="text-xs">Trades CSV</span>
+                <Table className="h-8 w-8" />
+                <span className="text-sm font-medium">Trades CSV</span>
+                <span className="text-xs text-muted-foreground">Export all trade details</span>
               </Button>
               <Button
                 onClick={() => handleExportCSV('analytics')}
                 disabled={isExporting}
                 variant="outline"
-                className="h-auto flex-col gap-2 py-4"
+                className="h-auto flex-col gap-2 py-6"
               >
-                <Download className="h-6 w-6" />
-                <span className="text-xs">Analytics CSV</span>
+                <Download className="h-8 w-8" />
+                <span className="text-sm font-medium">Analytics CSV</span>
+                <span className="text-xs text-muted-foreground">Export performance metrics</span>
               </Button>
             </div>
           </div>
