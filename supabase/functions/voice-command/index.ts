@@ -65,20 +65,33 @@ serve(async (req) => {
         tools: [{
           type: "function",
           function: {
-            name: "execute_trade_command",
-            description: "Execute a trade management command",
+            name: "execute_app_command",
+            description: "Execute any app command including navigation, trade management, journal entries, analytics, and settings",
             parameters: {
               type: "object",
               properties: {
                 action: {
                   type: "string",
-                  enum: ["delete_last", "show_wins", "show_losses", "count_trades", "show_recent", "show_stats", "mark_last_as", "close_trade"],
+                  enum: [
+                    "navigate", "delete_last", "show_wins", "show_losses", "count_trades", 
+                    "show_recent", "show_stats", "mark_last_as", "close_trade", "add_trade",
+                    "add_journal", "show_journal", "show_analytics", "export_data", "show_targets",
+                    "show_achievements", "show_leaderboard", "show_streaks"
+                  ],
                   description: "The action to perform"
+                },
+                destination: {
+                  type: "string",
+                  enum: [
+                    "dashboard", "journal", "trades", "analytics", "ai-coach", "targets", 
+                    "achievements", "leaderboard", "streaks", "settings", "pricing", "integrations"
+                  ],
+                  description: "Navigation destination (for navigate action)"
                 },
                 timeframe: {
                   type: "string",
                   enum: ["today", "this_week", "this_month", "all"],
-                  description: "Time period for the query"
+                  description: "Time period for queries"
                 },
                 result_filter: {
                   type: "string",
@@ -88,15 +101,28 @@ serve(async (req) => {
                 result_value: {
                   type: "string",
                   enum: ["win", "loss", "breakeven"],
-                  description: "Result to mark the trade as (for mark_last_as action)"
+                  description: "Result to mark the trade as"
                 },
                 profit_amount: {
                   type: "number",
-                  description: "Profit/loss amount (for close_trade action)"
+                  description: "Profit/loss amount"
                 },
                 exit_price: {
                   type: "number",
-                  description: "Exit price (optional, for close_trade action)"
+                  description: "Exit price"
+                },
+                trade_data: {
+                  type: "object",
+                  description: "Trade data for adding new trade"
+                },
+                journal_data: {
+                  type: "object",
+                  description: "Journal entry data"
+                },
+                export_format: {
+                  type: "string",
+                  enum: ["json", "csv"],
+                  description: "Export format"
                 }
               },
               required: ["action"],
@@ -118,16 +144,16 @@ serve(async (req) => {
     if (!toolCall) {
       return new Response(JSON.stringify({ 
         success: false, 
-        message: "I couldn't understand that command. Try 'delete last trade', 'show my wins this week', 'mark last trade as win', or 'close trade with profit 50'" 
+        message: "I couldn't understand that command. Try: 'go to journal', 'show my stats', 'add a trade', 'what's my streak?', or 'export data'" 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
     const params = JSON.parse(toolCall.function.arguments);
-    const { action, timeframe = 'all', result_filter = 'all' } = params;
+    const { action, timeframe = 'all', result_filter = 'all', destination, export_format } = params;
 
-    console.log('Parsed command:', { action, timeframe, result_filter });
+    console.log('Parsed command:', params);
 
     // Calculate date range
     const now = new Date();
@@ -362,6 +388,196 @@ serve(async (req) => {
           action: 'close',
           tradeId: lastOpenTrade.id,
           data: updateData
+        };
+        break;
+      }
+
+      case 'navigate': {
+        if (!destination) {
+          return new Response(JSON.stringify({
+            success: false,
+            message: "Please specify where you want to go"
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        result = {
+          success: true,
+          message: `Navigating to ${destination}`,
+          action: 'navigate',
+          data: { destination }
+        };
+        break;
+      }
+
+      case 'add_trade': {
+        const { trade_data } = params;
+        if (!trade_data || !trade_data.pair || !trade_data.direction || !trade_data.entry_price) {
+          return new Response(JSON.stringify({
+            success: false,
+            message: "Please provide trade details (pair, direction, entry price)"
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        const { error: insertError } = await supabase
+          .from('trades')
+          .insert({
+            user_id: user.id,
+            ...trade_data
+          });
+
+        if (insertError) throw insertError;
+
+        result = {
+          success: true,
+          message: `Added ${trade_data.direction} trade for ${trade_data.pair}`,
+          action: 'add_trade'
+        };
+        break;
+      }
+
+      case 'add_journal': {
+        const { journal_data } = params;
+        if (!journal_data || !journal_data.mood) {
+          return new Response(JSON.stringify({
+            success: false,
+            message: "Please provide at least your mood for the journal entry"
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        const { error: insertError } = await supabase
+          .from('journal_entries')
+          .insert({
+            user_id: user.id,
+            entry_date: new Date().toISOString().split('T')[0],
+            ...journal_data
+          });
+
+        if (insertError) throw insertError;
+
+        result = {
+          success: true,
+          message: `Journal entry added with ${journal_data.mood} mood`,
+          action: 'add_journal'
+        };
+        break;
+      }
+
+      case 'show_journal': {
+        const { data: entries } = await supabase
+          .from('journal_entries')
+          .select('*')
+          .eq('user_id', user.id)
+          .gte('entry_date', startDate.toISOString().split('T')[0])
+          .order('entry_date', { ascending: false })
+          .limit(5);
+
+        result = {
+          success: true,
+          message: `Found ${entries?.length || 0} recent journal entries`,
+          data: { entries },
+          action: 'show'
+        };
+        break;
+      }
+
+      case 'show_analytics': {
+        const { data: trades } = await supabase
+          .from('trades')
+          .select('*')
+          .eq('user_id', user.id)
+          .gte('created_at', startDate.toISOString());
+
+        const pairs = [...new Set(trades?.map(t => t.pair))];
+        const winRate = trades?.length 
+          ? ((trades.filter(t => t.result === 'win').length / trades.length) * 100).toFixed(1)
+          : '0';
+
+        result = {
+          success: true,
+          message: `Analytics ${timeframe !== 'all' ? timeframe : ''}: ${trades?.length || 0} trades across ${pairs.length} pairs. Win rate: ${winRate}%`,
+          data: { trades, pairs, winRate },
+          action: 'analytics'
+        };
+        break;
+      }
+
+      case 'export_data': {
+        result = {
+          success: true,
+          message: `Preparing ${export_format || 'json'} export`,
+          action: 'export',
+          data: { format: export_format || 'json' }
+        };
+        break;
+      }
+
+      case 'show_targets': {
+        const { data: targets } = await supabase
+          .from('targets')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        result = {
+          success: true,
+          message: `You have ${targets?.length || 0} active target${targets?.length !== 1 ? 's' : ''}`,
+          data: { targets },
+          action: 'show'
+        };
+        break;
+      }
+
+      case 'show_achievements': {
+        const { data: achievements } = await supabase
+          .from('achievements')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('earned_at', { ascending: false });
+
+        result = {
+          success: true,
+          message: `You've earned ${achievements?.length || 0} achievement${achievements?.length !== 1 ? 's' : ''}`,
+          data: { achievements },
+          action: 'show'
+        };
+        break;
+      }
+
+      case 'show_streaks': {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('current_streak, longest_streak')
+          .eq('id', user.id)
+          .single();
+
+        result = {
+          success: true,
+          message: `Current streak: ${profile?.current_streak || 0} days. Best: ${profile?.longest_streak || 0} days`,
+          data: profile,
+          action: 'show'
+        };
+        break;
+      }
+
+      case 'show_leaderboard': {
+        const { data: profiles } = await supabase
+          .from('leaderboard_profiles')
+          .select('*')
+          .eq('is_public', true)
+          .order('win_rate', { ascending: false })
+          .limit(5);
+
+        result = {
+          success: true,
+          message: `Top ${profiles?.length || 0} traders on the leaderboard`,
+          data: { profiles },
+          action: 'show'
         };
         break;
       }

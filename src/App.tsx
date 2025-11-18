@@ -33,21 +33,23 @@ import Streaks from "./pages/Streaks";
 import Onboarding from "./pages/Onboarding";
 import Achievements from "./pages/Achievements";
 import Install from "./pages/Install";
+import { GlobalVoiceAssistant } from "./components/GlobalVoiceAssistant";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
   useOfflineSync();
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/calculators" element={<Calculators />} />
-        <Route path="/ai-chat" element={<AIChat />} />
-        <Route path="/weekly-summary" element={<WeeklySummary />} />
-        <Route path="/ai-journal" element={<AIJournal />} />
+    <>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/calculators" element={<Calculators />} />
+          <Route path="/ai-chat" element={<AIChat />} />
+          <Route path="/weekly-summary" element={<WeeklySummary />} />
+          <Route path="/ai-journal" element={<AIJournal />} />
         <Route path="/pattern-recognition" element={<PatternRecognition />} />
         <Route path="/journal" element={<Journal />} />
         
@@ -72,7 +74,9 @@ const AppContent = () => {
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <GlobalVoiceAssistant />
     </BrowserRouter>
+    </>
   );
 };
 
