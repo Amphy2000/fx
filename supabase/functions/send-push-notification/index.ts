@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { title, body, targetUsers, icon, badge } = await req.json();
+    const { title, body, targetUsers, userSegment, icon, badge, actionButtons, templateId } = await req.json();
 
     if (!title || !body) {
       return new Response(
@@ -95,6 +95,9 @@ Deno.serve(async (req) => {
         title,
         body,
         target_users: targetUsers || [],
+        user_segment: userSegment || 'all',
+        action_buttons: actionButtons || null,
+        template_id: templateId || null,
         status: 'sending'
       })
       .select()
@@ -102,13 +105,47 @@ Deno.serve(async (req) => {
 
     if (logError) throw logError;
 
-    // Fetch active subscriptions
+    // Fetch active subscriptions based on segment
+    let userIds: string[] = [];
+    
+    if (userSegment && userSegment !== 'all') {
+      // Fetch users based on segment
+      let userQuery = supabaseClient.from('profiles').select('id');
+      
+      switch (userSegment) {
+        case 'free':
+          userQuery = userQuery.eq('subscription_tier', 'free');
+          break;
+        case 'monthly':
+          userQuery = userQuery.eq('subscription_tier', 'monthly');
+          break;
+        case 'lifetime':
+          userQuery = userQuery.eq('subscription_tier', 'lifetime');
+          break;
+        case 'inactive':
+          // Users who haven't logged a trade in 7 days
+          const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+          userQuery = userQuery.or(`last_trade_date.is.null,last_trade_date.lt.${sevenDaysAgo}`);
+          break;
+        case 'active':
+          // Users who logged a trade in last 7 days
+          const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+          userQuery = userQuery.gte('last_trade_date', weekAgo);
+          break;
+      }
+      
+      const { data: users } = await userQuery;
+      userIds = users?.map(u => u.id) || [];
+    }
+
     let query = supabaseClient
       .from('push_subscriptions')
       .select('*')
       .eq('is_active', true);
 
-    if (targetUsers && targetUsers.length > 0 && targetUsers[0] !== 'all') {
+    if (userSegment && userSegment !== 'all' && userIds.length > 0) {
+      query = query.in('user_id', userIds);
+    } else if (targetUsers && targetUsers.length > 0 && targetUsers[0] !== 'all') {
       query = query.in('user_id', targetUsers);
     }
 
@@ -132,7 +169,11 @@ Deno.serve(async (req) => {
         title,
         body,
         icon: icon || '/pwa-192x192.png',
-        badge: badge || '/favicon.png'
+        badge: badge || '/favicon.png',
+        data: {
+          notificationId: notificationLog.id,
+          actions: actionButtons || []
+        }
       };
 
       const results = await Promise.allSettled(
