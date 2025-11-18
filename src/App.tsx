@@ -14,7 +14,6 @@ import WeeklySummary from "./pages/WeeklySummary";
 import AIJournal from "./pages/AIJournal";
 import PatternRecognition from "./pages/PatternRecognition";
 import Journal from "./pages/Journal";
-
 import Leaderboard from "./pages/Leaderboard";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
@@ -24,6 +23,7 @@ import Pricing from "./pages/Pricing";
 import Feedback from "./pages/Feedback";
 import Privacy from "./pages/Privacy";
 import Integrations from "./pages/Integrations";
+import MT5Setup from "./pages/MT5Setup";
 import NotFound from "./pages/NotFound";
 import CheckIn from "./pages/CheckIn";
 import Routine from "./pages/Routine";
@@ -54,6 +54,7 @@ const AppContent = () => {
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/integrations" element={<Integrations />} />
+        <Route path="/integrations/mt5-setup" element={<MT5Setup />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/targets" element={<Targets />} />
         <Route path="/trade-calendar" element={<TradeCalendar />} />
