@@ -35,28 +35,20 @@ export const VoiceTradeLogger = ({ onTradeDataParsed }: VoiceTradeLoggerProps) =
 
     // Initialize Speech Recognition
     const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
+    recognition.continuous = false; // Changed to false for cleaner results
+    recognition.interimResults = false; // Only final results
     recognition.lang = 'en-US';
+    recognition.maxAlternatives = 1;
 
     recognition.onresult = (event: any) => {
-      let interimTranscript = '';
-      let finalTranscript = '';
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript + ' ';
-        } else {
-          interimTranscript += transcript;
-        }
-      }
-
-      if (finalTranscript) {
-        setTranscript(prev => prev + finalTranscript);
-      } else if (interimTranscript) {
-        setTranscript(prev => prev + interimTranscript);
-      }
+      const result = event.results[0][0].transcript;
+      setTranscript(result);
+      setIsRecording(false);
+      
+      // Automatically process after recording stops
+      setTimeout(() => {
+        processTranscript(result);
+      }, 100);
     };
 
     recognition.onerror = (event: any) => {
@@ -65,6 +57,8 @@ export const VoiceTradeLogger = ({ onTradeDataParsed }: VoiceTradeLoggerProps) =
         toast.error("No speech detected", {
           description: "Please try speaking again"
         });
+      } else if (event.error === 'aborted') {
+        // User stopped manually, ignore
       } else {
         toast.error("Speech recognition error", {
           description: event.error
@@ -74,10 +68,6 @@ export const VoiceTradeLogger = ({ onTradeDataParsed }: VoiceTradeLoggerProps) =
     };
 
     recognition.onend = () => {
-      if (isRecording && transcript.trim()) {
-        // Process the transcript
-        processTranscript(transcript);
-      }
       setIsRecording(false);
     };
 
@@ -92,7 +82,7 @@ export const VoiceTradeLogger = ({ onTradeDataParsed }: VoiceTradeLoggerProps) =
         }
       }
     };
-  }, [isRecording, transcript]);
+  }, []);
 
   const startRecording = async () => {
     if (!isSupported) {
@@ -104,10 +94,11 @@ export const VoiceTradeLogger = ({ onTradeDataParsed }: VoiceTradeLoggerProps) =
 
     try {
       setTranscript("");
+      setIsProcessing(false);
       recognitionRef.current.start();
       setIsRecording(true);
-      toast.success("Recording started - speak your trade details", {
-        description: "Say something like: 'Buy EUR/USD at 1.0850, stop loss 1.0800, take profit 1.0950'"
+      toast.success("Listening...", {
+        description: "Speak clearly: 'Buy EUR/USD at 1.0850, stop 1.0800, target 1.0950'"
       });
     } catch (error) {
       console.error("Error starting recognition:", error);
@@ -213,27 +204,45 @@ export const VoiceTradeLogger = ({ onTradeDataParsed }: VoiceTradeLoggerProps) =
             {isProcessing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
+                Parsing trade...
               </>
             ) : isRecording ? (
               <>
                 <MicOff className="mr-2 h-4 w-4" />
-                Stop Recording
+                Stop & Parse
               </>
             ) : (
               <>
                 <Mic className="mr-2 h-4 w-4" />
-                Start Recording
+                Speak Trade
               </>
             )}
           </Button>
         </div>
 
-        {transcript && (
-          <div className="p-3 bg-muted rounded-lg">
-            <p className="text-sm font-medium mb-1">Transcript:</p>
-            <p className="text-sm text-muted-foreground">{transcript}</p>
-          </div>
+        {transcript && !isProcessing && (
+          <>
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-sm font-medium mb-1">Heard:</p>
+              <p className="text-sm text-muted-foreground">{transcript}</p>
+            </div>
+            <Button
+              onClick={() => processTranscript(transcript)}
+              variant="outline"
+              size="sm"
+              disabled={isProcessing}
+              className="w-full"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Parsing...
+                </>
+              ) : (
+                "Parse Again"
+              )}
+            </Button>
+          </>
         )}
 
         <div className="text-xs text-muted-foreground space-y-1">
