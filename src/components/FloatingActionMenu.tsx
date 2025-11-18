@@ -17,6 +17,7 @@ import { toast } from "sonner";
 export const FloatingActionMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
   const navigate = useNavigate();
 
   const quickActions = [
@@ -24,7 +25,7 @@ export const FloatingActionMenu = () => {
       icon: Mic,
       label: "Voice Assistant",
       action: () => {
-        // Voice assistant opens itself, just trigger navigation
+        setShowVoiceAssistant(true);
         setIsOpen(false);
       },
       color: "bg-primary hover:bg-primary/90",
@@ -34,7 +35,7 @@ export const FloatingActionMenu = () => {
       icon: TrendingUp,
       label: "Log Trade",
       action: () => {
-        navigate("/?action=add-trade");
+        navigate("/dashboard?action=add-trade");
         setIsOpen(false);
       },
       color: "bg-green-600 hover:bg-green-700"
@@ -105,7 +106,7 @@ export const FloatingActionMenu = () => {
       )}
 
       {/* Modals */}
-      <GlobalVoiceAssistant />
+      <GlobalVoiceAssistant isOpen={showVoiceAssistant} onOpenChange={setShowVoiceAssistant} />
       <FeedbackModal open={showFeedback} onOpenChange={setShowFeedback} />
     </>
   );

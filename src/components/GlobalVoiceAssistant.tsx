@@ -12,9 +12,26 @@ declare global {
     webkitSpeechRecognition: any;
   }
 }
-export const GlobalVoiceAssistant = () => {
-  const [isOpen, setIsOpen] = useState(false);
+interface GlobalVoiceAssistantProps {
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export const GlobalVoiceAssistant = ({ 
+  isOpen: externalIsOpen, 
+  onOpenChange 
+}: GlobalVoiceAssistantProps = {}) => {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
+  const setIsOpen = (open: boolean) => {
+    if (onOpenChange) {
+      onOpenChange(open);
+    } else {
+      setInternalIsOpen(open);
+    }
+  };
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
