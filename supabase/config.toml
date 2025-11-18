@@ -45,5 +45,8 @@ verify_jwt = true
 [functions.voice-trade-parser]
 verify_jwt = true
 
+[functions.parse-voice-trade]
+verify_jwt = true
+
 [functions.journal-insights]
 verify_jwt = true
