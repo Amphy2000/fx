@@ -109,6 +109,58 @@ const Settings = () => {
     }
   };
 
+  const handleResetAccount = async () => {
+    if (!profile) return;
+    
+    const confirmed = window.confirm(
+      "⚠️ WARNING: This will permanently delete ALL your data including:\n\n" +
+      "• All trades\n" +
+      "• Journal entries\n" +
+      "• Achievements\n" +
+      "• Check-ins\n" +
+      "• Streaks\n" +
+      "• MT5 connections\n\n" +
+      "This action CANNOT be undone. Are you absolutely sure?"
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      // Delete all user data
+      await Promise.all([
+        supabase.from("trades").delete().eq("user_id", profile.id),
+        supabase.from("journal_entries").delete().eq("user_id", profile.id),
+        supabase.from("achievements").delete().eq("user_id", profile.id),
+        supabase.from("daily_checkins").delete().eq("user_id", profile.id),
+        supabase.from("streaks").delete().eq("user_id", profile.id),
+        supabase.from("mt5_accounts").delete().eq("user_id", profile.id),
+        supabase.from("routine_entries").delete().eq("user_id", profile.id),
+        supabase.from("targets").delete().eq("user_id", profile.id),
+      ]);
+      
+      // Reset profile stats
+      const { error } = await supabase
+        .from("profiles")
+        .update({ 
+          trades_count: 0,
+          current_streak: 0,
+          longest_streak: 0,
+          last_trade_date: null,
+          onboarding_completed: false,
+          onboarding_step: 0
+        })
+        .eq("id", profile.id);
+
+      if (error) throw error;
+      
+      toast.success("Account reset successfully");
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Error resetting account:", error);
+      toast.error("Failed to reset account");
+    }
+  };
+
   const restartOnboarding = async () => {
     if (!profile) return;
     
@@ -128,6 +180,16 @@ const Settings = () => {
     } catch (error) {
       console.error("Error restarting onboarding:", error);
       toast.error("Failed to restart onboarding");
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      navigate("/auth");
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Failed to sign out");
     }
   };
 
@@ -242,6 +304,27 @@ const Settings = () => {
               <Button onClick={restartOnboarding} variant="outline" className="w-full">
                 Restart Onboarding Tour
               </Button>
+            </CardContent>
+          </Card>
+
+          {/* Account Actions */}
+          <Card className="border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground">Account Management</CardTitle>
+              <CardDescription>Manage your account and data</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button onClick={handleSignOut} variant="outline" className="w-full">
+                Sign Out
+              </Button>
+              <div className="pt-3 border-t border-border">
+                <Button onClick={handleResetAccount} variant="destructive" className="w-full">
+                  Reset Account (Delete All Data)
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  ⚠️ This will permanently delete all your trades, journal entries, achievements, and other data. This action cannot be undone.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </div>
