@@ -168,12 +168,12 @@ export const GlobalVoiceAssistant = () => {
     }
   };
   if (!isOpen) {
-    return <Button onClick={() => setIsOpen(true)} size="icon" className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50 my-[38px]">
+    return <Button onClick={() => setIsOpen(true)} size="icon" className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-lg z-50">
         <Mic className="h-6 w-6" />
       </Button>;
   }
   if (isMinimized) {
-    return <Card className="fixed bottom-6 right-6 w-72 shadow-2xl z-50">
+    return <Card className="fixed bottom-24 right-6 w-72 shadow-2xl z-50">
         <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-sm">Voice Assistant</CardTitle>
           <div className="flex gap-2">
@@ -193,7 +193,7 @@ export const GlobalVoiceAssistant = () => {
         </CardContent>
       </Card>;
   }
-  return <Card className="fixed bottom-6 right-6 w-96 max-h-[600px] shadow-2xl z-50 flex flex-col">
+  return <Card className="fixed bottom-24 right-6 w-96 max-h-[600px] shadow-2xl z-50 flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <div>
           <CardTitle className="flex items-center gap-2">
@@ -246,11 +246,11 @@ export const GlobalVoiceAssistant = () => {
             <li>"Go to journal"</li>
             <li>"Show my analytics"</li>
             <li>"What's my current streak?"</li>
-            <li>"Add a winning trade for EURUSD"</li>
-            <li>"Close my last trade with profit 100"</li>
-            <li>"Export my data as JSON"</li>
-            <li>"Show leaderboard"</li>
-            <li>"Navigate to settings"</li>
+            <li>"Show my recent trades"</li>
+            <li>"Mark last trade as win"</li>
+            <li>"Close my trade with profit 100"</li>
+            <li>"Delete last trade"</li>
+            <li>"Show my stats for this week"</li>
           </ul>
         </div>
       </CardContent>
