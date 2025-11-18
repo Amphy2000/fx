@@ -39,11 +39,33 @@ serve(async (req) => {
 
     const { accountId, trades: newTrades } = await req.json();
     
-    if (!accountId || !newTrades || !Array.isArray(newTrades)) {
+    if (!accountId) {
       return new Response(JSON.stringify({ error: 'Invalid request data' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400
       });
+    }
+
+    // If no trades provided, just update account status and return
+    if (!newTrades || !Array.isArray(newTrades) || newTrades.length === 0) {
+      await supabase
+        .from('mt5_accounts')
+        .update({ 
+          last_sync_at: new Date().toISOString(),
+          last_sync_status: 'success'
+        })
+        .eq('id', accountId)
+        .eq('user_id', user.id);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Account ready for sync. No trades to process.',
+          imported: 0,
+          updated: 0
+        }), 
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log(`mt5-sync: Processing ${newTrades.length} trades for account ${accountId}`);

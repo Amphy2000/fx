@@ -93,7 +93,11 @@ export const MT5IntegrationCard = () => {
 
       if (error) throw error;
 
-      toast.success("Sync initiated successfully");
+      if (data?.imported > 0 || data?.updated > 0) {
+        toast.success(`Synced ${data.imported} new and ${data.updated} updated trades`);
+      } else {
+        toast.success("Account synced - ready to receive trades");
+      }
       await fetchAccounts();
     } catch (error: any) {
       console.error('Error syncing:', error);
