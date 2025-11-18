@@ -42,6 +42,10 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
       entry_price: voiceData.entry_price || prev.entry_price,
       stop_loss: voiceData.stop_loss || prev.stop_loss,
       take_profit: voiceData.take_profit || prev.take_profit,
+      result: voiceData.result || prev.result,
+      emotion_before: voiceData.emotion_before || prev.emotion_before,
+      emotion_after: voiceData.emotion_after || prev.emotion_after,
+      notes: voiceData.notes || prev.notes,
     }));
     setShowVoiceLogger(false);
   };
