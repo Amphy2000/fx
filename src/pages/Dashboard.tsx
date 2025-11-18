@@ -24,6 +24,7 @@ import { TradingScoreCard } from "@/components/TradingScoreCard";
 import { MilestoneNotification } from "@/components/MilestoneNotification";
 import { GamificationOverlay } from "@/components/GamificationOverlay";
 import { VoiceCommands } from "@/components/VoiceCommands";
+import { ExportDialog } from "@/components/ExportDialog";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -189,111 +190,7 @@ const Dashboard = () => {
       supabase.removeChannel(channel);
     };
   }, [user]);
-  const handleExportPDF = async () => {
-    try {
-      const {
-        data,
-        error
-      } = await supabase.functions.invoke('export-pdf', {
-        body: {
-          startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          endDate: new Date().toISOString()
-        }
-      });
-      if (error) throw error;
-
-      // Create a temporary container to render the HTML
-      const container = document.createElement('div');
-      container.innerHTML = data.html;
-      container.style.position = 'absolute';
-      container.style.left = '-9999px';
-      container.style.padding = '20px';
-      container.style.backgroundColor = 'white';
-      container.style.color = 'black';
-      container.style.width = '210mm'; // A4 width
-      document.body.appendChild(container);
-
-      // Wait for fonts and images to load
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Use html2pdf to convert HTML to PDF
-      const html2pdf = (await import('html2pdf.js')).default;
-      const opt = {
-        margin: [10, 10, 10, 10] as [number, number, number, number],
-        filename: data.fileName,
-        image: {
-          type: 'jpeg' as const,
-          quality: 0.98
-        },
-        html2canvas: {
-          scale: 2,
-          backgroundColor: '#ffffff',
-          useCORS: true,
-          logging: false
-        },
-        jsPDF: {
-          unit: 'mm',
-          format: 'a4',
-          orientation: 'portrait' as const
-        },
-        pagebreak: {
-          mode: ['avoid-all', 'css', 'legacy']
-        }
-      };
-      await html2pdf().set(opt).from(container).save();
-
-      // Clean up
-      document.body.removeChild(container);
-      toast({
-        title: "Export Successful",
-        description: "Your trading report has been downloaded."
-      });
-    } catch (error) {
-      console.error('Export error:', error);
-      toast({
-        title: "Export Failed",
-        description: "Unable to generate report. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-  const handleExportCSV = async (type: 'trades' | 'analytics') => {
-    try {
-      const {
-        data,
-        error
-      } = await supabase.functions.invoke('export-csv', {
-        body: {
-          type,
-          startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          endDate: new Date().toISOString()
-        }
-      });
-      if (error) throw error;
-
-      // Create blob and download
-      const blob = new Blob([data.csv], {
-        type: 'text/csv'
-      });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = data.fileName;
-      a.click();
-      window.URL.revokeObjectURL(url);
-      toast({
-        title: "Export Successful",
-        description: `${type === 'trades' ? 'Trades' : 'Analytics'} data has been downloaded.`
-      });
-    } catch (error) {
-      console.error('Export error:', error);
-      toast({
-        title: "Export Failed",
-        description: "Unable to export data. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
   return <Layout>
       <div className="space-y-4 p-3 md:p-4 lg:p-0 md:py-0 md:px-0 md:mx-[10px] w-full max-w-full">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 md:gap-4">
@@ -302,13 +199,9 @@ const Dashboard = () => {
             <p className="text-xs md:text-sm lg:text-base text-muted-foreground">AI-Powered Analytics {mt5Accounts.length > 0 ? '• MT5 Synced' : ''}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleExportPDF} className="text-xs md:text-sm">
+            <Button variant="outline" size="sm" onClick={() => setExportDialogOpen(true)} className="text-xs md:text-sm">
               <FileDown className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-              PDF
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => handleExportCSV('trades')} className="text-xs md:text-sm">
-              <FileDown className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-              CSV
+              Export
             </Button>
             <CreditsDisplay />
           </div>
@@ -470,6 +363,7 @@ const Dashboard = () => {
       }} userId={user.id} />
           <MilestoneNotification trades={trades} />
           <GamificationOverlay />
+          <ExportDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} />
         </>}
     </Layout>;
 };
