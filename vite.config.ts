@@ -3,9 +3,16 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
+import fs from "fs";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode }) => {
+  // Read the custom service worker code
+  const swCustomCode = mode === 'production' 
+    ? fs.readFileSync(path.resolve(__dirname, 'src/sw-custom.js'), 'utf-8')
+    : '';
+
+  return {
   server: {
     host: "::",
     port: 8080,
@@ -15,7 +22,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "robots.txt", "hero-bg.jpg"],
+      includeAssets: ["favicon.ico", "robots.txt", "hero-bg.jpg", "sw.js"],
       manifest: {
         name: "Amphy AI Trade Journal",
         short_name: "Amphy AI",
@@ -59,6 +66,10 @@ export default defineConfig(({ mode }) => ({
             },
           },
         ],
+        // Add custom push event handlers
+        additionalManifestEntries: [],
+        skipWaiting: true,
+        clientsClaim: true,
       },
       devOptions: {
         enabled: true,
@@ -70,4 +81,5 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-}));
+};
+});

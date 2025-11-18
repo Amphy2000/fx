@@ -656,6 +656,78 @@ export type Database = {
         }
         Relationships: []
       }
+      push_notifications: {
+        Row: {
+          admin_id: string
+          body: string
+          created_at: string | null
+          failed_count: number | null
+          id: string
+          sent_count: number | null
+          status: string | null
+          target_users: string[] | null
+          title: string
+        }
+        Insert: {
+          admin_id: string
+          body: string
+          created_at?: string | null
+          failed_count?: number | null
+          id?: string
+          sent_count?: number | null
+          status?: string | null
+          target_users?: string[] | null
+          title: string
+        }
+        Update: {
+          admin_id?: string
+          body?: string
+          created_at?: string | null
+          failed_count?: number | null
+          id?: string
+          sent_count?: number | null
+          status?: string | null
+          target_users?: string[] | null
+          title?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth_key: string
+          created_at: string | null
+          device_info: string | null
+          endpoint: string
+          id: string
+          is_active: boolean | null
+          p256dh_key: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          auth_key: string
+          created_at?: string | null
+          device_info?: string | null
+          endpoint: string
+          id?: string
+          is_active?: boolean | null
+          p256dh_key: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          auth_key?: string
+          created_at?: string | null
+          device_info?: string | null
+          endpoint?: string
+          id?: string
+          is_active?: boolean | null
+          p256dh_key?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       routine_entries: {
         Row: {
           created_at: string
