@@ -32,6 +32,9 @@ const Dashboard = () => {
   const [trades, setTrades] = useState<any[]>([]);
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [mt5Accounts, setMt5Accounts] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [stats, setStats] = useState({
     totalTrades: 0,
     wins: 0,
@@ -43,6 +46,37 @@ const Dashboard = () => {
     bestTrade: 0,
     worstTrade: 0
   });
+  // Swipe gesture handling
+  const tabs = ["overview", "analytics", "trades", "voice", "comparison"];
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    const currentIndex = tabs.indexOf(activeTab);
+    
+    if (isLeftSwipe && currentIndex < tabs.length - 1) {
+      setActiveTab(tabs[currentIndex + 1]);
+    }
+    
+    if (isRightSwipe && currentIndex > 0) {
+      setActiveTab(tabs[currentIndex - 1]);
+    }
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({
       data: {
@@ -365,7 +399,7 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        <Tabs defaultValue="overview">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-5 lg:w-auto">
             <TabsTrigger value="overview"><BarChart3 className="h-4 w-4 mr-2" />Overview</TabsTrigger>
             <TabsTrigger value="analytics"><LineChart className="h-4 w-4 mr-2" />Analytics</TabsTrigger>
@@ -374,36 +408,43 @@ const Dashboard = () => {
             <TabsTrigger value="comparison"><Target className="h-4 w-4 mr-2" />Compare</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-6 mt-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <DailyChallengeCard trades={trades} />
-              <TradingScoreCard trades={trades} />
-            </div>
-            <div className="grid md:grid-cols-2 gap-6">
-              {user && <EquityCurve userId={user.id} />}
-              <ModernBarChart data={getMonthlyData()} />
-            </div>
-            <DrawdownHeatmap trades={trades} />
-          </TabsContent>
+          <div 
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+            className="touch-pan-y"
+          >
+            <TabsContent value="overview" className="space-y-6 mt-6 animate-fade-in">
+              <div className="grid md:grid-cols-2 gap-6">
+                <DailyChallengeCard trades={trades} />
+                <TradingScoreCard trades={trades} />
+              </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                {user && <EquityCurve userId={user.id} />}
+                <ModernBarChart data={getMonthlyData()} />
+              </div>
+              <DrawdownHeatmap trades={trades} />
+            </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-6 mt-6">
-            <SessionAnalytics trades={trades} />
-            {user && <SetupPerformanceAnalyzer trades={trades} userId={user.id} />}
-          </TabsContent>
+            <TabsContent value="analytics" className="space-y-6 mt-6 animate-fade-in">
+              <SessionAnalytics trades={trades} />
+              {user && <SetupPerformanceAnalyzer trades={trades} userId={user.id} />}
+            </TabsContent>
 
-          <TabsContent value="trades" className="space-y-6 mt-6">
-            <TradeForm onTradeAdded={handleTradeAdded} />
-            <TradesList trades={trades} onTradeDeleted={handleTradeAdded} />
-          </TabsContent>
+            <TabsContent value="trades" className="space-y-6 mt-6 animate-fade-in">
+              <TradeForm onTradeAdded={handleTradeAdded} />
+              <TradesList trades={trades} onTradeDeleted={handleTradeAdded} />
+            </TabsContent>
 
-          <TabsContent value="voice" className="space-y-6 mt-6">
-            <VoiceCommands onCommandExecuted={handleTradeAdded} />
-            <TradesList trades={trades} onTradeDeleted={handleTradeAdded} />
-          </TabsContent>
+            <TabsContent value="voice" className="space-y-6 mt-6 animate-fade-in">
+              <VoiceCommands onCommandExecuted={handleTradeAdded} />
+              <TradesList trades={trades} onTradeDeleted={handleTradeAdded} />
+            </TabsContent>
 
-          <TabsContent value="comparison" className="space-y-6 mt-6">
-            <PeriodComparison trades={trades} />
-          </TabsContent>
+            <TabsContent value="comparison" className="space-y-6 mt-6 animate-fade-in">
+              <PeriodComparison trades={trades} />
+            </TabsContent>
+          </div>
         </Tabs>
       </div>
 
