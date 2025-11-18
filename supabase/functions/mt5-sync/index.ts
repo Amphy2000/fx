@@ -13,31 +13,70 @@ serve(async (req) => {
   try {
     console.log('mt5-sync: Request received');
     
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-        status: 401 
-      });
-    }
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
+    // Check for MT5 API key in header (from EA) or Authorization (from browser)
+    const apiKey = req.headers.get('X-MT5-API-Key');
+    const authHeader = req.headers.get('Authorization');
+    
+    let supabase;
+    let user;
+    let accountId;
+    let newTrades;
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      console.error('mt5-sync: Auth error', userError);
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-        status: 401 
+    // Read body once
+    const body = await req.json();
+
+    if (apiKey) {
+      // MT5 EA webhook call - use service role key
+      console.log('mt5-sync: MT5 EA webhook call detected');
+      supabase = createClient(supabaseUrl, supabaseServiceKey);
+      
+      // Verify API key and get account
+      const { data: account, error: accountError } = await supabase
+        .from('mt5_accounts')
+        .select('id, user_id, api_key_encrypted')
+        .eq('api_key_encrypted', apiKey)
+        .eq('is_active', true)
+        .single();
+
+      if (accountError || !account) {
+        console.error('mt5-sync: Invalid API key', accountError);
+        return new Response(JSON.stringify({ error: 'Invalid API key' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401
+        });
+      }
+
+      accountId = account.id;
+      user = { id: account.user_id };
+      newTrades = body.trades;
+      
+    } else if (authHeader) {
+      // Browser call - use user auth
+      console.log('mt5-sync: Browser call detected');
+      supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') ?? '', {
+        global: { headers: { Authorization: authHeader } }
+      });
+
+      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
+      if (userError || !authUser) {
+        console.error('mt5-sync: Auth error', userError);
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401
+        });
+      }
+      user = authUser;
+      accountId = body.accountId;
+      newTrades = body.trades;
+    } else {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401
       });
     }
-
-    const { accountId, trades: newTrades } = await req.json();
     
     if (!accountId) {
       return new Response(JSON.stringify({ error: 'Invalid request data' }), {
