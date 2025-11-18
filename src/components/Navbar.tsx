@@ -2,7 +2,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { TrendingUp, LogOut, LayoutDashboard, MessageSquare, Calendar, Settings, Shield, Sun, Moon } from "lucide-react";
+import { Brain, LogOut, LayoutDashboard, MessageSquare, Calendar, Settings, Shield, Sun, Moon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 const Navbar = () => {
@@ -104,7 +104,7 @@ const Navbar = () => {
     <nav className="flex-1 flex items-center justify-between">
       <div className="flex items-center justify-between w-full">
         <Link to="/" className="flex items-center gap-2 font-bold text-xl">
-          <TrendingUp className="h-6 w-6 text-primary" />
+          <Brain className="h-6 w-6 text-primary" />
           <span>Amphy AI</span>
         </Link>
         
