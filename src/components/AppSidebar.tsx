@@ -1,4 +1,4 @@
-import { LayoutDashboard, MessageSquare, Calendar, Settings, TrendingUp, LogOut, Target, Calculator, CreditCard, Trophy, GraduationCap, Plug, Heart, ClipboardCheck, Lightbulb, BarChart3, Flame, Award, BookOpen, Zap, Notebook } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Calendar, Settings, Brain, LogOut, Target, Calculator, CreditCard, Trophy, GraduationCap, Plug, Heart, ClipboardCheck, Lightbulb, BarChart3, Flame, Award, BookOpen, Zap, Notebook } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,7 +21,7 @@ const generalNavItems = [{
 }, {
   title: "Weekly Summary",
   url: "/weekly-summary",
-  icon: TrendingUp
+  icon: BarChart3
 }, {
   title: "Integrations",
   url: "/integrations",
@@ -138,7 +138,7 @@ export function AppSidebar() {
   return <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center gap-2">
-          <TrendingUp className="h-6 w-6 text-sidebar-primary" />
+          <Brain className="h-6 w-6 text-sidebar-primary" />
           <span className="font-bold text-lg text-sidebar-foreground">Amphy AI</span>
         </div>
       </SidebarHeader>
