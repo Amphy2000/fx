@@ -1,0 +1,135 @@
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Smartphone, Download, Wifi, TrendingUp } from "lucide-react";
+import { Layout } from "@/components/Layout";
+
+export default function Install() {
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+    }
+
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    window.addEventListener("beforeinstallprompt", handler);
+
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+
+    if (outcome === "accepted") {
+      setIsInstalled(true);
+    }
+
+    setDeferredPrompt(null);
+    setIsInstallable(false);
+  };
+
+  return (
+    <Layout>
+      <div className="container max-w-4xl py-8">
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle className="text-3xl mb-2">Install Amphy AI</CardTitle>
+            <CardDescription className="text-base">
+              Get the full app experience on your device
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {isInstalled ? (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Smartphone className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Already Installed!</h3>
+                <p className="text-muted-foreground">
+                  You're using the installed version of Amphy AI
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div className="text-center p-4">
+                    <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Wifi className="w-6 h-6 text-primary" />
+                    </div>
+                    <h3 className="font-semibold mb-2">Work Offline</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Log trades and view stats without internet
+                    </p>
+                  </div>
+                  <div className="text-center p-4">
+                    <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <TrendingUp className="w-6 h-6 text-primary" />
+                    </div>
+                    <h3 className="font-semibold mb-2">Faster Access</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Launch instantly from your home screen
+                    </p>
+                  </div>
+                  <div className="text-center p-4">
+                    <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Smartphone className="w-6 h-6 text-primary" />
+                    </div>
+                    <h3 className="font-semibold mb-2">App Experience</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Full-screen mode without browser UI
+                    </p>
+                  </div>
+                </div>
+
+                {isInstallable ? (
+                  <div className="text-center pt-4">
+                    <Button onClick={handleInstallClick} size="lg" className="gap-2">
+                      <Download className="w-5 h-5" />
+                      Install App
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="bg-muted p-6 rounded-lg space-y-4">
+                    <h3 className="font-semibold text-center mb-4">How to Install</h3>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <h4 className="font-medium mb-1">On iPhone/iPad:</h4>
+                        <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                          <li>Tap the Share button in Safari</li>
+                          <li>Scroll down and tap "Add to Home Screen"</li>
+                          <li>Tap "Add" to confirm</li>
+                        </ol>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-medium mb-1">On Android:</h4>
+                        <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                          <li>Tap the menu (⋮) in your browser</li>
+                          <li>Select "Install app" or "Add to Home screen"</li>
+                          <li>Tap "Install" to confirm</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </Layout>
+  );
+}
