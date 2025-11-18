@@ -130,7 +130,7 @@ serve(async (req) => {
             }
           }
         }],
-        tool_choice: { type: "function", function: { name: "execute_trade_command" } }
+        tool_choice: { type: "function", function: { name: "execute_app_command" } }
       })
     });
 
