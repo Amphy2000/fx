@@ -183,6 +183,39 @@ const Settings = () => {
     }
   };
 
+  const handleExportData = async (format: 'json' | 'csv') => {
+    if (!profile) return;
+    
+    try {
+      toast.info(`Preparing ${format.toUpperCase()} export...`);
+      
+      const { data, error } = await supabase.functions.invoke('export-user-data', {
+        body: { format }
+      });
+
+      if (error) throw error;
+
+      // Create blob and download
+      const blob = format === 'json' 
+        ? new Blob([data], { type: 'application/json' })
+        : new Blob([data], { type: 'text/csv' });
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `amphy-backup-${new Date().toISOString().split('T')[0]}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success(`${format.toUpperCase()} export complete!`);
+    } catch (error) {
+      console.error("Error exporting data:", error);
+      toast.error("Failed to export data");
+    }
+  };
+
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -304,6 +337,27 @@ const Settings = () => {
               <Button onClick={restartOnboarding} variant="outline" className="w-full">
                 Restart Onboarding Tour
               </Button>
+            </CardContent>
+          </Card>
+
+          {/* Data Export */}
+          <Card className="border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground">Data Export & Backup</CardTitle>
+              <CardDescription>Download your data before resetting your account</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <Button onClick={() => handleExportData('json')} variant="outline" className="w-full">
+                  Export as JSON
+                </Button>
+                <Button onClick={() => handleExportData('csv')} variant="outline" className="w-full">
+                  Export as CSV
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                JSON includes all data. CSV includes trades only.
+              </p>
             </CardContent>
           </Card>
 

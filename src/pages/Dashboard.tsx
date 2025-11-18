@@ -23,6 +23,8 @@ import { DailyChallengeCard } from "@/components/DailyChallengeCard";
 import { TradingScoreCard } from "@/components/TradingScoreCard";
 import { MilestoneNotification } from "@/components/MilestoneNotification";
 import { GamificationOverlay } from "@/components/GamificationOverlay";
+import { VoiceCommands } from "@/components/VoiceCommands";
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
@@ -364,10 +366,11 @@ const Dashboard = () => {
         </div>
 
         <Tabs defaultValue="overview">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-5 lg:w-auto">
             <TabsTrigger value="overview"><BarChart3 className="h-4 w-4 mr-2" />Overview</TabsTrigger>
             <TabsTrigger value="analytics"><LineChart className="h-4 w-4 mr-2" />Analytics</TabsTrigger>
             <TabsTrigger value="trades"><Activity className="h-4 w-4 mr-2" />Trades</TabsTrigger>
+            <TabsTrigger value="voice"><Brain className="h-4 w-4 mr-2" />Voice</TabsTrigger>
             <TabsTrigger value="comparison"><Target className="h-4 w-4 mr-2" />Compare</TabsTrigger>
           </TabsList>
 
@@ -390,6 +393,11 @@ const Dashboard = () => {
 
           <TabsContent value="trades" className="space-y-6 mt-6">
             <TradeForm onTradeAdded={handleTradeAdded} />
+            <TradesList trades={trades} onTradeDeleted={handleTradeAdded} />
+          </TabsContent>
+
+          <TabsContent value="voice" className="space-y-6 mt-6">
+            <VoiceCommands onCommandExecuted={handleTradeAdded} />
             <TradesList trades={trades} onTradeDeleted={handleTradeAdded} />
           </TabsContent>
 

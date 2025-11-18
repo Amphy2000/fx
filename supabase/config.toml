@@ -50,3 +50,9 @@ verify_jwt = true
 
 [functions.journal-insights]
 verify_jwt = true
+
+[functions.export-user-data]
+verify_jwt = true
+
+[functions.voice-command]
+verify_jwt = true
