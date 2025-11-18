@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Trash2, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, Filter, Image as ImageIcon, Brain } from "lucide-react";
+import { Trash2, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, Filter, Image as ImageIcon, Brain, Loader2 } from "lucide-react";
 import { formatDistance, format } from "date-fns";
 import { TradeInsightBadge } from "@/components/TradeInsightBadge";
 import { EmotionTrackingModal } from "./EmotionTrackingModal";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface TradesListProps {
   trades: any[];
@@ -29,6 +30,8 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
   const [showInsightModal, setShowInsightModal] = useState(false);
   const [emotionModalOpen, setEmotionModalOpen] = useState(false);
   const [selectedTradeForEmotion, setSelectedTradeForEmotion] = useState<any>(null);
+  const [selectedTrades, setSelectedTrades] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   
   const itemsPerPage = 10;
   const handleDelete = async (tradeId: string) => {
@@ -44,6 +47,55 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
       onTradeDeleted();
     } catch (error: any) {
       toast.error(error.message || "Failed to delete trade");
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedTrades.size === 0) return;
+    
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${selectedTrades.size} trade${selectedTrades.size > 1 ? 's' : ''}? This action cannot be undone.`
+    );
+    
+    if (!confirmed) return;
+    
+    setBulkDeleting(true);
+    try {
+      const tradeIds = Array.from(selectedTrades);
+      const { error } = await supabase
+        .from("trades")
+        .delete()
+        .in("id", tradeIds);
+
+      if (error) throw error;
+
+      toast.success(`${selectedTrades.size} trade${selectedTrades.size > 1 ? 's' : ''} deleted successfully`);
+      setSelectedTrades(new Set());
+      onTradeDeleted();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete trades");
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
+  const toggleTradeSelection = (tradeId: string) => {
+    setSelectedTrades(prev => {
+      const next = new Set(prev);
+      if (next.has(tradeId)) {
+        next.delete(tradeId);
+      } else {
+        next.add(tradeId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedTrades.size === paginatedTrades.length) {
+      setSelectedTrades(new Set());
+    } else {
+      setSelectedTrades(new Set(paginatedTrades.map(t => t.id)));
     }
   };
 
@@ -272,6 +324,38 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
           )}
         </div>
 
+        {/* Bulk Actions */}
+        {selectedTrades.size > 0 && (
+          <div className="flex items-center justify-between p-3 bg-primary/10 border border-primary/20 rounded-lg">
+            <span className="text-sm font-medium">
+              {selectedTrades.size} trade{selectedTrades.size > 1 ? 's' : ''} selected
+            </span>
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              onClick={handleBulkDelete}
+              disabled={bulkDeleting}
+            >
+              {bulkDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Trash2 className="h-4 w-4 mr-2" />}
+              Delete Selected
+            </Button>
+          </div>
+        )}
+
+        {/* Select All */}
+        {paginatedTrades.length > 0 && (
+          <div className="flex items-center gap-2 px-2">
+            <Checkbox 
+              checked={selectedTrades.size === paginatedTrades.length && paginatedTrades.length > 0}
+              onCheckedChange={toggleSelectAll}
+              id="select-all"
+            />
+            <label htmlFor="select-all" className="text-sm text-muted-foreground cursor-pointer">
+              Select all on page
+            </label>
+          </div>
+        )}
+
         {filteredTrades.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">
             No trades match your filters. Try adjusting them!
@@ -284,7 +368,12 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
             key={trade.id}
             className="p-4 rounded-lg border border-border/50 bg-card/50 transition-smooth hover:bg-card"
           >
-            <div className="flex items-start justify-between mb-3">
+            <div className="flex items-start gap-3 mb-3">
+              <Checkbox 
+                checked={selectedTrades.has(trade.id)}
+                onCheckedChange={() => toggleTradeSelection(trade.id)}
+                className="mt-1"
+              />
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="font-semibold text-lg">{trade.pair}</h3>

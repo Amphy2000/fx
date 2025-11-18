@@ -62,7 +62,7 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    // Parse trade data using AI
+    // Parse trade data using AI - enhanced to capture more fields
     const parseResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -73,24 +73,27 @@ serve(async (req) => {
         model: 'google/gemini-2.5-flash',
         messages: [{
           role: 'system',
-          content: `You are a trade data extractor. Extract ONLY the trading information from noisy speech transcripts.
+          content: `You are a trade data extractor. Extract ALL available trading information from speech transcripts.
 
 CRITICAL RULES:
 - Ignore repeated/duplicate words (common in speech recognition)
-- Extract the CORE trading info: pair, direction, entry, stop loss, take profit
+- Extract: pair, direction, entry, stop loss, take profit, result, emotion_before, emotion_after, notes
 - Common pairs: EURUSD, GBPUSD, USDJPY, AUDUSD, USDCAD, XAUUSD (gold), XAGUSD (silver), US30
 - Direction: buy/long → "buy", sell/short → "sell"
+- Result: win/won/profit → "win", loss/lost → "loss", breakeven/BE → "breakeven", open/pending → "open"
+- Emotions: calm, confident, anxious, greedy, fearful, disciplined, excited, frustrated, neutral
+- Notes: any additional context mentioned (setup, conditions, lessons, etc.)
 - Return ONLY valid JSON, no explanations
 
 EXAMPLES:
-Input: "long EURUSD at 1.0950 stop 1.0920 target 1.1000"
-Output: {"pair":"EURUSD","direction":"buy","entry_price":"1.0950","stop_loss":"1.0920","take_profit":"1.1000"}
+Input: "long EURUSD at 1.0950 stop 1.0920 target 1.1000, feeling confident, trade was a win, followed my setup perfectly"
+Output: {"pair":"EURUSD","direction":"buy","entry_price":"1.0950","stop_loss":"1.0920","take_profit":"1.1000","result":"win","emotion_before":"confident","notes":"followed my setup perfectly"}
 
-Input: "short gold 2050 stop 2060 tp 2030"  
-Output: {"pair":"XAUUSD","direction":"sell","entry_price":"2050","stop_loss":"2060","take_profit":"2030"}
+Input: "short gold 2050 stop 2060 tp 2030, was anxious before, after I felt frustrated it was a loss, rushed the entry"
+Output: {"pair":"XAUUSD","direction":"sell","entry_price":"2050","stop_loss":"2060","take_profit":"2030","result":"loss","emotion_before":"anxious","emotion_after":"frustrated","notes":"rushed the entry"}
 
-Input: "mountMount usMount USDMount USD ads 1.095 stop 1.0 ads stop 1.0920"
-Output: {"pair":"USDMOUNT","direction":"buy","entry_price":"1.095","stop_loss":"1.0920","take_profit":null}
+Input: "bought GBPUSD 1.2650, SL 1.2620, calm and disciplined"
+Output: {"pair":"GBPUSD","direction":"buy","entry_price":"1.2650","stop_loss":"1.2620","take_profit":null,"emotion_before":"calm","notes":"disciplined"}
 
 If data is missing, use null. Return JSON only.`
         }, {
