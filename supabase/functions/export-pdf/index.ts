@@ -34,8 +34,10 @@ serve(async (req) => {
 
     const { startDate, endDate } = await req.json();
 
+    console.log('Export PDF request:', { startDate, endDate, userId: user.id });
+
     // Fetch all necessary data
-    const { data: trades } = await supabase
+    const { data: trades, error: tradesError } = await supabase
       .from('trades')
       .select('*')
       .eq('user_id', user.id)
@@ -43,11 +45,27 @@ serve(async (req) => {
       .lte('created_at', endDate)
       .order('created_at', { ascending: true });
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
       .single();
+
+    console.log('PDF data fetch:', { 
+      tradesCount: trades?.length, 
+      tradesError, 
+      profile: !!profile, 
+      profileError 
+    });
+
+    if (tradesError) {
+      console.error('Trades fetch error:', tradesError);
+      throw tradesError;
+    }
+
+    if (profileError) {
+      console.error('Profile fetch error:', profileError);
+    }
 
     if (!trades || trades.length === 0) {
       return new Response(JSON.stringify({ error: 'No trades found for this period' }), {

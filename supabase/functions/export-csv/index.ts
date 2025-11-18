@@ -34,14 +34,23 @@ serve(async (req) => {
 
     const { startDate, endDate, type = 'trades' } = await req.json();
 
+    console.log('Export CSV request:', { startDate, endDate, type, userId: user.id });
+
     if (type === 'trades') {
-      const { data: trades } = await supabase
+      const { data: trades, error: tradesError } = await supabase
         .from('trades')
         .select('*')
         .eq('user_id', user.id)
         .gte('created_at', startDate)
         .lte('created_at', endDate)
         .order('created_at', { ascending: true });
+
+      console.log('Trades query result:', { count: trades?.length, error: tradesError });
+
+      if (tradesError) {
+        console.error('Trades fetch error:', tradesError);
+        throw tradesError;
+      }
 
       if (!trades || trades.length === 0) {
         return new Response(JSON.stringify({ error: 'No trades found' }), {
@@ -54,20 +63,27 @@ serve(async (req) => {
       
       return new Response(JSON.stringify({ 
         csv,
-        fileName: `trades-${startDate}-${endDate}.csv`
+        fileName: `trades-${new Date(startDate).toISOString().split('T')[0]}-${new Date(endDate).toISOString().split('T')[0]}.csv`
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
 
     } else if (type === 'analytics') {
       // Generate analytics CSV with daily/weekly breakdowns
-      const { data: trades } = await supabase
+      const { data: trades, error: tradesError } = await supabase
         .from('trades')
         .select('*')
         .eq('user_id', user.id)
         .gte('created_at', startDate)
         .lte('created_at', endDate)
         .order('created_at', { ascending: true });
+
+      console.log('Analytics query result:', { count: trades?.length, error: tradesError });
+
+      if (tradesError) {
+        console.error('Analytics fetch error:', tradesError);
+        throw tradesError;
+      }
 
       if (!trades || trades.length === 0) {
         return new Response(JSON.stringify({ error: 'No data found' }), {
@@ -80,7 +96,7 @@ serve(async (req) => {
       
       return new Response(JSON.stringify({ 
         csv,
-        fileName: `analytics-${startDate}-${endDate}.csv`
+        fileName: `analytics-${new Date(startDate).toISOString().split('T')[0]}-${new Date(endDate).toISOString().split('T')[0]}.csv`
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
