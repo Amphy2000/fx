@@ -160,80 +160,16 @@ export const MT5IntegrationCard = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Email Forwarding Option */}
-        <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
-          <div className="flex items-start gap-3">
-            <Mail className="h-5 w-5 text-primary mt-0.5" />
-            <div className="flex-1 space-y-2">
-              <h3 className="font-semibold text-sm">Option 1: Email Forwarding (Easiest)</h3>
-              <p className="text-sm text-muted-foreground">
-                Forward your broker's trade confirmation emails to this address:
-              </p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 text-xs bg-background px-3 py-2 rounded border">
-                  {userEmailAddress}
-                </code>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    navigator.clipboard.writeText(userEmailAddress);
-                    toastHook({ title: "Copied!", description: "Email address copied to clipboard" });
-                  }}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Set up a forwarding rule in your email to automatically send broker confirmations here. Trades will appear within seconds.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* MT5 EA Option */}
-        <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
-          <div className="flex items-start gap-3">
-            <Server className="h-5 w-5 text-primary mt-0.5" />
-            <div className="flex-1 space-y-2">
-              <h3 className="font-semibold text-sm">Option 2: Direct MT5 Connection</h3>
-              <p className="text-sm text-muted-foreground">
-                Install our Expert Advisor for real-time synchronization
-              </p>
-              <Button variant="outline" size="sm" asChild>
-                <a href="/integrations/mt5-setup">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  View Setup Guide
-                </a>
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        <Separator />
-
-        {accounts.length === 0 ? (
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              No MT5 accounts connected yet. Choose an option above to get started.
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <Alert>
-            <AlertDescription>
-              After connecting, configure the Expert Advisor (EA) in your MT5 terminal. 
-              <a href="/integrations/mt5-setup" className="underline ml-1">View setup guide</a> • 
-              <a href="/MT5_Trade_Sync_EA.mq5" download className="underline ml-1">Download EA</a>
-            </AlertDescription>
-          </Alert>
-        )}
+        {/* Connect Account First */}
+        <Alert>
+          <AlertDescription>
+            Connect your MT5 account below, then choose how to import your trades.
+          </AlertDescription>
+        </Alert>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="account">Account Number</Label>
+            <Label htmlFor="account">MT5 Account Number</Label>
             <Input
               id="account"
               placeholder="123456789"
@@ -271,6 +207,66 @@ export const MT5IntegrationCard = () => {
             Connect MT5 Account
           </Button>
         </div>
+
+        <Separator />
+
+        {accounts.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="font-semibold">Import Methods</h3>
+            
+            {/* Manual Upload - Primary Method */}
+            <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+              <div className="flex items-start gap-3">
+                <Download className="h-5 w-5 text-primary mt-0.5" />
+                <div className="flex-1 space-y-2">
+                  <h4 className="font-semibold text-sm">Manual Upload (Recommended)</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Export your trade history from MT5 and upload it here
+                  </p>
+                  <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                    <li>In MT5: Right-click "Account History" → "Save as Report"</li>
+                    <li>Save as HTML or export as CSV</li>
+                    <li>Go to <a href="/integrations" className="underline">Integrations page</a> to upload</li>
+                  </ol>
+                  <Button variant="outline" size="sm" asChild className="mt-2">
+                    <a href="/integrations">
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Upload Trades
+                    </a>
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Email Forwarding - Advanced */}
+            <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+              <div className="flex items-start gap-3">
+                <Mail className="h-5 w-5 text-primary mt-0.5" />
+                <div className="flex-1 space-y-2">
+                  <h4 className="font-semibold text-sm">Email Auto-Import (Advanced)</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Forward broker confirmation emails to:
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-xs bg-background px-3 py-2 rounded border">
+                      {userEmailAddress}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(userEmailAddress);
+                        toastHook({ title: "Copied!", description: "Email address copied to clipboard" });
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {accounts.length > 0 && (
           <div className="space-y-3 pt-4 border-t">
