@@ -295,153 +295,168 @@ const Dashboard = () => {
     }
   };
   return <Layout>
-      <div className="space-y-6 p-4 md:p-0 py-0 px-0 mx-[10px] max-w-full overflow-x-hidden">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+      <div className="space-y-4 p-3 md:p-4 lg:p-0 md:py-0 md:px-0 md:mx-[10px] w-full max-w-full">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 md:gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Trading Dashboard</h1>
-            <p className="text-sm md:text-base text-muted-foreground">AI-Powered Analytics {mt5Accounts.length > 0 ? '• MT5 Synced' : ''}</p>
+            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold">Trading Dashboard</h1>
+            <p className="text-xs md:text-sm lg:text-base text-muted-foreground">AI-Powered Analytics {mt5Accounts.length > 0 ? '• MT5 Synced' : ''}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleExportPDF}>
-              <FileDown className="h-4 w-4 mr-2" />
+            <Button variant="outline" size="sm" onClick={handleExportPDF} className="text-xs md:text-sm">
+              <FileDown className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               PDF
             </Button>
-            <Button variant="outline" size="sm" onClick={() => handleExportCSV('trades')}>
-              <FileDown className="h-4 w-4 mr-2" />
+            <Button variant="outline" size="sm" onClick={() => handleExportCSV('trades')} className="text-xs md:text-sm">
+              <FileDown className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
               CSV
             </Button>
             <CreditsDisplay />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 md:gap-3 w-full">
           <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-            <CardContent className="p-4">
+            <CardContent className="p-3 md:p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase">Trades</p>
-                  <p className="text-2xl font-bold">{stats.totalTrades}</p>
+                  <p className="text-[10px] md:text-xs text-muted-foreground uppercase">Trades</p>
+                  <p className="text-lg md:text-2xl font-bold">{stats.totalTrades}</p>
                 </div>
-                <Activity className="h-8 w-8 text-primary opacity-50" />
+                <Activity className="h-6 w-6 md:h-8 md:w-8 text-primary opacity-50" />
               </div>
             </CardContent>
           </Card>
 
           <Card className={`bg-gradient-to-br ${stats.totalPnL >= 0 ? 'from-green-500/10 border-green-500/20' : 'from-red-500/10 border-red-500/20'}`}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between gap-2">
+            <CardContent className="p-3 md:p-4">
+              <div className="flex items-center justify-between gap-1 md:gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs text-muted-foreground uppercase">P/L</p>
-                  <p className={`text-2xl font-bold ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <p className="text-[10px] md:text-xs text-muted-foreground uppercase">P/L</p>
+                  <p className={`text-lg md:text-2xl font-bold ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'} truncate`}>
                     ${stats.totalPnL >= 0 ? '+' : ''}{stats.totalPnL.toLocaleString()}
                   </p>
                 </div>
-                {stats.totalPnL >= 0 ? <TrendingUp className="h-8 w-8 text-green-600 opacity-50 flex-shrink-0" /> : <TrendingDown className="h-8 w-8 text-red-600 opacity-50 flex-shrink-0" />}
+                {stats.totalPnL >= 0 ? <TrendingUp className="h-6 w-6 md:h-8 md:w-8 text-green-600 opacity-50 flex-shrink-0" /> : <TrendingDown className="h-6 w-6 md:h-8 md:w-8 text-red-600 opacity-50 flex-shrink-0" />}
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-blue-500/10 border-blue-500/20">
-            <CardContent className="p-4">
+            <CardContent className="p-3 md:p-4">
               <div>
-                <p className="text-xs text-muted-foreground uppercase">Win Rate</p>
-                <p className="text-2xl font-bold">{stats.winRate}%</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground uppercase">Win Rate</p>
+                <p className="text-lg md:text-2xl font-bold">{stats.winRate}%</p>
                 <Progress value={stats.winRate} className="h-1 mt-1" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-purple-500/10 border-purple-500/20">
-            <CardContent className="p-4">
+            <CardContent className="p-3 md:p-4">
               <div>
-                <p className="text-xs text-muted-foreground uppercase">Profit Factor</p>
-                <p className="text-2xl font-bold">{stats.profitFactor}</p>
-                <p className="text-xs text-muted-foreground">{stats.wins}W/{stats.losses}L</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground uppercase">Profit Factor</p>
+                <p className="text-lg md:text-2xl font-bold">{stats.profitFactor}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground">{stats.wins}W/{stats.losses}L</p>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-amber-500/10 border-amber-500/20">
-            <CardContent className="p-4">
+            <CardContent className="p-3 md:p-4">
               <div>
-                <p className="text-xs text-muted-foreground uppercase">Avg R</p>
-                <p className="text-2xl font-bold">{stats.avgRMultiple}R</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground uppercase">Avg R</p>
+                <p className="text-lg md:text-2xl font-bold">{stats.avgRMultiple}R</p>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-green-500/10 border-green-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between gap-2">
+            <CardContent className="p-3 md:p-4">
+              <div className="flex items-center justify-between gap-1 md:gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs text-muted-foreground uppercase">Best</p>
-                  <p className="text-2xl font-bold text-green-600">
+                  <p className="text-[10px] md:text-xs text-muted-foreground uppercase">Best</p>
+                  <p className="text-lg md:text-2xl font-bold text-green-600 truncate">
                     +${stats.bestTrade.toLocaleString()}
                   </p>
                 </div>
-                <Target className="h-8 w-8 text-green-600 opacity-50 flex-shrink-0" />
+                <Target className="h-6 w-6 md:h-8 md:w-8 text-green-600 opacity-50 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-red-500/10 border-red-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between gap-2">
+            <CardContent className="p-3 md:p-4">
+              <div className="flex items-center justify-between gap-1 md:gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs text-muted-foreground uppercase">Worst</p>
-                  <p className="text-2xl font-bold text-red-600">
+                  <p className="text-[10px] md:text-xs text-muted-foreground uppercase">Worst</p>
+                  <p className="text-lg md:text-2xl font-bold text-red-600 truncate">
                     ${stats.worstTrade.toLocaleString()}
                   </p>
                 </div>
-                <TrendingDown className="h-8 w-8 text-red-600 opacity-50 flex-shrink-0" />
+                <TrendingDown className="h-6 w-6 md:h-8 md:w-8 text-red-600 opacity-50 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto">
-            <TabsTrigger value="overview"><BarChart3 className="h-4 w-4 mr-2" />Overview</TabsTrigger>
-            <TabsTrigger value="analytics"><LineChart className="h-4 w-4 mr-2" />Analytics</TabsTrigger>
-            <TabsTrigger value="trades"><Activity className="h-4 w-4 mr-2" />Trades</TabsTrigger>
-            <TabsTrigger value="voice"><Brain className="h-4 w-4 mr-2" />Voice</TabsTrigger>
-            <TabsTrigger value="comparison"><Target className="h-4 w-4 mr-2" />Compare</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5 lg:w-auto text-xs md:text-sm">
+            <TabsTrigger value="overview" className="px-2 md:px-4">
+              <BarChart3 className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+              <span className="hidden sm:inline">Overview</span>
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="px-2 md:px-4">
+              <LineChart className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+              <span className="hidden sm:inline">Analytics</span>
+            </TabsTrigger>
+            <TabsTrigger value="trades" className="px-2 md:px-4">
+              <Activity className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+              <span className="hidden sm:inline">Trades</span>
+            </TabsTrigger>
+            <TabsTrigger value="voice" className="px-2 md:px-4">
+              <Brain className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+              <span className="hidden sm:inline">Voice</span>
+            </TabsTrigger>
+            <TabsTrigger value="comparison" className="px-2 md:px-4">
+              <Target className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
+              <span className="hidden sm:inline">Compare</span>
+            </TabsTrigger>
           </TabsList>
 
           <div 
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
-            className="touch-pan-y"
+            className="touch-pan-y w-full"
           >
-            <TabsContent value="overview" className="space-y-6 mt-6 animate-fade-in">
-              <div className="grid md:grid-cols-2 gap-6">
+            <TabsContent value="overview" className="space-y-4 md:space-y-6 mt-4 md:mt-6 animate-fade-in w-full">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
                 <DailyChallengeCard trades={trades} />
                 <TradingScoreCard trades={trades} />
               </div>
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
                 {user && <EquityCurve userId={user.id} />}
                 <ModernBarChart data={getMonthlyData()} />
               </div>
               <DrawdownHeatmap trades={trades} />
             </TabsContent>
 
-            <TabsContent value="analytics" className="space-y-6 mt-6 animate-fade-in">
+            <TabsContent value="analytics" className="space-y-4 md:space-y-6 mt-4 md:mt-6 animate-fade-in w-full">
               <SessionAnalytics trades={trades} />
               {user && <SetupPerformanceAnalyzer trades={trades} userId={user.id} />}
             </TabsContent>
 
-            <TabsContent value="trades" className="space-y-6 mt-6 animate-fade-in">
+            <TabsContent value="trades" className="space-y-4 md:space-y-6 mt-4 md:mt-6 animate-fade-in w-full">
               <TradeForm onTradeAdded={handleTradeAdded} />
               <TradesList trades={trades} onTradeDeleted={handleTradeAdded} />
             </TabsContent>
 
-            <TabsContent value="voice" className="space-y-6 mt-6 animate-fade-in">
+            <TabsContent value="voice" className="space-y-4 md:space-y-6 mt-4 md:mt-6 animate-fade-in w-full">
               <VoiceCommands onCommandExecuted={handleTradeAdded} />
               <TradesList trades={trades} onTradeDeleted={handleTradeAdded} />
             </TabsContent>
 
-            <TabsContent value="comparison" className="space-y-6 mt-6 animate-fade-in">
+            <TabsContent value="comparison" className="space-y-4 md:space-y-6 mt-4 md:mt-6 animate-fade-in w-full">
               <PeriodComparison trades={trades} />
             </TabsContent>
           </div>
