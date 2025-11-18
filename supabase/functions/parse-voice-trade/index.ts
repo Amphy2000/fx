@@ -73,16 +73,26 @@ serve(async (req) => {
         model: 'google/gemini-2.5-flash',
         messages: [{
           role: 'system',
-          content: `Extract trading data from voice transcript. Return ONLY valid JSON with these fields: pair, direction (buy/sell), entry_price, stop_loss, take_profit. 
-          
-          Examples:
-          - "long EURUSD at 1.0950 stop 1.0920 target 1.1000" -> {"pair":"EURUSD","direction":"buy","entry_price":"1.0950","stop_loss":"1.0920","take_profit":"1.1000"}
-          - "short gold 2050 stop 2060 tp 2030" -> {"pair":"XAUUSD","direction":"sell","entry_price":"2050","stop_loss":"2060","take_profit":"2030"}
-          - "buy GBPUSD 1.2650 SL 1.2620 TP 1.2700" -> {"pair":"GBPUSD","direction":"buy","entry_price":"1.2650","stop_loss":"1.2620","take_profit":"1.2700"}
-          
-          Common pairs: EURUSD, GBPUSD, USDJPY, AUDUSD, USDCAD, XAUUSD (gold), XAGUSD (silver), US30 (dow)
-          Direction synonyms: long/buy, short/sell
-          If any data is missing, set to null. Always return valid JSON only, no explanations.`
+          content: `You are a trade data extractor. Extract ONLY the trading information from noisy speech transcripts.
+
+CRITICAL RULES:
+- Ignore repeated/duplicate words (common in speech recognition)
+- Extract the CORE trading info: pair, direction, entry, stop loss, take profit
+- Common pairs: EURUSD, GBPUSD, USDJPY, AUDUSD, USDCAD, XAUUSD (gold), XAGUSD (silver), US30
+- Direction: buy/long → "buy", sell/short → "sell"
+- Return ONLY valid JSON, no explanations
+
+EXAMPLES:
+Input: "long EURUSD at 1.0950 stop 1.0920 target 1.1000"
+Output: {"pair":"EURUSD","direction":"buy","entry_price":"1.0950","stop_loss":"1.0920","take_profit":"1.1000"}
+
+Input: "short gold 2050 stop 2060 tp 2030"  
+Output: {"pair":"XAUUSD","direction":"sell","entry_price":"2050","stop_loss":"2060","take_profit":"2030"}
+
+Input: "mountMount usMount USDMount USD ads 1.095 stop 1.0 ads stop 1.0920"
+Output: {"pair":"USDMOUNT","direction":"buy","entry_price":"1.095","stop_loss":"1.0920","take_profit":null}
+
+If data is missing, use null. Return JSON only.`
         }, {
           role: 'user',
           content: transcript
