@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle2, XCircle, RefreshCw, Mail, Server, Copy, ExternalLink, Download, TrendingUp, AlertTriangle } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, RefreshCw, Mail, Server, Copy, ExternalLink, Download, TrendingUp, AlertTriangle, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
@@ -146,6 +146,27 @@ export const MT5IntegrationCard = () => {
     toast.success(`${label} copied to clipboard`);
   };
 
+  const handleDelete = async (accountId: string) => {
+    if (!confirm("Are you sure you want to delete this MT5 account? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('mt5_accounts')
+        .delete()
+        .eq('id', accountId);
+
+      if (error) throw error;
+
+      toast.success("MT5 account deleted successfully");
+      await fetchAccounts();
+    } catch (error: any) {
+      console.error('Error deleting account:', error);
+      toast.error("Failed to delete MT5 account");
+    }
+  };
+
   const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mt5-sync`;
 
   return (
@@ -232,13 +253,23 @@ export const MT5IntegrationCard = () => {
                   {accounts.map((account) => (
                     <div key={account.id} className="space-y-3 p-3 bg-background rounded border">
                       <div className="flex items-center justify-between">
-                        <div>
+                        <div className="flex-1">
                           <p className="font-medium text-sm">{account.account_number}</p>
                           <p className="text-xs text-muted-foreground">{account.broker_name}</p>
                         </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          {getSyncStatusIcon(account.last_sync_status)}
-                          <span className="capitalize">{account.last_sync_status}</span>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2 text-sm">
+                            {getSyncStatusIcon(account.last_sync_status)}
+                            <span className="capitalize">{account.last_sync_status}</span>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDelete(account.id)}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                       
