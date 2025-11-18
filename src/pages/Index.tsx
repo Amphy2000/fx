@@ -204,7 +204,7 @@ const Index = () => {
           <div className="flex flex-col md:flex-row justify-between items-center gap-6 max-w-6xl mx-auto">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-chart-1 to-chart-2 flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-white" />
+                <Brain className="h-6 w-6 text-white" />
               </div>
               <span className="font-bold text-lg">Amphy AI</span>
             </div>
