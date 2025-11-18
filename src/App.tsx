@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { useOfflineSync } from "@/hooks/useOfflineSync";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -31,8 +32,48 @@ import AdvancedAnalytics from "./pages/AdvancedAnalytics";
 import Streaks from "./pages/Streaks";
 import Onboarding from "./pages/Onboarding";
 import Achievements from "./pages/Achievements";
+import Install from "./pages/Install";
 
 const queryClient = new QueryClient();
+
+const AppContent = () => {
+  useOfflineSync();
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/calculators" element={<Calculators />} />
+        <Route path="/ai-chat" element={<AIChat />} />
+        <Route path="/weekly-summary" element={<WeeklySummary />} />
+        <Route path="/ai-journal" element={<AIJournal />} />
+        <Route path="/pattern-recognition" element={<PatternRecognition />} />
+        <Route path="/journal" element={<Journal />} />
+        
+        <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/integrations" element={<Integrations />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/targets" element={<Targets />} />
+        <Route path="/trade-calendar" element={<TradeCalendar />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/feedback" element={<Feedback />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/check-in" element={<CheckIn />} />
+        <Route path="/routine" element={<Routine />} />
+        <Route path="/setups" element={<Setups />} />
+        <Route path="/analytics/advanced" element={<AdvancedAnalytics />} />
+        <Route path="/streaks" element={<Streaks />} />
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/achievements" element={<Achievements />} />
+        <Route path="/install" element={<Install />} />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </BrowserRouter>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -40,38 +81,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/calculators" element={<Calculators />} />
-            <Route path="/ai-chat" element={<AIChat />} />
-            <Route path="/weekly-summary" element={<WeeklySummary />} />
-            <Route path="/ai-journal" element={<AIJournal />} />
-            <Route path="/pattern-recognition" element={<PatternRecognition />} />
-            <Route path="/journal" element={<Journal />} />
-            
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/integrations" element={<Integrations />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/targets" element={<Targets />} />
-            <Route path="/trade-calendar" element={<TradeCalendar />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/feedback" element={<Feedback />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/check-in" element={<CheckIn />} />
-            <Route path="/routine" element={<Routine />} />
-            <Route path="/setups" element={<Setups />} />
-            <Route path="/analytics/advanced" element={<AdvancedAnalytics />} />
-            <Route path="/streaks" element={<Streaks />} />
-            <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="/achievements" element={<Achievements />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <AppContent />
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
