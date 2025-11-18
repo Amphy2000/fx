@@ -100,7 +100,23 @@ const Dashboard = () => {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) navigate("/auth");else setUser(session.user);
     });
-    return () => subscription.unsubscribe();
+
+    // Listen for custom event to open trade form
+    const handleOpenTradeForm = () => {
+      setActiveTab("trades");
+    };
+    window.addEventListener('open-trade-form', handleOpenTradeForm);
+
+    // Check URL params for action
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'add-trade') {
+      setActiveTab("trades");
+    }
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('open-trade-form', handleOpenTradeForm);
+    };
   }, [navigate]);
   const fetchProfile = async (userId: string) => {
     const {
