@@ -112,7 +112,6 @@ export const GlobalVoiceAssistant = () => {
             'journal': '/journal',
             'trades': '/',
             'analytics': '/analytics',
-            'ai-coach': '/ai-coach',
             'targets': '/targets',
             'achievements': '/achievements',
             'leaderboard': '/leaderboard',
@@ -232,7 +231,7 @@ export const GlobalVoiceAssistant = () => {
 
         {commandHistory.length > 0 && <div className="space-y-2">
             <p className="text-sm font-medium">Recent Commands:</p>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
+            <div className="space-y-2 max-h-48 overflow-y-auto scrollbar-thin">
               {commandHistory.map((item, idx) => <div key={idx} className="p-2 bg-muted/50 rounded-lg text-xs space-y-1">
                   <p className="font-medium">{item.command}</p>
                   <p className="text-muted-foreground">{item.result}</p>
