@@ -310,7 +310,12 @@ export const MT5IntegrationCard = () => {
                           <Alert className="bg-yellow-500/10 border-yellow-500/20">
                             <AlertTriangle className="h-4 w-4 text-yellow-500" />
                             <AlertDescription className="text-xs text-yellow-700 dark:text-yellow-400">
-                              <strong>EA Not Connected Yet</strong> - Follow the setup steps below and paste both Webhook URL and API Key in your MT5 EA settings.
+                              <strong>EA Not Connected Yet</strong>
+                              <div className="mt-2 space-y-1">
+                                <p>✅ Make sure you enabled "Allow WebRequest" in MT5 (see step 3 below)</p>
+                                <p>✅ Paste both Webhook URL and API Key in EA settings</p>
+                                <p>✅ Check MT5 Experts tab for "Successfully sent" or error messages</p>
+                              </div>
                             </AlertDescription>
                           </Alert>
                         )}
@@ -324,17 +329,20 @@ export const MT5IntegrationCard = () => {
                           </Alert>
                         )}
                       
-                      <div className="space-y-2">
-                        <p className="text-xs font-medium">Quick Setup:</p>
-                        <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
-                          <li>Download the EA file below</li>
-                          <li>In MT5: File → Open Data Folder → MQL5 → Experts</li>
-                          <li>Paste the EA file there and restart MT5</li>
-                          <li>Drag the EA onto any chart</li>
-                          <li>Copy your Webhook URL and API Key below and paste them in the EA settings</li>
-                          <li>Enable "Allow Algo Trading" in MT5 and click OK</li>
-                        </ol>
-                      </div>
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium">Quick Setup:</p>
+                          <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
+                            <li>Download the EA file below</li>
+                            <li>In MT5: Tools → Options → Expert Advisors tab</li>
+                            <li>✅ Check "Allow WebRequest for listed URL" and add: <code className="bg-muted px-1 py-0.5 rounded text-[10px]">https://yvclpmdgrwugayrvjtqg.supabase.co</code></li>
+                            <li>Click OK, then: File → Open Data Folder → MQL5 → Experts</li>
+                            <li>Paste the EA file there and restart MT5</li>
+                            <li>Drag the EA onto any chart</li>
+                            <li>Paste both Webhook URL and API Key from below in the EA settings</li>
+                            <li>✅ Check "Allow Algo Trading" and click OK</li>
+                            <li>Look for "Successfully sent" message in the Experts tab</li>
+                          </ol>
+                        </div>
 
                       <div className="flex gap-2">
                         <Button size="sm" variant="default" asChild>

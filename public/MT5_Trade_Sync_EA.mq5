@@ -2,6 +2,11 @@
 //|                                           MT5_Trade_Sync_EA.mq5 |
 //|                                      Auto Trade Sync for Journal |
 //|                                                                  |
+//| IMPORTANT: Before using this EA:                                 |
+//| 1. In MT5: Tools → Options → Expert Advisors                     |
+//| 2. Check "Allow WebRequest for listed URL"                       |
+//| 3. Add this URL: https://yvclpmdgrwugayrvjtqg.supabase.co       |
+//| 4. Click OK and restart MT5                                      |
 //+------------------------------------------------------------------+
 #property copyright "Trade Journal"
 #property link      ""
@@ -157,6 +162,9 @@ void SendToWebhook(string payload, int tradeCount)
    headers = "Content-Type: application/json\r\n";
    headers += "X-MT5-API-Key: " + APIKey + "\r\n";
    
+   Print("Attempting to send ", tradeCount, " trades to webhook...");
+   Print("Webhook URL: ", WebhookURL);
+   
    int timeout = 5000;
    int res = WebRequest(
       "POST",
@@ -170,11 +178,20 @@ void SendToWebhook(string payload, int tradeCount)
    
    if(res == 200)
    {
-      Print("Successfully sent ", tradeCount, " trades to webhook");
+      Print("✓ Successfully sent ", tradeCount, " trades to webhook");
+   }
+   else if(res == -1)
+   {
+      Print("✗ ERROR: WebRequest failed. Error code: ", GetLastError());
+      Print("✗ Make sure you added the URL to 'Allow WebRequest' list in MT5 options:");
+      Print("  1. Tools → Options → Expert Advisors");
+      Print("  2. Check 'Allow WebRequest for listed URL'");
+      Print("  3. Add: https://yvclpmdgrwugayrvjtqg.supabase.co");
+      Print("  4. Click OK and restart MT5");
    }
    else
    {
-      Print("Failed to send to webhook. Error code: ", res);
+      Print("✗ Failed to send to webhook. HTTP code: ", res);
       Print("Response: ", CharArrayToString(resultData));
    }
 }
