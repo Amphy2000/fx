@@ -72,7 +72,7 @@ serve(async (req) => {
               properties: {
                 action: {
                   type: "string",
-                  enum: ["delete_last", "show_wins", "show_losses", "count_trades", "show_recent", "show_stats"],
+                  enum: ["delete_last", "show_wins", "show_losses", "count_trades", "show_recent", "show_stats", "mark_last_as", "close_trade"],
                   description: "The action to perform"
                 },
                 timeframe: {
@@ -84,6 +84,19 @@ serve(async (req) => {
                   type: "string",
                   enum: ["win", "loss", "breakeven", "all"],
                   description: "Filter by trade result"
+                },
+                result_value: {
+                  type: "string",
+                  enum: ["win", "loss", "breakeven"],
+                  description: "Result to mark the trade as (for mark_last_as action)"
+                },
+                profit_amount: {
+                  type: "number",
+                  description: "Profit/loss amount (for close_trade action)"
+                },
+                exit_price: {
+                  type: "number",
+                  description: "Exit price (optional, for close_trade action)"
                 }
               },
               required: ["action"],
@@ -105,7 +118,7 @@ serve(async (req) => {
     if (!toolCall) {
       return new Response(JSON.stringify({ 
         success: false, 
-        message: "I couldn't understand that command. Try 'delete last trade' or 'show my wins this week'" 
+        message: "I couldn't understand that command. Try 'delete last trade', 'show my wins this week', 'mark last trade as win', or 'close trade with profit 50'" 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -248,6 +261,107 @@ serve(async (req) => {
           message: `Stats ${timeframe !== 'all' ? timeframe : ''}: ${trades?.length || 0} trades, ${winRate}% win rate, ${wins}W-${losses}L. P/L: ${totalPL.toFixed(2)}`,
           data: { total: trades?.length, wins, losses, winRate, totalPL },
           action: 'stats'
+        };
+        break;
+      }
+
+      case 'mark_last_as': {
+        const { result_value } = params;
+        if (!result_value) {
+          return new Response(JSON.stringify({
+            success: false,
+            message: "Please specify the result (win, loss, or breakeven)"
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        const { data: lastTrade } = await supabase
+          .from('trades')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (!lastTrade) {
+          return new Response(JSON.stringify({
+            success: false,
+            message: "You don't have any trades to update."
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        const { error: updateError } = await supabase
+          .from('trades')
+          .update({ result: result_value })
+          .eq('id', lastTrade.id);
+
+        if (updateError) throw updateError;
+
+        result = {
+          success: true,
+          message: `Marked ${lastTrade.pair} as ${result_value}`,
+          action: 'update',
+          tradeId: lastTrade.id,
+          data: { result: result_value }
+        };
+        break;
+      }
+
+      case 'close_trade': {
+        const { profit_amount, exit_price } = params;
+        if (profit_amount === undefined) {
+          return new Response(JSON.stringify({
+            success: false,
+            message: "Please specify the profit/loss amount"
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        const { data: lastOpenTrade } = await supabase
+          .from('trades')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('result', 'open')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (!lastOpenTrade) {
+          return new Response(JSON.stringify({
+            success: false,
+            message: "You don't have any open trades to close."
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        const updateData: any = {
+          profit_loss: profit_amount,
+          result: profit_amount > 0 ? 'win' : profit_amount < 0 ? 'loss' : 'breakeven',
+          close_time: new Date().toISOString()
+        };
+
+        if (exit_price) {
+          updateData.exit_price = exit_price;
+        }
+
+        const { error: updateError } = await supabase
+          .from('trades')
+          .update(updateData)
+          .eq('id', lastOpenTrade.id);
+
+        if (updateError) throw updateError;
+
+        result = {
+          success: true,
+          message: `Closed ${lastOpenTrade.pair} with ${profit_amount > 0 ? 'profit' : 'loss'} of ${Math.abs(profit_amount).toFixed(2)}`,
+          action: 'close',
+          tradeId: lastOpenTrade.id,
+          data: updateData
         };
         break;
       }

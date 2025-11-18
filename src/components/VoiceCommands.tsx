@@ -232,6 +232,9 @@ export const VoiceCommands = ({ onCommandExecuted }: VoiceCommandsProps) => {
             <li>"Count trades today"</li>
             <li>"Show recent trades"</li>
             <li>"Show my stats this month"</li>
+            <li>"Mark last trade as win"</li>
+            <li>"Close trade with profit 50"</li>
+            <li>"Mark last as loss"</li>
           </ul>
         </div>
       </CardContent>
