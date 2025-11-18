@@ -169,9 +169,7 @@ export const GlobalVoiceAssistant = () => {
     }
   };
   if (!isOpen) {
-    return <Button onClick={() => setIsOpen(true)} size="icon" className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-lg z-50">
-        <Mic className="h-6 w-6" />
-      </Button>;
+    return;
   }
   if (isMinimized) {
     return <Card className="fixed bottom-24 right-6 w-72 shadow-2xl z-50">
