@@ -261,7 +261,7 @@ const Dashboard = () => {
     }
   };
   return <Layout>
-      <div className="space-y-6 w-full max-w-full overflow-x-hidden px-4 sm:px-6 lg:px-8">
+      <div className="space-y-6 p-4 md:p-0 py-0 px-0 mx-[10px] max-w-full overflow-x-hidden">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">Trading Dashboard</h1>
@@ -280,7 +280,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 w-full">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
           <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -366,35 +366,20 @@ const Dashboard = () => {
         </div>
 
         <Tabs defaultValue="overview">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 lg:w-auto overflow-x-auto">
-            <TabsTrigger value="overview" className="text-xs sm:text-sm">
-              <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Overview</span>
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="text-xs sm:text-sm">
-              <LineChart className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Analytics</span>
-            </TabsTrigger>
-            <TabsTrigger value="trades" className="text-xs sm:text-sm">
-              <Activity className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Trades</span>
-            </TabsTrigger>
-            <TabsTrigger value="voice" className="col-span-3 sm:col-span-1 text-xs sm:text-sm">
-              <Brain className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Voice</span>
-            </TabsTrigger>
-            <TabsTrigger value="comparison" className="col-span-3 sm:col-span-1 text-xs sm:text-sm">
-              <Target className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Compare</span>
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5 lg:w-auto">
+            <TabsTrigger value="overview"><BarChart3 className="h-4 w-4 mr-2" />Overview</TabsTrigger>
+            <TabsTrigger value="analytics"><LineChart className="h-4 w-4 mr-2" />Analytics</TabsTrigger>
+            <TabsTrigger value="trades"><Activity className="h-4 w-4 mr-2" />Trades</TabsTrigger>
+            <TabsTrigger value="voice"><Brain className="h-4 w-4 mr-2" />Voice</TabsTrigger>
+            <TabsTrigger value="comparison"><Target className="h-4 w-4 mr-2" />Compare</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-6 mt-6 w-full">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 w-full">
+          <TabsContent value="overview" className="space-y-6 mt-6">
+            <div className="grid md:grid-cols-2 gap-6">
               <DailyChallengeCard trades={trades} />
               <TradingScoreCard trades={trades} />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 w-full">
+            <div className="grid md:grid-cols-2 gap-6">
               {user && <EquityCurve userId={user.id} />}
               <ModernBarChart data={getMonthlyData()} />
             </div>
