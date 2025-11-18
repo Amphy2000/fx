@@ -223,86 +223,77 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 md:gap-3 w-full">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3 w-full">
           <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-            <CardContent className="p-3 md:p-4">
+            <CardContent className="p-2 md:p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] md:text-xs text-muted-foreground uppercase">Trades</p>
-                  <p className="text-lg md:text-2xl font-bold">{stats.totalTrades}</p>
+                  <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase">Trades</p>
+                  <p className="text-base md:text-lg lg:text-xl font-bold">{stats.totalTrades}</p>
                 </div>
-                <Activity className="h-6 w-6 md:h-8 md:w-8 text-primary opacity-50" />
+                <Activity className="h-4 w-4 md:h-5 md:w-5 text-primary opacity-50" />
               </div>
             </CardContent>
           </Card>
 
           <Card className={`bg-gradient-to-br ${stats.totalPnL >= 0 ? 'from-green-500/10 border-green-500/20' : 'from-red-500/10 border-red-500/20'}`}>
-            <CardContent className="p-3 md:p-4">
-              <div className="flex items-center justify-between gap-1 md:gap-2">
+            <CardContent className="p-2 md:p-3">
+              <div className="flex items-center justify-between gap-1">
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] md:text-xs text-muted-foreground uppercase">P/L</p>
-                  <p className={`text-sm md:text-xl lg:text-2xl font-bold ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'} break-all`}>
+                  <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase">P/L</p>
+                  <p className={`text-xs md:text-base lg:text-lg font-bold ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'} break-all`}>
                     ${stats.totalPnL >= 0 ? '+' : ''}{stats.totalPnL.toLocaleString()}
                   </p>
                 </div>
-                {stats.totalPnL >= 0 ? <TrendingUp className="h-5 w-5 md:h-6 md:w-6 lg:h-8 lg:w-8 text-green-600 opacity-50 flex-shrink-0" /> : <TrendingDown className="h-5 w-5 md:h-6 md:w-6 lg:h-8 lg:w-8 text-red-600 opacity-50 flex-shrink-0" />}
+                {stats.totalPnL >= 0 ? <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-green-600 opacity-50 flex-shrink-0" /> : <TrendingDown className="h-4 w-4 md:h-5 md:w-5 text-red-600 opacity-50 flex-shrink-0" />}
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-blue-500/10 border-blue-500/20">
-            <CardContent className="p-3 md:p-4">
+            <CardContent className="p-2 md:p-3">
               <div>
-                <p className="text-[10px] md:text-xs text-muted-foreground uppercase">Win Rate</p>
-                <p className="text-lg md:text-2xl font-bold">{stats.winRate}%</p>
+                <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase">Win Rate</p>
+                <p className="text-base md:text-lg lg:text-xl font-bold">{stats.winRate}%</p>
                 <Progress value={stats.winRate} className="h-1 mt-1" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-purple-500/10 border-purple-500/20">
-            <CardContent className="p-3 md:p-4">
+            <CardContent className="p-2 md:p-3">
               <div>
-                <p className="text-[10px] md:text-xs text-muted-foreground uppercase">Profit Factor</p>
-                <p className="text-lg md:text-2xl font-bold">{stats.profitFactor}</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground">{stats.wins}W/{stats.losses}L</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-amber-500/10 border-amber-500/20">
-            <CardContent className="p-3 md:p-4">
-              <div>
-                <p className="text-[10px] md:text-xs text-muted-foreground uppercase">Avg R</p>
-                <p className="text-lg md:text-2xl font-bold">{stats.avgRMultiple}R</p>
+                <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase">Profit Factor</p>
+                <p className="text-base md:text-lg lg:text-xl font-bold">{stats.profitFactor}</p>
+                <p className="text-[9px] md:text-[10px] text-muted-foreground">{stats.wins}W/{stats.losses}L</p>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-green-500/10 border-green-500/20">
-            <CardContent className="p-3 md:p-4">
-              <div className="flex items-center justify-between gap-1 md:gap-2">
+            <CardContent className="p-2 md:p-3">
+              <div className="flex items-center justify-between gap-1">
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] md:text-xs text-muted-foreground uppercase">Best</p>
-                  <p className="text-sm md:text-xl lg:text-2xl font-bold text-green-600 break-all">
+                  <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase">Best</p>
+                  <p className="text-xs md:text-base lg:text-lg font-bold text-green-600 break-all">
                     +${stats.bestTrade.toLocaleString()}
                   </p>
                 </div>
-                <Target className="h-5 w-5 md:h-6 md:w-6 lg:h-8 lg:w-8 text-green-600 opacity-50 flex-shrink-0" />
+                <Target className="h-4 w-4 md:h-5 md:w-5 text-green-600 opacity-50 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-red-500/10 border-red-500/20">
-            <CardContent className="p-3 md:p-4">
-              <div className="flex items-center justify-between gap-1 md:gap-2">
+            <CardContent className="p-2 md:p-3">
+              <div className="flex items-center justify-between gap-1">
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] md:text-xs text-muted-foreground uppercase">Worst</p>
-                  <p className="text-sm md:text-xl lg:text-2xl font-bold text-red-600 break-all">
+                  <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase">Worst</p>
+                  <p className="text-xs md:text-base lg:text-lg font-bold text-red-600 break-all">
                     ${stats.worstTrade.toLocaleString()}
                   </p>
                 </div>
-                <TrendingDown className="h-5 w-5 md:h-6 md:w-6 lg:h-8 lg:w-8 text-red-600 opacity-50 flex-shrink-0" />
+                <TrendingDown className="h-4 w-4 md:h-5 md:w-5 text-red-600 opacity-50 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
