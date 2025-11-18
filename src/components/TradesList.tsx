@@ -92,10 +92,10 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
   };
 
   const toggleSelectAll = () => {
-    if (selectedTrades.size === paginatedTrades.length) {
+    if (selectedTrades.size === filteredTrades.length) {
       setSelectedTrades(new Set());
     } else {
-      setSelectedTrades(new Set(paginatedTrades.map(t => t.id)));
+      setSelectedTrades(new Set(filteredTrades.map(t => t.id)));
     }
   };
 
@@ -346,12 +346,12 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
         {paginatedTrades.length > 0 && (
           <div className="flex items-center gap-2 px-2">
             <Checkbox 
-              checked={selectedTrades.size === paginatedTrades.length && paginatedTrades.length > 0}
+              checked={selectedTrades.size === filteredTrades.length && filteredTrades.length > 0}
               onCheckedChange={toggleSelectAll}
               id="select-all"
             />
             <label htmlFor="select-all" className="text-sm text-muted-foreground cursor-pointer">
-              Select all on page
+              Select all {filteredTrades.length} trade{filteredTrades.length !== 1 ? 's' : ''}
             </label>
           </div>
         )}
