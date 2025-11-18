@@ -15,6 +15,7 @@ import { MT5AccountCard } from "@/components/MT5AccountCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { MT5IntegrationCard } from "@/components/MT5IntegrationCard";
+import { MT5SyncLogs } from "@/components/MT5SyncLogs";
 
 const Integrations = () => {
   const navigate = useNavigate();
@@ -263,6 +264,14 @@ const Integrations = () => {
         <MT5IntegrationCard />
 
         <Separator className="my-6" />
+
+        {/* Sync History */}
+        {mt5Accounts.length > 0 && (
+          <>
+            <MT5SyncLogs />
+            <Separator className="my-6" />
+          </>
+        )}
 
         {/* Manual Upload Section */}
         <Card className="border-border">
