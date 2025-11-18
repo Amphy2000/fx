@@ -56,3 +56,30 @@ verify_jwt = true
 
 [functions.voice-command]
 verify_jwt = true
+
+[functions.mt5-sync]
+verify_jwt = false
+
+[functions.send-first-sync-notification]
+verify_jwt = true
+
+[functions.ai-daily-journal]
+verify_jwt = true
+
+[functions.ai-behavior-analysis]
+verify_jwt = true
+
+[functions.enhanced-weekly-summary]
+verify_jwt = true
+
+[functions.export-csv]
+verify_jwt = true
+
+[functions.export-pdf]
+verify_jwt = true
+
+[functions.import-email-trades]
+verify_jwt = true
+
+[functions.pattern-recognition]
+verify_jwt = true
