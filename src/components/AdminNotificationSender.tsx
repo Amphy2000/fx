@@ -1,7 +1,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EnhancedNotificationSender } from "./EnhancedNotificationSender";
 import { NotificationTemplateManager } from "./NotificationTemplateManager";
-import { FileText, Send } from "lucide-react";
+import { NotificationAnalytics } from "./NotificationAnalytics";
+import { FileText, Send, BarChart3 } from "lucide-react";
 
 export const AdminNotificationSender = () => {
   return (
@@ -15,6 +16,10 @@ export const AdminNotificationSender = () => {
           <FileText className="mr-2 h-4 w-4" />
           Templates
         </TabsTrigger>
+        <TabsTrigger value="analytics">
+          <BarChart3 className="mr-2 h-4 w-4" />
+          Analytics
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="send">
@@ -23,6 +28,10 @@ export const AdminNotificationSender = () => {
 
       <TabsContent value="templates">
         <NotificationTemplateManager />
+      </TabsContent>
+
+      <TabsContent value="analytics">
+        <NotificationAnalytics />
       </TabsContent>
     </Tabs>
   );
