@@ -83,7 +83,7 @@ serve(async (req) => {
                 destination: {
                   type: "string",
                   enum: [
-                    "dashboard", "journal", "trades", "analytics", "ai-coach", "targets", 
+                    "dashboard", "journal", "trades", "analytics", "targets", 
                     "achievements", "leaderboard", "streaks", "settings", "pricing", "integrations"
                   ],
                   description: "Navigation destination (for navigate action)"

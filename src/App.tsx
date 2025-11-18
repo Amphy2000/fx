@@ -33,7 +33,7 @@ import Streaks from "./pages/Streaks";
 import Onboarding from "./pages/Onboarding";
 import Achievements from "./pages/Achievements";
 import Install from "./pages/Install";
-import { GlobalVoiceAssistant } from "./components/GlobalVoiceAssistant";
+import { FloatingActionMenu } from "./components/FloatingActionMenu";
 
 const queryClient = new QueryClient();
 
@@ -74,7 +74,7 @@ const AppContent = () => {
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <GlobalVoiceAssistant />
+      <FloatingActionMenu />
     </BrowserRouter>
     </>
   );
