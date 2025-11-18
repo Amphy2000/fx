@@ -2,34 +2,34 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
-import { TrendingUp, Brain, BarChart3, Target, Shield, Zap, Check, ArrowRight, LineChart, Activity, TrendingDown } from "lucide-react";
+import { Mic, Brain, BarChart3, Target, Shield, Zap, Check, ArrowRight, LineChart, Activity, MessageSquare } from "lucide-react";
 import heroImage from "@/assets/hero-bg.jpg";
 const Index = () => {
   const navigate = useNavigate();
   const features = [{
-    icon: <TrendingUp className="h-6 w-6" />,
-    title: "Track Every Trade",
-    description: "Log trades with detailed entries, stops, targets, and outcomes with precision"
+    icon: <Mic className="h-6 w-6" />,
+    title: "Voice Command Control",
+    description: "Navigate your app, log trades, and get insights using only your voice - hands-free trading journal"
+  }, {
+    icon: <Mic className="h-6 w-6" />,
+    title: "Voice Trade Logger",
+    description: "Speak your trades naturally and watch AI instantly log all details - entry, exit, stops, and notes"
   }, {
     icon: <Brain className="h-6 w-6" />,
-    title: "AI-Powered Insights",
-    description: "Get personalized feedback and pattern recognition from advanced AI"
+    title: "AI-Powered Analysis",
+    description: "Get instant personalized feedback, pattern recognition, and trading psychology insights from advanced AI"
+  }, {
+    icon: <MessageSquare className="h-6 w-6" />,
+    title: "AI Trading Coach",
+    description: "Chat with your personal AI coach for real-time advice, strategy refinement, and performance tips"
   }, {
     icon: <BarChart3 className="h-6 w-6" />,
-    title: "Performance Analytics",
-    description: "Visualize win rates, profit/loss, and trading patterns in real-time"
+    title: "Smart Analytics",
+    description: "Visualize win rates, profit/loss, and AI-detected patterns in stunning real-time dashboards"
   }, {
     icon: <Target className="h-6 w-6" />,
     title: "Psychology Tracking",
-    description: "Monitor emotions and discover psychological patterns affecting performance"
-  }, {
-    icon: <Shield className="h-6 w-6" />,
-    title: "Secure & Private",
-    description: "Your trading data is encrypted with bank-level security"
-  }, {
-    icon: <Zap className="h-6 w-6" />,
-    title: "Real-Time Updates",
-    description: "Instantly sync across all your devices with zero latency"
+    description: "Monitor emotions with AI-powered insights to discover psychological patterns affecting your trades"
   }];
   const stats = [{
     value: "10K+",
@@ -41,7 +41,12 @@ const Index = () => {
     value: "98%",
     label: "Satisfaction Rate"
   }];
-  const benefits = ["Discover your strongest trading pairs", "Get AI feedback after every trade", "Stay disciplined and consistent", "Track your trading habits effectively"];
+  const benefits = [
+    "Log trades in seconds using natural voice commands", 
+    "Get instant AI feedback and insights after every trade", 
+    "Control your entire trading journal hands-free with voice", 
+    "Discover hidden patterns with AI-powered analytics"
+  ];
   return <div className="min-h-screen bg-background">
       <Navbar />
       
@@ -59,20 +64,20 @@ const Index = () => {
             <div className="text-center mb-16 mx-0 my-0 px-0 py-0">
               {/* Badge */}
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-chart-1/10 border border-chart-1/30 mb-8 animate-fade-in backdrop-blur-sm">
-                <Activity className="h-4 w-4 text-chart-1 animate-pulse" />
-                <span className="text-sm font-semibold text-foreground">AI-Powered Trading Intelligence</span>
+                <Mic className="h-4 w-4 text-chart-1 animate-pulse" />
+                <span className="text-sm font-semibold text-foreground">Voice-Powered AI Trading Journal</span>
               </div>
               
               {/* Main headline */}
               <h1 className="text-6xl font-bold mb-8 text-foreground tracking-tight leading-[1.1] md:text-6xl">
-                Master Your
+                Trade Smarter with
                 <span className="block mt-3 bg-gradient-to-r from-chart-1 via-chart-2 to-chart-3 bg-clip-text text-transparent mx-0 my-0 px-px py-[20px] text-5xl">
-                  Trading Edge
+                  Voice & AI Power
                 </span>
               </h1>
               
               <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto leading-relaxed font-light">
-                Professional trading journal with advanced AI analytics, real-time insights, and psychology tracking. Trusted by 10,000+ traders worldwide.
+                The world's first AI-powered trading journal with voice commands. Log trades by speaking, get instant AI insights, and control everything hands-free. Trusted by 10,000+ traders.
               </p>
               
               {/* CTA Buttons */}
@@ -108,14 +113,14 @@ const Index = () => {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-16">
               <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-chart-2/10 border border-chart-2/30 text-chart-2 text-sm font-bold mb-6 backdrop-blur-sm">
-                <Zap className="h-4 w-4" />
-                Limited Beta Access
+                <Brain className="h-4 w-4" />
+                Revolutionary AI + Voice Features
               </div>
               <h2 className="text-4xl md:text-5xl font-bold mb-4">
-                Why Top Traders Choose Us
+                Why Top Traders Choose Amphy AI
               </h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Join thousands of successful traders who've transformed their performance
+                Join thousands who've transformed their trading with voice commands and AI insights
               </p>
             </div>
             <div className="grid md:grid-cols-2 gap-5">
@@ -135,10 +140,10 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Professional Trading Tools
+              Powerful AI-Driven Features
             </h2>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-              Everything you need to analyze, improve, and master your trading strategy
+              Experience the future of trading journals with voice control, AI analysis, and intelligent insights
             </p>
           </div>
           
@@ -164,10 +169,10 @@ const Index = () => {
         <div className="container mx-auto px-4 text-center relative">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-4xl md:text-6xl font-bold mb-6 text-foreground">
-              Start Trading Smarter Today
+              Try Voice-Powered Trading Free
             </h2>
             <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
-              Join 10,000+ traders who are mastering their edge with AI-powered analytics and real-time insights
+              Experience the future: Log trades by voice, get AI insights instantly, and control your journal hands-free. Join 10,000+ traders.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" onClick={() => navigate("/auth")} className="bg-chart-1 hover:bg-chart-1/90 text-white text-lg px-10 py-7 h-auto font-semibold shadow-[0_0_40px_-10px_hsl(var(--chart-1))] hover:shadow-[0_0_60px_-10px_hsl(var(--chart-1))] transition-all group">
@@ -180,10 +185,14 @@ const Index = () => {
             </div>
             
             {/* Trust indicators */}
-            <div className="mt-12 flex items-center justify-center gap-8 text-sm text-muted-foreground">
+            <div className="mt-12 flex items-center justify-center gap-8 text-sm text-muted-foreground flex-wrap">
               <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-chart-1" />
-                <span>Bank-level Security</span>
+                <Mic className="h-4 w-4 text-chart-1" />
+                <span>Voice Control Enabled</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Brain className="h-4 w-4 text-chart-1" />
+                <span>AI-Powered Insights</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-chart-1" />
@@ -191,7 +200,7 @@ const Index = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Zap className="h-4 w-4 text-chart-1" />
-                <span>Setup in 2 Minutes</span>
+                <span>Setup in 60 Seconds</span>
               </div>
             </div>
           </div>
