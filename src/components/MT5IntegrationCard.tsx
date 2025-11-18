@@ -329,18 +329,26 @@ export const MT5IntegrationCard = () => {
                           </Alert>
                         )}
                       
-                        <div className="space-y-2">
-                          <p className="text-xs font-medium">Quick Setup:</p>
+                        <div className="space-y-3">
+                          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded p-3">
+                            <p className="text-xs font-bold text-yellow-700 dark:text-yellow-400 mb-2">⚠️ CRITICAL STEP - Must do first or EA won't work:</p>
+                            <ol className="text-xs text-yellow-700 dark:text-yellow-400 space-y-1 list-decimal list-inside ml-2">
+                              <li>In MT5: <strong>Tools → Options → Expert Advisors</strong></li>
+                              <li>✅ Check "<strong>Allow WebRequest for listed URL</strong>"</li>
+                              <li>Click <strong>Add</strong> and paste: <code className="bg-yellow-500/20 px-1 py-0.5 rounded text-[10px] font-mono">https://yvclpmdgrwugayrvjtqg.supabase.co</code></li>
+                              <li>Click <strong>OK</strong> and <strong>restart MT5</strong></li>
+                            </ol>
+                          </div>
+                          
+                          <p className="text-xs font-medium">Setup Steps:</p>
                           <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
                             <li>Download the EA file below</li>
-                            <li>In MT5: Tools → Options → Expert Advisors tab</li>
-                            <li>✅ Check "Allow WebRequest for listed URL" and add: <code className="bg-muted px-1 py-0.5 rounded text-[10px]">https://yvclpmdgrwugayrvjtqg.supabase.co</code></li>
-                            <li>Click OK, then: File → Open Data Folder → MQL5 → Experts</li>
-                            <li>Paste the EA file there and restart MT5</li>
+                            <li>In MT5: <strong>File → Open Data Folder → MQL5 → Experts</strong></li>
+                            <li>Paste the EA file there and <strong>restart MT5</strong></li>
                             <li>Drag the EA onto any chart</li>
-                            <li>Paste both Webhook URL and API Key from below in the EA settings</li>
-                            <li>✅ Check "Allow Algo Trading" and click OK</li>
-                            <li>Look for "Successfully sent" message in the Experts tab</li>
+                            <li>Paste both <strong>Webhook URL</strong> and <strong>API Key</strong> from below</li>
+                            <li>✅ Check "<strong>Allow Algo Trading</strong>" and click OK</li>
+                            <li>Check MT5 <strong>Experts tab</strong> (bottom) for "✓ Successfully sent" message</li>
                           </ol>
                         </div>
 
