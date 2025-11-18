@@ -5,16 +5,31 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, RefreshCw, Mail, Server, Copy, ExternalLink, Download, TrendingUp, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 
 export const MT5IntegrationCard = () => {
+  const { toast: toastHook } = useToast();
   const [accountNumber, setAccountNumber] = useState("");
   const [brokerName, setBrokerName] = useState("");
   const [serverName, setServerName] = useState("");
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [syncing, setSyncing] = useState<string | null>(null);
+
+  const { data: session } = useQuery({
+    queryKey: ['session'],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session;
+    }
+  });
+
+  const user = session?.user;
+  const userEmailAddress = user?.email ? `user_${user.id}@yvclpmdgrwugayrvjtqg.supabase.co` : '';
 
   useEffect(() => {
     fetchAccounts();
@@ -136,19 +151,85 @@ export const MT5IntegrationCard = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>MT5 Integration</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <TrendingUp className="h-5 w-5" />
+          MT5 Auto-Import
+        </CardTitle>
         <CardDescription>
-          Connect your MT5 account to automatically sync trades
+          Two easy ways to automatically import your trades
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <Alert>
-          <AlertDescription>
-            After connecting, configure the Expert Advisor (EA) in your MT5 terminal. 
-            <a href="/integrations/mt5-setup" className="underline ml-1">View setup guide</a> • 
-            <a href="/MT5_Trade_Sync_EA.mq5" download className="underline ml-1">Download EA</a>
-          </AlertDescription>
-        </Alert>
+        {/* Email Forwarding Option */}
+        <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+          <div className="flex items-start gap-3">
+            <Mail className="h-5 w-5 text-primary mt-0.5" />
+            <div className="flex-1 space-y-2">
+              <h3 className="font-semibold text-sm">Option 1: Email Forwarding (Easiest)</h3>
+              <p className="text-sm text-muted-foreground">
+                Forward your broker's trade confirmation emails to this address:
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-xs bg-background px-3 py-2 rounded border">
+                  {userEmailAddress}
+                </code>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(userEmailAddress);
+                    toastHook({ title: "Copied!", description: "Email address copied to clipboard" });
+                  }}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Set up a forwarding rule in your email to automatically send broker confirmations here. Trades will appear within seconds.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* MT5 EA Option */}
+        <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+          <div className="flex items-start gap-3">
+            <Server className="h-5 w-5 text-primary mt-0.5" />
+            <div className="flex-1 space-y-2">
+              <h3 className="font-semibold text-sm">Option 2: Direct MT5 Connection</h3>
+              <p className="text-sm text-muted-foreground">
+                Install our Expert Advisor for real-time synchronization
+              </p>
+              <Button variant="outline" size="sm" asChild>
+                <a href="/integrations/mt5-setup">
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  View Setup Guide
+                </a>
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <Separator />
+
+        {accounts.length === 0 ? (
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              No MT5 accounts connected yet. Choose an option above to get started.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <Alert>
+            <AlertDescription>
+              After connecting, configure the Expert Advisor (EA) in your MT5 terminal. 
+              <a href="/integrations/mt5-setup" className="underline ml-1">View setup guide</a> • 
+              <a href="/MT5_Trade_Sync_EA.mq5" download className="underline ml-1">Download EA</a>
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="space-y-4">
           <div className="space-y-2">
