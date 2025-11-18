@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,10 @@ export const MT5IntegrationCard = () => {
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [syncing, setSyncing] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchAccounts();
+  }, []);
 
   const fetchAccounts = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -45,6 +49,9 @@ export const MT5IntegrationCard = () => {
         return;
       }
 
+      // Generate unique API key for MT5 EA
+      const apiKey = `mt5_${crypto.randomUUID().replace(/-/g, '')}`;
+
       // Insert MT5 account
       const { data, error } = await supabase
         .from('mt5_accounts')
@@ -55,7 +62,8 @@ export const MT5IntegrationCard = () => {
           server_name: serverName,
           account_type: 'live',
           is_active: true,
-          last_sync_status: 'pending'
+          last_sync_status: 'pending',
+          api_key_encrypted: apiKey
         })
         .select()
         .single();
@@ -69,7 +77,7 @@ export const MT5IntegrationCard = () => {
         return;
       }
 
-      toast.success("MT5 account connected successfully!");
+      toast.success("MT5 account connected! Copy your API key to use in MT5 EA.");
       setAccountNumber("");
       setBrokerName("");
       setServerName("");
@@ -118,6 +126,13 @@ export const MT5IntegrationCard = () => {
     }
   };
 
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied to clipboard`);
+  };
+
+  const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mt5-sync`;
+
   return (
     <Card>
       <CardHeader>
@@ -129,7 +144,8 @@ export const MT5IntegrationCard = () => {
       <CardContent className="space-y-6">
         <Alert>
           <AlertDescription>
-            One MT5 account per user. Your account number must be unique.
+            After connecting, configure the Expert Advisor (EA) in your MT5 terminal using the webhook URL and API key shown below. 
+            <a href="/MT5_Trade_Sync_EA.mq5" download className="underline ml-1">Download MT5 EA</a>
           </AlertDescription>
         </Alert>
 
@@ -178,7 +194,7 @@ export const MT5IntegrationCard = () => {
           <div className="space-y-3 pt-4 border-t">
             <h4 className="font-semibold">Connected Accounts</h4>
             {accounts.map((account) => (
-              <Card key={account.id} className="p-4">
+              <Card key={account.id} className="p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
                     <p className="font-medium">{account.account_number}</p>
@@ -200,11 +216,67 @@ export const MT5IntegrationCard = () => {
                     disabled={syncing === account.id}
                   >
                     {syncing === account.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Testing
+                      </>
                     ) : (
-                      <RefreshCw className="h-4 w-4" />
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Test
+                      </>
                     )}
                   </Button>
+                </div>
+
+                <div className="space-y-3 pt-3 border-t">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium">Webhook URL</Label>
+                    <div className="flex gap-2">
+                      <Input 
+                        value={webhookUrl} 
+                        readOnly 
+                        className="text-xs font-mono"
+                      />
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => copyToClipboard(webhookUrl, 'Webhook URL')}
+                      >
+                        Copy
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {account.api_key_encrypted && (
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium">API Key</Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          value={account.api_key_encrypted} 
+                          readOnly 
+                          className="text-xs font-mono"
+                          type="password"
+                        />
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => copyToClipboard(account.api_key_encrypted, 'API Key')}
+                        >
+                          Copy
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Configure this API key in your MT5 EA to authenticate webhook calls
+                      </p>
+                    </div>
+                  )}
+
+                  {account.last_sync_at && (
+                    <p className="text-xs text-muted-foreground pt-2">
+                      Last synced: {new Date(account.last_sync_at).toLocaleString()}
+                    </p>
+                  )}
                 </div>
               </Card>
             ))}
