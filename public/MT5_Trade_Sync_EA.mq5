@@ -86,7 +86,7 @@ void CheckAndSendTrades()
    if(tradeCount > 0)
    {
       string payload = BuildPayload(trades);
-      SendToWebhook(payload);
+      SendToWebhook(payload, tradeCount);
    }
    
    lastCheckTime = TimeCurrent();
@@ -146,7 +146,7 @@ string BuildPayload(string &trades[])
 //+------------------------------------------------------------------+
 //| Send data to webhook                                             |
 //+------------------------------------------------------------------+
-void SendToWebhook(string payload)
+void SendToWebhook(string payload, int tradeCount)
 {
    char postData[];
    char resultData[];
@@ -170,7 +170,7 @@ void SendToWebhook(string payload)
    
    if(res == 200)
    {
-      Print("Successfully sent ", ArraySize(StringSplit(payload, '{')), " trades to webhook");
+      Print("Successfully sent ", tradeCount, " trades to webhook");
    }
    else
    {
