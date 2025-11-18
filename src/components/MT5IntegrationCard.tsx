@@ -214,152 +214,125 @@ export const MT5IntegrationCard = () => {
           <div className="space-y-4">
             <h3 className="font-semibold">Import Methods</h3>
             
-            {/* Manual Upload - Primary Method */}
-            <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+            {/* Auto-Sync EA - Best Option */}
+            <div className="space-y-3 p-4 border-2 border-primary rounded-lg bg-primary/5">
               <div className="flex items-start gap-3">
-                <Download className="h-5 w-5 text-primary mt-0.5" />
-                <div className="flex-1 space-y-2">
-                  <h4 className="font-semibold text-sm">Manual Upload (Recommended)</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Export your trade history from MT5 and upload it here
-                  </p>
-                  <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                    <li>In MT5: Right-click "Account History" → "Save as Report"</li>
-                    <li>Save as HTML or export as CSV</li>
-                    <li>Go to <a href="/integrations" className="underline">Integrations page</a> to upload</li>
-                  </ol>
-                  <Button variant="outline" size="sm" asChild className="mt-2">
-                    <a href="/integrations">
+                <RefreshCw className="h-5 w-5 text-primary mt-0.5" />
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <h4 className="font-semibold text-sm flex items-center gap-2">
+                      Auto-Sync (Recommended)
+                      <span className="text-xs font-normal px-2 py-0.5 bg-primary text-primary-foreground rounded">Best</span>
+                    </h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Trades sync automatically after each trade - one-time 5-minute setup
+                    </p>
+                  </div>
+                  
+                  {accounts.map((account) => (
+                    <div key={account.id} className="space-y-3 p-3 bg-background rounded border">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-sm">{account.account_number}</p>
+                          <p className="text-xs text-muted-foreground">{account.broker_name}</p>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          {getSyncStatusIcon(account.last_sync_status)}
+                          <span className="capitalize">{account.last_sync_status}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium">Quick Setup:</p>
+                        <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
+                          <li>Download the EA file below</li>
+                          <li>In MT5: File → Open Data Folder → MQL5 → Experts</li>
+                          <li>Paste the EA file there and restart MT5</li>
+                          <li>Drag the EA onto any chart</li>
+                          <li>Copy your API Key below and paste it in the EA settings</li>
+                        </ol>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="default" asChild>
+                          <a href="/MT5_Trade_Sync_EA.mq5" download>
+                            <Download className="h-4 w-4 mr-2" />
+                            Download EA
+                          </a>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleSync(account.id)}
+                          disabled={syncing === account.id}
+                        >
+                          {syncing === account.id ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Testing
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2" />
+                              Test Connection
+                            </>
+                          )}
+                        </Button>
+                      </div>
+
+                      {account.api_key_encrypted && (
+                        <div className="space-y-2 pt-2 border-t">
+                          <Label className="text-xs font-medium">Your API Key (paste this in EA):</Label>
+                          <div className="flex gap-2">
+                            <Input 
+                              value={account.api_key_encrypted} 
+                              readOnly 
+                              className="text-xs font-mono"
+                            />
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => copyToClipboard(account.api_key_encrypted, 'API Key')}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  
+                  <Button variant="link" size="sm" asChild className="px-0">
+                    <a href="/integrations/mt5-setup">
                       <ExternalLink className="h-4 w-4 mr-2" />
-                      Upload Trades
+                      View detailed setup guide with screenshots
                     </a>
                   </Button>
                 </div>
               </div>
             </div>
 
-            {/* Email Forwarding - Advanced */}
+            {/* Manual Upload - Fallback */}
             <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
               <div className="flex items-start gap-3">
-                <Mail className="h-5 w-5 text-primary mt-0.5" />
+                <Download className="h-5 w-5 text-primary mt-0.5" />
                 <div className="flex-1 space-y-2">
-                  <h4 className="font-semibold text-sm">Email Auto-Import (Advanced)</h4>
+                  <h4 className="font-semibold text-sm">Manual Upload (Backup method)</h4>
                   <p className="text-sm text-muted-foreground">
-                    Forward broker confirmation emails to:
+                    If auto-sync doesn't work, upload your history manually
                   </p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 text-xs bg-background px-3 py-2 rounded border">
-                      {userEmailAddress}
-                    </code>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(userEmailAddress);
-                        toastHook({ title: "Copied!", description: "Email address copied to clipboard" });
-                      }}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href="/integrations">
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Upload Trade History
+                    </a>
+                  </Button>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {accounts.length > 0 && (
-          <div className="space-y-3 pt-4 border-t">
-            <h4 className="font-semibold">Connected Accounts</h4>
-            {accounts.map((account) => (
-              <Card key={account.id} className="p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="font-medium">{account.account_number}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {account.broker_name} • {account.server_name}
-                    </p>
-                    <div className="flex items-center gap-2 text-sm">
-                      {getSyncStatusIcon(account.last_sync_status)}
-                      <span className="capitalize">{account.last_sync_status}</span>
-                      {account.sync_error && (
-                        <span className="text-red-500">• {account.sync_error}</span>
-                      )}
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleSync(account.id)}
-                    disabled={syncing === account.id}
-                  >
-                    {syncing === account.id ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Testing
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Test
-                      </>
-                    )}
-                  </Button>
-                </div>
-
-                <div className="space-y-3 pt-3 border-t">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-medium">Webhook URL</Label>
-                    <div className="flex gap-2">
-                      <Input 
-                        value={webhookUrl} 
-                        readOnly 
-                        className="text-xs font-mono"
-                      />
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => copyToClipboard(webhookUrl, 'Webhook URL')}
-                      >
-                        Copy
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {account.api_key_encrypted && (
-                    <div className="space-y-2">
-                      <Label className="text-xs font-medium">API Key</Label>
-                      <div className="flex gap-2">
-                        <Input 
-                          value={account.api_key_encrypted} 
-                          readOnly 
-                          className="text-xs font-mono"
-                          type="password"
-                        />
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => copyToClipboard(account.api_key_encrypted, 'API Key')}
-                        >
-                          Copy
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Configure this API key in your MT5 EA to authenticate webhook calls
-                      </p>
-                    </div>
-                  )}
-
-                  {account.last_sync_at && (
-                    <p className="text-xs text-muted-foreground pt-2">
-                      Last synced: {new Date(account.last_sync_at).toLocaleString()}
-                    </p>
-                  )}
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
       </CardContent>
     </Card>
   );
