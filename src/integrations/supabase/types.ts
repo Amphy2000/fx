@@ -474,6 +474,77 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_clicks: {
+        Row: {
+          action: string | null
+          clicked_at: string | null
+          id: string
+          notification_id: string
+          user_id: string
+        }
+        Insert: {
+          action?: string | null
+          clicked_at?: string | null
+          id?: string
+          notification_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string | null
+          clicked_at?: string | null
+          id?: string
+          notification_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_clicks_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "push_notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_templates: {
+        Row: {
+          action_buttons: Json | null
+          body: string
+          category: string | null
+          created_at: string | null
+          created_by: string
+          icon: string | null
+          id: string
+          name: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          action_buttons?: Json | null
+          body: string
+          category?: string | null
+          created_at?: string | null
+          created_by: string
+          icon?: string | null
+          id?: string
+          name: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          action_buttons?: Json | null
+          body?: string
+          category?: string | null
+          created_at?: string | null
+          created_by?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       performance_metrics: {
         Row: {
           average_loss: number | null
@@ -658,37 +729,55 @@ export type Database = {
       }
       push_notifications: {
         Row: {
+          action_buttons: Json | null
           admin_id: string
           body: string
+          clicked_count: number | null
           created_at: string | null
           failed_count: number | null
           id: string
+          opened_count: number | null
+          scheduled_for: string | null
           sent_count: number | null
           status: string | null
           target_users: string[] | null
+          template_id: string | null
           title: string
+          user_segment: string | null
         }
         Insert: {
+          action_buttons?: Json | null
           admin_id: string
           body: string
+          clicked_count?: number | null
           created_at?: string | null
           failed_count?: number | null
           id?: string
+          opened_count?: number | null
+          scheduled_for?: string | null
           sent_count?: number | null
           status?: string | null
           target_users?: string[] | null
+          template_id?: string | null
           title: string
+          user_segment?: string | null
         }
         Update: {
+          action_buttons?: Json | null
           admin_id?: string
           body?: string
+          clicked_count?: number | null
           created_at?: string | null
           failed_count?: number | null
           id?: string
+          opened_count?: number | null
+          scheduled_for?: string | null
           sent_count?: number | null
           status?: string | null
           target_users?: string[] | null
+          template_id?: string | null
           title?: string
+          user_segment?: string | null
         }
         Relationships: []
       }
@@ -766,6 +855,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      scheduled_notifications: {
+        Row: {
+          action_buttons: Json | null
+          body: string
+          created_at: string | null
+          created_by: string
+          id: string
+          recurrence: string | null
+          scheduled_for: string
+          sent_at: string | null
+          status: string | null
+          template_id: string | null
+          title: string
+          user_segment: string
+        }
+        Insert: {
+          action_buttons?: Json | null
+          body: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          recurrence?: string | null
+          scheduled_for: string
+          sent_at?: string | null
+          status?: string | null
+          template_id?: string | null
+          title: string
+          user_segment: string
+        }
+        Update: {
+          action_buttons?: Json | null
+          body?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          recurrence?: string | null
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string | null
+          template_id?: string | null
+          title?: string
+          user_segment?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_notifications_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "notification_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       setup_performance: {
         Row: {

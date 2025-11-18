@@ -1,4 +1,6 @@
 // Service Worker for Push Notifications
+// This handles push events and notification actions
+
 self.addEventListener('push', function(event) {
   console.log('Push notification received:', event);
   
@@ -25,8 +27,13 @@ self.addEventListener('push', function(event) {
     requireInteraction: false,
     data: {
       url: data.url || '/',
+      notificationId: data.data?.notificationId,
       ...data
-    }
+    },
+    actions: data.data?.actions?.map(action => ({
+      action: action.url || action.action,
+      title: action.title
+    })) || []
   };
 
   event.waitUntil(
@@ -39,21 +46,35 @@ self.addEventListener('notificationclick', function(event) {
   
   event.notification.close();
 
-  const urlToOpen = event.notification.data?.url || '/';
+  const notificationId = event.notification.data?.notificationId;
+  const action = event.action || 'open';
+  const urlToOpen = event.action ? event.action : (event.notification.data?.url || '/');
+
+  // Track the click
+  if (notificationId) {
+    fetch('/api/track-notification-click', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        notificationId,
+        action
+      })
+    }).catch(err => console.error('Failed to track click:', err));
+  }
 
   event.waitUntil(
     clients.matchAll({
       type: 'window',
       includeUncontrolled: true
     }).then(function(clientList) {
-      // Check if there's already a window open
       for (let i = 0; i < clientList.length; i++) {
         const client = clientList[i];
-        if (client.url === urlToOpen && 'focus' in client) {
+        if (client.url.includes(urlToOpen) && 'focus' in client) {
           return client.focus();
         }
       }
-      // If no window is open, open a new one
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
       }
