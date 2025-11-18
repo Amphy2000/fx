@@ -241,11 +241,11 @@ const Dashboard = () => {
               <div className="flex items-center justify-between gap-1 md:gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] md:text-xs text-muted-foreground uppercase">P/L</p>
-                  <p className={`text-lg md:text-2xl font-bold ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'} truncate`}>
+                  <p className={`text-sm md:text-xl lg:text-2xl font-bold ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'} break-all`}>
                     ${stats.totalPnL >= 0 ? '+' : ''}{stats.totalPnL.toLocaleString()}
                   </p>
                 </div>
-                {stats.totalPnL >= 0 ? <TrendingUp className="h-6 w-6 md:h-8 md:w-8 text-green-600 opacity-50 flex-shrink-0" /> : <TrendingDown className="h-6 w-6 md:h-8 md:w-8 text-red-600 opacity-50 flex-shrink-0" />}
+                {stats.totalPnL >= 0 ? <TrendingUp className="h-5 w-5 md:h-6 md:w-6 lg:h-8 lg:w-8 text-green-600 opacity-50 flex-shrink-0" /> : <TrendingDown className="h-5 w-5 md:h-6 md:w-6 lg:h-8 lg:w-8 text-red-600 opacity-50 flex-shrink-0" />}
               </div>
             </CardContent>
           </Card>
@@ -284,11 +284,11 @@ const Dashboard = () => {
               <div className="flex items-center justify-between gap-1 md:gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] md:text-xs text-muted-foreground uppercase">Best</p>
-                  <p className="text-lg md:text-2xl font-bold text-green-600 truncate">
+                  <p className="text-sm md:text-xl lg:text-2xl font-bold text-green-600 break-all">
                     +${stats.bestTrade.toLocaleString()}
                   </p>
                 </div>
-                <Target className="h-6 w-6 md:h-8 md:w-8 text-green-600 opacity-50 flex-shrink-0" />
+                <Target className="h-5 w-5 md:h-6 md:w-6 lg:h-8 lg:w-8 text-green-600 opacity-50 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
@@ -298,11 +298,11 @@ const Dashboard = () => {
               <div className="flex items-center justify-between gap-1 md:gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] md:text-xs text-muted-foreground uppercase">Worst</p>
-                  <p className="text-lg md:text-2xl font-bold text-red-600 truncate">
+                  <p className="text-sm md:text-xl lg:text-2xl font-bold text-red-600 break-all">
                     ${stats.worstTrade.toLocaleString()}
                   </p>
                 </div>
-                <TrendingDown className="h-6 w-6 md:h-8 md:w-8 text-red-600 opacity-50 flex-shrink-0" />
+                <TrendingDown className="h-5 w-5 md:h-6 md:w-6 lg:h-8 lg:w-8 text-red-600 opacity-50 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>

@@ -59,9 +59,9 @@ const Index = () => {
         {/* Grid pattern overlay */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border)/0.1)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border)/0.1)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
         
-        <div className="container mx-auto px-4 md:py-32 relative py-[26px]">
+        <div className="container mx-auto px-6 md:px-8 lg:px-12 md:py-32 relative py-16">
           <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16 mx-0 my-0 px-0 py-0">
+            <div className="text-center mb-16 px-4">
               {/* Badge */}
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-chart-1/10 border border-chart-1/30 mb-8 animate-fade-in backdrop-blur-sm">
                 <Mic className="h-4 w-4 text-chart-1 animate-pulse" />
@@ -109,9 +109,9 @@ const Index = () => {
 
       {/* Benefits Section */}
       <section className="py-24 bg-background/50">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-6 md:px-8 lg:px-12">
           <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-16">
+            <div className="text-center mb-16 px-4">
               <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-chart-2/10 border border-chart-2/30 text-chart-2 text-sm font-bold mb-6 backdrop-blur-sm">
                 <Brain className="h-4 w-4" />
                 Revolutionary AI + Voice Features
@@ -137,8 +137,8 @@ const Index = () => {
 
       {/* Features Section */}
       <section className="py-24 border-t border-border/50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
+        <div className="container mx-auto px-6 md:px-8 lg:px-12">
+          <div className="text-center mb-16 px-4">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
               Powerful AI-Driven Features
             </h2>
@@ -166,8 +166,8 @@ const Index = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-chart-1/10 via-background to-chart-3/10" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-chart-1/20 via-transparent to-transparent" />
         
-        <div className="container mx-auto px-4 text-center relative">
-          <div className="max-w-4xl mx-auto">
+        <div className="container mx-auto px-6 md:px-8 lg:px-12 text-center relative">
+          <div className="max-w-4xl mx-auto px-4">
             <h2 className="text-4xl md:text-6xl font-bold mb-6 text-foreground">
               Try Voice-Powered Trading Free
             </h2>
@@ -209,8 +209,8 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="py-12 bg-card/20">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6 max-w-6xl mx-auto">
+        <div className="container mx-auto px-6 md:px-8 lg:px-12">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6 max-w-6xl mx-auto px-4">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-chart-1 to-chart-2 flex items-center justify-center">
                 <Brain className="h-6 w-6 text-white" />
