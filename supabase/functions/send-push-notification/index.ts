@@ -39,11 +39,12 @@ async function generateVAPIDHeaders(
     sub: vapidDetails.subject
   };
 
-  // Import private key
-  const privateKeyData = urlBase64ToUint8Array(vapidDetails.privateKey);
+  // Import private key - Create a new Uint8Array with proper ArrayBuffer type
+  const tempArray = urlBase64ToUint8Array(vapidDetails.privateKey);
+  const privateKeyData = new Uint8Array(tempArray);
   const privateKey = await crypto.subtle.importKey(
     'pkcs8',
-    privateKeyData.buffer as ArrayBuffer,
+    privateKeyData,
     { name: 'ECDSA', namedCurve: 'P-256' },
     false,
     ['sign']
