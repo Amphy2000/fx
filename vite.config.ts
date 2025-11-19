@@ -3,7 +3,6 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
-import fs from "fs";
 
 // https://vitejs.dev/config/
 export default defineConfig(() => {
@@ -21,8 +20,8 @@ export default defineConfig(() => {
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,woff2}"],
         maximumFileSizeToCacheInBytes: 5000000,
-        // Import push notification handlers
-        importScripts: ['/sw-push-handlers.js'],
+        // CRITICAL: Import push notification handlers into the service worker
+        importScripts: ['sw-push-handlers.js'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
