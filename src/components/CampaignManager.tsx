@@ -11,10 +11,12 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, PlayCircle, PauseCircle, Trash2, TrendingUp, Zap } from "lucide-react";
+import { Plus, PlayCircle, PauseCircle, Trash2, TrendingUp, Zap, Edit } from "lucide-react";
 
 export const CampaignManager = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState<any>(null);
   const [newCampaign, setNewCampaign] = useState({
     name: "",
     description: "",
@@ -115,6 +117,27 @@ export const CampaignManager = () => {
     },
   });
 
+  const updateCampaignMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const { error } = await supabase
+        .from("notification_campaigns")
+        .update(data)
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notification-campaigns"] });
+      toast.success("Campaign updated successfully");
+      setIsEditOpen(false);
+      setEditingCampaign(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to update campaign");
+      console.error("Campaign update error:", error);
+    },
+  });
+
   const runCampaignsMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("process-campaigns");
@@ -133,6 +156,29 @@ export const CampaignManager = () => {
 
   const handleCreateCampaign = () => {
     createCampaignMutation.mutate(newCampaign);
+  };
+
+  const handleEditCampaign = (campaign: any) => {
+    setEditingCampaign(campaign);
+    setNewCampaign({
+      name: campaign.name,
+      description: campaign.description || "",
+      trigger_type: campaign.trigger_type,
+      trigger_conditions: campaign.trigger_conditions,
+      notification_title: campaign.notification_title,
+      notification_body: campaign.notification_body,
+      user_segment: campaign.user_segment,
+    });
+    setIsEditOpen(true);
+  };
+
+  const handleUpdateCampaign = () => {
+    if (editingCampaign) {
+      updateCampaignMutation.mutate({
+        id: editingCampaign.id,
+        data: newCampaign,
+      });
+    }
   };
 
   const getTriggerDescription = (type: string, conditions: any) => {
@@ -311,6 +357,13 @@ export const CampaignManager = () => {
                   <CardDescription>{campaign.description}</CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleEditCampaign(campaign)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
