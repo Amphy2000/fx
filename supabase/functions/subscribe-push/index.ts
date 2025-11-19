@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('Subscribe-push function called');
+    console.log('Subscribe-push function called with OneSignal');
     
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -22,16 +22,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Extract the JWT token
     const token = authHeader.replace('Bearer ', '');
 
-    // Create service role client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get the user using service role client with the JWT
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
     
     if (userError || !user) {
@@ -44,31 +41,33 @@ Deno.serve(async (req) => {
 
     console.log('Authenticated user:', user.id);
 
-    const { subscription, deviceInfo } = await req.json();
-    console.log('Subscription data received');
+    const { oneSignalPlayerId, deviceInfo } = await req.json();
+    console.log('OneSignal player ID received:', oneSignalPlayerId);
     
-    if (!subscription || !subscription.endpoint || !subscription.keys) {
-      console.error('Invalid subscription data');
+    if (!oneSignalPlayerId) {
+      console.error('Missing OneSignal player ID');
       return new Response(
-        JSON.stringify({ error: 'Invalid subscription data' }),
+        JSON.stringify({ error: 'Missing OneSignal player ID' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
 
-    // Use admin client to insert subscription (bypasses RLS)
-    console.log('Upserting subscription with admin client...');
+    // Store the OneSignal player ID
+    console.log('Upserting subscription with OneSignal player ID...');
     const { error: upsertError } = await supabaseAdmin
       .from('push_subscriptions')
       .upsert({
         user_id: user.id,
-        endpoint: subscription.endpoint,
-        p256dh_key: subscription.keys.p256dh,
-        auth_key: subscription.keys.auth,
+        onesignal_player_id: oneSignalPlayerId,
         device_info: deviceInfo,
         is_active: true,
+        // Keep legacy fields as null for now
+        endpoint: `onesignal://${oneSignalPlayerId}`,
+        p256dh_key: '',
+        auth_key: '',
         updated_at: new Date().toISOString()
       }, {
-        onConflict: 'user_id,endpoint'
+        onConflict: 'user_id,onesignal_player_id'
       });
 
     if (upsertError) {

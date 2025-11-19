@@ -4,137 +4,120 @@ import { Card } from "@/components/ui/card";
 import { Bell, BellOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { registerPushServiceWorker } from "@/utils/registerPushSW";
+
+declare global {
+  interface Window {
+    OneSignalDeferred?: Promise<any>;
+  }
+}
 
 export const NotificationPermission = () => {
-  const [permission, setPermission] = useState<NotificationPermission>("default");
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [oneSignalInitialized, setOneSignalInitialized] = useState(false);
 
   useEffect(() => {
-    if ('Notification' in window) {
-      setPermission(Notification.permission);
-      checkSubscription();
-    }
+    initializeOneSignal();
   }, []);
 
-  // Recheck subscription when page becomes visible
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        checkSubscription();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, []);
-
-  const checkSubscription = async () => {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-
+  const initializeOneSignal = async () => {
     try {
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
-      setIsSubscribed(!!subscription);
-    } catch (error) {
-      console.error('Error checking subscription:', error);
-    }
-  };
-
-  const urlBase64ToUint8Array = (base64String: string) => {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding)
-      .replace(/\-/g, '+')
-      .replace(/_/g, '/');
-
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-  };
-
-  const subscribeToPush = async () => {
-    setIsLoading(true);
-    try {
-      // Request notification permission
-      const result = await Notification.requestPermission();
-      setPermission(result);
-
-      if (result !== 'granted') {
-        toast.error('Notification permission denied');
+      if (!window.OneSignalDeferred) {
+        console.error('OneSignal SDK not loaded');
         return;
       }
 
-      // Register our custom push notification service worker
-      await registerPushServiceWorker();
-
-      // Get VAPID public key
-      const { data: vapidData, error: vapidError } = await supabase.functions.invoke('get-vapid-public-key');
-      if (vapidError) {
-        console.error('VAPID key error:', vapidError);
-        throw vapidError;
-      }
-
-      const { publicKey } = vapidData;
-
-      if (!publicKey || publicKey.length !== 87) {
-        throw new Error(`Invalid VAPID public key format (expected 87 chars, got ${publicKey?.length})`);
-      }
-
-      // Subscribe to push notifications
-      const registration = await navigator.serviceWorker.ready;
+      const OneSignal = await window.OneSignalDeferred;
       
-      // Check if already subscribed
-      let subscription = await registration.pushManager.getSubscription();
+      const appId = import.meta.env.VITE_ONESIGNAL_APP_ID;
       
-      if (!subscription) {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(publicKey)
-        });
+      if (!appId) {
+        console.error('OneSignal App ID not configured');
+        return;
       }
 
-      // Send subscription to backend
+      await OneSignal.init({
+        appId: appId,
+        allowLocalhostAsSecureOrigin: true,
+      });
+
+      setOneSignalInitialized(true);
+
+      const isPushEnabled = await OneSignal.User.PushSubscription.optedIn;
+      setIsSubscribed(isPushEnabled);
+
+      OneSignal.User.PushSubscription.addEventListener('change', (subscription: any) => {
+        setIsSubscribed(subscription.current.optedIn);
+      });
+
+    } catch (error) {
+      console.error('Error initializing OneSignal:', error);
+    }
+  };
+
+  const subscribeToPush = async () => {
+    if (!oneSignalInitialized) {
+      toast.error('Push notifications not ready');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const OneSignal = await window.OneSignalDeferred!;
+
+      await OneSignal.Slidedown.promptPush();
+
+      const isPushEnabled = await OneSignal.User.PushSubscription.optedIn;
+      
+      if (!isPushEnabled) {
+        toast.error('Notification permission denied');
+        setIsLoading(false);
+        return;
+      }
+
+      const playerId = await OneSignal.User.PushSubscription.id;
+      
+      if (!playerId) {
+        throw new Error('Failed to get OneSignal player ID');
+      }
+
       const deviceInfo = `${navigator.userAgent}`;
 
-      const { error: subError } = await supabase.functions.invoke('subscribe-push', {
+      const { error } = await supabase.functions.invoke('subscribe-push', {
         body: {
-          subscription: subscription.toJSON(),
+          oneSignalPlayerId: playerId,
           deviceInfo
         }
       });
 
-      if (subError) throw subError;
+      if (error) throw error;
 
       setIsSubscribed(true);
       toast.success('Push notifications enabled!');
     } catch (error: any) {
       console.error('Error subscribing to push:', error);
-      const errorMsg = error?.message || 'Failed to enable push notifications';
-      toast.error(errorMsg);
+      toast.error(error?.message || 'Failed to enable push notifications');
     } finally {
       setIsLoading(false);
     }
   };
 
   const unsubscribeFromPush = async () => {
+    if (!oneSignalInitialized) {
+      toast.error('Push notifications not ready');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
-      
-      if (subscription) {
-        await subscription.unsubscribe();
-      }
+      const OneSignal = await window.OneSignalDeferred!;
+
+      await OneSignal.User.PushSubscription.optOut();
 
       setIsSubscribed(false);
       toast.success('Push notifications disabled');
-    } catch (error) {
-      console.error('Error unsubscribing from push:', error);
+    } catch (error: any) {
+      console.error('Error unsubscribing:', error);
       toast.error('Failed to disable push notifications');
     } finally {
       setIsLoading(false);

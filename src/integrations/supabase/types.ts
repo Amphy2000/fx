@@ -1712,6 +1712,7 @@ export type Database = {
           failed_attempts: number | null
           id: string
           is_active: boolean | null
+          onesignal_player_id: string | null
           p256dh_key: string
           updated_at: string | null
           user_id: string
@@ -1724,6 +1725,7 @@ export type Database = {
           failed_attempts?: number | null
           id?: string
           is_active?: boolean | null
+          onesignal_player_id?: string | null
           p256dh_key: string
           updated_at?: string | null
           user_id: string
@@ -1736,6 +1738,7 @@ export type Database = {
           failed_attempts?: number | null
           id?: string
           is_active?: boolean | null
+          onesignal_player_id?: string | null
           p256dh_key?: string
           updated_at?: string | null
           user_id?: string
