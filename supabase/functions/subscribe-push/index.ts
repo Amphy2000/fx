@@ -22,31 +22,33 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Use service role to bypass RLS for user verification
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    // Create client with user's token for verification
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    console.log('Verifying JWT...');
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    // Extract JWT token and decode it to get user ID
+    // Since verify_jwt=true in config, Supabase already verified the token
+    const token = authHeader.replace('Bearer ', '');
+    let userId: string;
     
-    if (userError || !user) {
-      console.error('Auth error:', userError);
+    try {
+      // Decode JWT to get user ID (token is already verified by Supabase)
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      userId = payload.sub;
+      console.log('User ID from JWT:', userId);
+      
+      if (!userId) {
+        throw new Error('No user ID in token');
+      }
+    } catch (error) {
+      console.error('Error decoding JWT:', error);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Invalid token' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
       );
     }
 
-    console.log('User authenticated:', user.id);
+    // Use service role client to bypass RLS
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
     const { subscription, deviceInfo } = await req.json();
     console.log('Subscription data received');
@@ -64,7 +66,7 @@ Deno.serve(async (req) => {
     const { error: upsertError } = await supabaseAdmin
       .from('push_subscriptions')
       .upsert({
-        user_id: user.id,
+        user_id: userId,
         endpoint: subscription.endpoint,
         p256dh_key: subscription.keys.p256dh,
         auth_key: subscription.keys.auth,
@@ -83,7 +85,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Subscription saved successfully for user:', user.id);
+    console.log('Subscription saved successfully for user:', userId);
 
     return new Response(
       JSON.stringify({ success: true, message: 'Subscription saved' }),
