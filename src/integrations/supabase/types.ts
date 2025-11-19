@@ -1764,6 +1764,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_campaign_stat: {
+        Args: { campaign_id: string; stat_name: string }
+        Returns: undefined
+      }
       reset_monthly_credits: { Args: never; Returns: undefined }
     }
     Enums: {
