@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Send, Clock, Target, Zap } from "lucide-react";
+import { Send, Clock, Target, Zap, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ActionButton {
@@ -57,13 +57,29 @@ export const EnhancedNotificationSender = () => {
       const { data: notifications } = await supabase
         .from('push_notifications')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
+        .order('created_at', { ascending: false });
 
       return {
         activeSubscriptions: uniqueUsers.size,
         recentNotifications: notifications || []
       };
+    }
+  });
+
+  const deleteNotificationMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('push_notifications')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['push-stats'] });
+      toast.success('Notification deleted successfully');
+    },
+    onError: () => {
+      toast.error('Failed to delete notification');
     }
   });
 
@@ -574,9 +590,19 @@ export const EnhancedNotificationSender = () => {
                       <p className="font-medium">{notif.title}</p>
                       <p className="text-sm text-muted-foreground">{notif.body}</p>
                     </div>
-                    <span className="text-xs px-2 py-1 rounded bg-muted">
-                      {notif.user_segment || 'all'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs px-2 py-1 rounded bg-muted">
+                        {notif.user_segment || 'all'}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteNotificationMutation.mutate(notif.id)}
+                        disabled={deleteNotificationMutation.isPending}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   <div className="flex gap-4 text-sm text-muted-foreground">
                     <div>📤 Sent: {notif.sent_count}</div>

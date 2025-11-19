@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Plus, Trophy, Pause, Play, TrendingUp } from "lucide-react";
+import { Plus, Trophy, Pause, Play, TrendingUp, Trash2 } from "lucide-react";
 
 export const EmailABTestManager = () => {
   const queryClient = useQueryClient();
@@ -192,6 +192,20 @@ export const EmailABTestManager = () => {
     ]);
   };
 
+  const removeVariant = (index: number) => {
+    if (variants.length > 2) {
+      const updated = variants.filter((_, i) => i !== index);
+      const currentPercentage = 100 / updated.length;
+      const rebalanced = updated.map(v => ({
+        ...v,
+        traffic_percentage: Math.floor(currentPercentage)
+      }));
+      setVariants(rebalanced);
+    } else {
+      toast.error("A/B tests require at least 2 variants");
+    }
+  };
+
   const updateVariant = (index: number, field: string, value: any) => {
     const updated = [...variants];
     updated[index] = { ...updated[index], [field]: value };
@@ -308,7 +322,19 @@ export const EmailABTestManager = () => {
                   {variants.map((variant, index) => (
                     <Card key={index}>
                       <CardHeader>
-                        <CardTitle className="text-base">{variant.name}</CardTitle>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base">{variant.name}</CardTitle>
+                          {variants.length > 2 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeVariant(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </CardHeader>
                       <CardContent className="space-y-3">
                         {formData.test_type === "subject_line" && (
