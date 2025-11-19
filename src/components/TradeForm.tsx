@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Image as ImageIcon, X } from "lucide-react";
+import { Plus, Image as ImageIcon, X, Mic } from "lucide-react";
 import { updateStreak, checkTradeAchievements } from "@/utils/streakManager";
 import { VoiceTradeLogger } from "@/components/VoiceTradeLogger";
 
@@ -233,11 +233,13 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
           </div>
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             size="sm"
             onClick={() => setShowVoiceLogger(!showVoiceLogger)}
+            className="gap-2"
           >
-            {showVoiceLogger ? "Hide" : "Voice Logger"}
+            <Mic className="h-4 w-4" />
+            {showVoiceLogger ? "Hide Voice Logger" : "Voice Logger"}
           </Button>
         </CardTitle>
       </CardHeader>
