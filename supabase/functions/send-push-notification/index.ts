@@ -166,15 +166,23 @@ async function generateVAPIDHeaders(
     sub: vapidDetails.subject
   };
 
-  // Parse public key JWK to get the base64url public key for the header
-  const publicKeyJwk = JSON.parse(vapidDetails.publicKey);
-  const xBytes = urlBase64ToUint8Array(publicKeyJwk.x);
-  const yBytes = urlBase64ToUint8Array(publicKeyJwk.y);
-  const publicKeyBytes = new Uint8Array(65);
-  publicKeyBytes[0] = 0x04;
-  publicKeyBytes.set(xBytes, 1);
-  publicKeyBytes.set(yBytes, 33);
-  const publicKeyBase64 = encodeBase64Url(publicKeyBytes);
+  // Handle both JWK and base64url formats for public key
+  let publicKeyBase64: string;
+  try {
+    // Try to parse as JWK JSON
+    const publicKeyJwk = JSON.parse(vapidDetails.publicKey);
+    const xBytes = urlBase64ToUint8Array(publicKeyJwk.x);
+    const yBytes = urlBase64ToUint8Array(publicKeyJwk.y);
+    const publicKeyBytes = new Uint8Array(65);
+    publicKeyBytes[0] = 0x04;
+    publicKeyBytes.set(xBytes, 1);
+    publicKeyBytes.set(yBytes, 33);
+    publicKeyBase64 = encodeBase64Url(publicKeyBytes);
+  } catch {
+    // If parsing fails, assume it's already in base64url format (legacy)
+    console.log('Using legacy base64url VAPID public key format');
+    publicKeyBase64 = vapidDetails.publicKey;
+  }
 
   // Import private key - VAPID keys should be stored as JWK
   let privateKeyJwk;
