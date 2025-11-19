@@ -403,6 +403,104 @@ export type Database = {
         }
         Relationships: []
       }
+      email_workflow_executions: {
+        Row: {
+          email_send_id: string | null
+          error_message: string | null
+          executed_at: string | null
+          id: string
+          status: string | null
+          user_id: string
+          workflow_id: string
+        }
+        Insert: {
+          email_send_id?: string | null
+          error_message?: string | null
+          executed_at?: string | null
+          id?: string
+          status?: string | null
+          user_id: string
+          workflow_id: string
+        }
+        Update: {
+          email_send_id?: string | null
+          error_message?: string | null
+          executed_at?: string | null
+          id?: string
+          status?: string | null
+          user_id?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_workflow_executions_email_send_id_fkey"
+            columns: ["email_send_id"]
+            isOneToOne: false
+            referencedRelation: "email_sends"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_workflow_executions_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "email_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_workflows: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          delay_minutes: number | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          sent_count: number | null
+          template_id: string | null
+          trigger_conditions: Json | null
+          trigger_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          delay_minutes?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          sent_count?: number | null
+          template_id?: string | null
+          trigger_conditions?: Json | null
+          trigger_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          delay_minutes?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          sent_count?: number | null
+          template_id?: string | null
+          trigger_conditions?: Json | null
+          trigger_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_workflows_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       equity_snapshots: {
         Row: {
           balance: number

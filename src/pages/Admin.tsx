@@ -16,6 +16,7 @@ import { AdminNotificationSender } from "@/components/AdminNotificationSender";
 import { EmailTemplateManager } from "@/components/EmailTemplateManager";
 import { EmailCampaignManager } from "@/components/EmailCampaignManager";
 import { EmailAnalyticsDashboard } from "@/components/EmailAnalyticsDashboard";
+import { EmailWorkflowManager } from "@/components/EmailWorkflowManager";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -218,6 +219,10 @@ const Admin = () => {
               <Mail className="mr-2 h-4 w-4" />
               Email Campaigns
             </TabsTrigger>
+            <TabsTrigger value="email-workflows">
+              <Mail className="mr-2 h-4 w-4" />
+              Workflows
+            </TabsTrigger>
             <TabsTrigger value="email-analytics">
               <BarChart3 className="mr-2 h-4 w-4" />
               Email Analytics
@@ -337,6 +342,10 @@ const Admin = () => {
 
           <TabsContent value="email-campaigns">
             <EmailCampaignManager />
+          </TabsContent>
+
+          <TabsContent value="email-workflows">
+            <EmailWorkflowManager />
           </TabsContent>
 
           <TabsContent value="email-analytics">

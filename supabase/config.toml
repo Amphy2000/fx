@@ -113,3 +113,6 @@ verify_jwt = true
 
 [functions.track-email-event]
 verify_jwt = false
+
+[functions.process-email-workflow]
+verify_jwt = false

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,13 +11,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Eye } from "lucide-react";
+// @ts-ignore - react-email-editor doesn't have types
+import EmailEditor from "react-email-editor";
 
 export const EmailTemplateManager = () => {
   const queryClient = useQueryClient();
+  const emailEditorRef = useRef<any>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [useVisualEditor, setUseVisualEditor] = useState(true);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -50,11 +54,27 @@ export const EmailTemplateManager = () => {
     },
   });
 
+  // Export design from visual editor
+  const exportHtml = async () => {
+    return new Promise<string>((resolve) => {
+      if (emailEditorRef.current && useVisualEditor) {
+        emailEditorRef.current.exportHtml((data: any) => {
+          const { html } = data;
+          resolve(html);
+        });
+      } else {
+        resolve(formData.html_content);
+      }
+    });
+  };
+
   // Create template
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      const htmlContent = await exportHtml();
       const { error } = await supabase.from("email_templates").insert({
         ...data,
+        html_content: htmlContent,
         created_by: currentUser?.id,
       });
 
@@ -75,9 +95,10 @@ export const EmailTemplateManager = () => {
   const updateMutation = useMutation({
     mutationFn: async (data: typeof formData & { id: string }) => {
       const { id, ...updateData } = data;
+      const htmlContent = await exportHtml();
       const { error } = await supabase
         .from("email_templates")
-        .update(updateData)
+        .update({ ...updateData, html_content: htmlContent })
         .eq("id", id);
 
       if (error) throw error;
@@ -188,6 +209,26 @@ export const EmailTemplateManager = () => {
                 Create a new email template. Use {`{{name}}, {{email}}`} as variables.
               </DialogDescription>
             </DialogHeader>
+            <div className="space-y-4 mb-4">
+              <div className="flex items-center gap-2">
+                <Label>Editor Mode:</Label>
+                <Button
+                  variant={useVisualEditor ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setUseVisualEditor(true)}
+                >
+                  Visual
+                </Button>
+                <Button
+                  variant={!useVisualEditor ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setUseVisualEditor(false)}
+                >
+                  HTML
+                </Button>
+              </div>
+            </div>
+
             <Tabs defaultValue="design" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="design">Design</TabsTrigger>
@@ -233,21 +274,45 @@ export const EmailTemplateManager = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label>HTML Content</Label>
-                    <Textarea
-                      value={formData.html_content}
-                      onChange={(e) => setFormData({ ...formData, html_content: e.target.value })}
-                      rows={15}
-                      className="font-mono text-sm"
-                    />
-                  </div>
+                  {useVisualEditor ? (
+                    <div>
+                      <Label>Email Design</Label>
+                      <div className="border rounded-lg overflow-hidden" style={{ height: "600px" }}>
+                        <EmailEditor
+                          ref={emailEditorRef}
+                          minHeight="600px"
+                          options={{
+                            appearance: {
+                              theme: "modern_light",
+                            },
+                            mergeTags: {
+                              name: { name: "Name", value: "{{name}}", sample: "John Doe" },
+                              email: { name: "Email", value: "{{email}}", sample: "john@example.com" },
+                            },
+                          }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Available variables: {`{{name}}, {{email}}`}
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <Label>HTML Content</Label>
+                      <textarea
+                        value={formData.html_content}
+                        onChange={(e) => setFormData({ ...formData, html_content: e.target.value })}
+                        rows={15}
+                        className="w-full p-3 border rounded-md font-mono text-sm"
+                      />
+                    </div>
+                  )}
                 </div>
               </TabsContent>
               <TabsContent value="preview">
                 <div className="border rounded-lg p-4 bg-white">
                   <iframe
-                    srcDoc={formData.html_content.replace(/{{name}}/g, "John Doe").replace(/{{email}}/g, "john@example.com")}
+                    srcDoc={formData.html_content.replace(/\{\{name\}\}/g, "John Doe").replace(/\{\{email\}\}/g, "john@example.com")}
                     className="w-full h-[500px] border-0"
                     title="Preview"
                   />
