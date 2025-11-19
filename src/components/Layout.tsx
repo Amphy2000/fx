@@ -18,10 +18,10 @@ export function Layout({
     setTheme
   } = useTheme();
   return <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full overflow-x-hidden">
         <AppSidebar />
         
-        <div className="flex-1 flex flex-col min-h-screen bg-background">
+        <div className="flex-1 flex flex-col min-h-screen bg-background overflow-x-hidden w-full">
           {/* Mobile Header with Hamburger */}
           {isMobile && <div className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-border bg-background/95 backdrop-blur-sm px-4 py-3">
               <div className="flex items-center gap-3">
@@ -47,8 +47,10 @@ export function Layout({
             </div>}
           
           {/* Main Content */}
-          <main className="flex-1 my-[5px] mx-0">
-            {children}
+          <main className="flex-1 w-full overflow-x-hidden px-4 md:px-6 py-4">
+            <div className="max-w-[100vw] md:max-w-full mx-auto">
+              {children}
+            </div>
           </main>
         </div>
       </div>
