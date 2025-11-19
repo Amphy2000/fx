@@ -127,19 +127,86 @@ const Settings = () => {
     if (!confirmed) return;
     
     try {
-      toast.info("Deleting all data... This may take a moment.");
+      toast.info("Deleting data... This may take a minute for large accounts.");
       
-      // Use database function to efficiently delete all user data (handles large datasets without timeout)
-      const { error: deleteError } = await supabase.rpc('delete_all_user_data', {
-        p_user_id: profile.id
-      });
-
-      if (deleteError) {
-        console.error("Error deleting user data:", deleteError);
-        throw deleteError;
-      }
+      // Helper function to delete in batches to avoid timeout
+      const deleteBatch = async (table: string, batchSize = 500): Promise<void> => {
+        let hasMore = true;
+        let totalDeleted = 0;
+        
+        while (hasMore) {
+          const { data: items, error: fetchError } = await (supabase as any)
+            .from(table)
+            .select('id')
+            .eq('user_id', profile.id)
+            .limit(batchSize);
+          
+          if (fetchError) throw fetchError;
+          
+          if (!items || items.length === 0) {
+            hasMore = false;
+            break;
+          }
+          
+          const ids = items.map((item: any) => item.id);
+          const { error: deleteError } = await (supabase as any)
+            .from(table)
+            .delete()
+            .in('id', ids);
+          
+          if (deleteError) throw deleteError;
+          
+          totalDeleted += items.length;
+          hasMore = items.length === batchSize;
+          
+          // Small delay to avoid overwhelming the database
+          if (hasMore) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        }
+        
+        console.log(`Deleted ${totalDeleted} records from ${table}`);
+      };
+      
+      // Delete dependent records first
+      toast.info("Deleting trade-related data...");
+      await deleteBatch('trade_tags');
+      await deleteBatch('trade_screenshots');
+      await deleteBatch('trade_insights');
+      await deleteBatch('chat_messages');
+      await deleteBatch('sync_logs');
+      
+      // Delete trades (most data-heavy table)
+      toast.info("Deleting trades... This is the slowest part.");
+      await deleteBatch('trades', 300); // Smaller batch for trades
+      
+      // Delete other main records
+      toast.info("Deleting journal and analytics...");
+      await deleteBatch('journal_entries');
+      await deleteBatch('achievements');
+      await deleteBatch('daily_checkins');
+      await deleteBatch('streaks');
+      await deleteBatch('routine_entries');
+      await deleteBatch('targets');
+      await deleteBatch('journal_insights');
+      
+      toast.info("Deleting performance data...");
+      await deleteBatch('performance_metrics');
+      await deleteBatch('equity_snapshots');
+      await deleteBatch('setup_performance');
+      await deleteBatch('setups');
+      
+      toast.info("Cleaning up remaining data...");
+      await deleteBatch('mt5_accounts');
+      await deleteBatch('mt5_connections');
+      await deleteBatch('chat_conversations');
+      await deleteBatch('copilot_feedback');
+      await deleteBatch('leaderboard_profiles');
+      await deleteBatch('subscriptions');
+      await deleteBatch('feedback');
       
       // Reset profile to fresh free tier account
+      toast.info("Resetting profile...");
       const { error: profileError } = await supabase
         .from("profiles")
         .update({ 
