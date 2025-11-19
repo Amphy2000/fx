@@ -114,7 +114,10 @@ export default function Onboarding() {
   };
 
   const skipOnboarding = async () => {
-    if (!userId) return;
+    if (!userId) {
+      toast.error("Please wait while we load your account");
+      return;
+    }
     try {
       const { error } = await supabase
         .from('profiles')
@@ -127,7 +130,7 @@ export default function Onboarding() {
       navigate("/dashboard");
     } catch (error) {
       console.error('Error skipping onboarding:', error);
-      toast.error('Failed to skip onboarding');
+      toast.error('Failed to skip onboarding. Please try again.');
     }
   };
 
