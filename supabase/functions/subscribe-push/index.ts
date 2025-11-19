@@ -22,19 +22,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create a Supabase client with the user's token to get authenticated user
-    const supabase = createClient(
+    // Extract the JWT token
+    const token = authHeader.replace('Bearer ', '');
+
+    // Create service role client
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader }
-        }
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get the authenticated user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    // Get the user using service role client with the JWT
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
     
     if (userError || !user) {
       console.error('Error getting user:', userError);
@@ -45,12 +43,6 @@ Deno.serve(async (req) => {
     }
 
     console.log('Authenticated user:', user.id);
-
-    // Use service role client to bypass RLS for insert
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
 
     const { subscription, deviceInfo } = await req.json();
     console.log('Subscription data received');
