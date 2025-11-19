@@ -728,6 +728,33 @@ export type Database = {
           },
         ]
       }
+      email_send_tracking: {
+        Row: {
+          created_at: string | null
+          domain: string
+          emails_sent: number | null
+          id: string
+          send_date: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          domain: string
+          emails_sent?: number | null
+          id?: string
+          send_date?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          domain?: string
+          emails_sent?: number | null
+          id?: string
+          send_date?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       email_sends: {
         Row: {
           campaign_id: string
@@ -852,6 +879,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      email_warm_up_schedules: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          current_daily_limit: number
+          daily_increment: number
+          domain: string
+          id: string
+          is_active: boolean | null
+          last_increment_at: string | null
+          started_at: string | null
+          target_daily_limit: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          current_daily_limit?: number
+          daily_increment?: number
+          domain: string
+          id?: string
+          is_active?: boolean | null
+          last_increment_at?: string | null
+          started_at?: string | null
+          target_daily_limit?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          current_daily_limit?: number
+          daily_increment?: number
+          domain?: string
+          id?: string
+          is_active?: boolean | null
+          last_increment_at?: string | null
+          started_at?: string | null
+          target_daily_limit?: number
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       email_workflow_executions: {
         Row: {
@@ -2305,6 +2374,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_send_email: {
+        Args: { check_domain: string; email_count?: number }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2320,7 +2393,12 @@ export type Database = {
         Args: { stat_name: string; variant_id: string }
         Returns: undefined
       }
+      increment_warmup_limits: { Args: never; Returns: undefined }
       is_email_suppressed: { Args: { check_email: string }; Returns: boolean }
+      record_email_send: {
+        Args: { send_count?: number; send_domain: string }
+        Returns: undefined
+      }
       reset_monthly_credits: { Args: never; Returns: undefined }
     }
     Enums: {
