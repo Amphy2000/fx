@@ -25,22 +25,20 @@ const Auth = () => {
 
   // Check for password reset flow
   useEffect(() => {
-    const params = new URLSearchParams(window.location.hash.substring(1));
-    if (params.get('type') === 'recovery') {
-      setIsPasswordReset(true);
-    }
-  }, []);
-
-  // Redirect if already logged in (but not during password reset)
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session && !isPasswordReset) {
-        navigate("/dashboard");
+    const checkPasswordReset = async () => {
+      const params = new URLSearchParams(window.location.hash.substring(1));
+      if (params.get('type') === 'recovery') {
+        setIsPasswordReset(true);
+      } else {
+        // Only redirect if not in password reset flow
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          navigate("/dashboard");
+        }
       }
     };
-    checkSession();
-  }, [navigate, isPasswordReset]);
+    checkPasswordReset();
+  }, [navigate]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
