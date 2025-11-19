@@ -27,7 +27,9 @@ self.addEventListener('push', function(event) {
     badge: data.badge || '/favicon.png',
     vibrate: [200, 100, 200],
     tag: data.tag || 'amphy-notification',
-    requireInteraction: false,
+    requireInteraction: true,
+    silent: false,
+    renotify: true,
     data: {
       url: data.url || '/',
       notificationId: data.data?.notificationId,
@@ -53,9 +55,13 @@ self.addEventListener('notificationclick', function(event) {
   const action = event.action || 'open';
   const urlToOpen = event.action ? event.action : (event.notification.data?.url || '/');
 
-  // Track the click
+  // Track the click using Supabase function
   if (notificationId) {
-    fetch('/api/track-notification-click', {
+    const supabaseUrl = self.location.origin.includes('lovableproject.com') 
+      ? 'https://yvclpmdgrwugayrvjtqg.supabase.co'
+      : (self.location.origin.includes('localhost') ? 'http://127.0.0.1:54321' : 'https://yvclpmdgrwugayrvjtqg.supabase.co');
+    
+    fetch(`${supabaseUrl}/functions/v1/track-notification-click`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -72,12 +78,19 @@ self.addEventListener('notificationclick', function(event) {
       type: 'window',
       includeUncontrolled: true
     }).then(function(clientList) {
+      // Check if there's already a window/tab open
       for (let i = 0; i < clientList.length; i++) {
         const client = clientList[i];
-        if (client.url.includes(urlToOpen) && 'focus' in client) {
-          return client.focus();
+        if ('focus' in client) {
+          return client.focus().then(() => {
+            // Navigate to the URL
+            if (client.navigate) {
+              return client.navigate(urlToOpen);
+            }
+          });
         }
       }
+      // No window open, open a new one
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
       }
