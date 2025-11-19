@@ -195,14 +195,15 @@ export const EmailWorkflowManager = () => {
               Create Workflow
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh]">
             <DialogHeader>
               <DialogTitle>Create Email Workflow</DialogTitle>
               <DialogDescription>
                 Configure an automated email to be sent when specific events occur
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4">
+            <div className="max-h-[60vh] overflow-y-auto pr-2 -mr-2">
+              <div className="grid gap-4">
               <div>
                 <Label>Workflow Name</Label>
                 <Input
@@ -268,6 +269,7 @@ export const EmailWorkflowManager = () => {
                   onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
                 />
                 <Label>Active</Label>
+              </div>
               </div>
             </div>
             <DialogFooter>
@@ -348,11 +350,12 @@ export const EmailWorkflowManager = () => {
 
       {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Edit Email Workflow</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4">
+          <div className="max-h-[60vh] overflow-y-auto pr-2 -mr-2">
+            <div className="grid gap-4">
             <div>
               <Label>Workflow Name</Label>
               <Input
@@ -412,6 +415,7 @@ export const EmailWorkflowManager = () => {
                 onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
               />
               <Label>Active</Label>
+            </div>
             </div>
           </div>
           <DialogFooter>
