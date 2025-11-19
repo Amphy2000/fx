@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -242,20 +242,30 @@ export const EnhancedNotificationSender = () => {
     setSelectedUsers([]);
   };
 
-  const getSegmentCount = (segment: string) => {
-    if (segment === 'specific') {
-      return selectedUsers.length;
-    }
-    
-    // This is approximate - you'd query the database for exact counts
-    const total = stats?.activeSubscriptions || 0;
-    switch (segment) {
-      case 'free': return Math.floor(total * 0.7);
-      case 'monthly': return Math.floor(total * 0.2);
-      case 'lifetime': return Math.floor(total * 0.1);
-      default: return total;
-    }
-  };
+  const [subscriptionCount, setSubscriptionCount] = useState<number>(0);
+
+  useEffect(() => {
+    const updateCount = async () => {
+      if (userSegment === 'specific' && selectedUsers.length > 0) {
+        const { count } = await supabase
+          .from('push_subscriptions')
+          .select('*', { count: 'exact', head: true })
+          .in('user_id', selectedUsers)
+          .eq('is_active', true);
+        setSubscriptionCount(count || 0);
+      } else {
+        const total = stats?.activeSubscriptions || 0;
+        let count = total;
+        switch (userSegment) {
+          case 'free': count = Math.floor(total * 0.7); break;
+          case 'monthly': count = Math.floor(total * 0.2); break;
+          case 'lifetime': count = Math.floor(total * 0.1); break;
+        }
+        setSubscriptionCount(count);
+      }
+    };
+    updateCount();
+  }, [userSegment, selectedUsers, stats]);
 
   return (
     <div className="space-y-6">
@@ -357,13 +367,13 @@ export const EnhancedNotificationSender = () => {
                       Specific Users (Test)
                     </SelectItem>
                     <SelectItem value="free">
-                      Free Users (~{getSegmentCount('free')})
+                      Free Users (~{Math.floor((stats?.activeSubscriptions || 0) * 0.7)})
                     </SelectItem>
                     <SelectItem value="monthly">
-                      Monthly Subscribers (~{getSegmentCount('monthly')})
+                      Monthly Subscribers (~{Math.floor((stats?.activeSubscriptions || 0) * 0.2)})
                     </SelectItem>
                     <SelectItem value="lifetime">
-                      Lifetime Members (~{getSegmentCount('lifetime')})
+                      Lifetime Members (~{Math.floor((stats?.activeSubscriptions || 0) * 0.1)})
                     </SelectItem>
                     <SelectItem value="active">
                       Active Traders (last 7 days)
@@ -496,7 +506,7 @@ export const EnhancedNotificationSender = () => {
                 className="w-full"
               >
                 <Send className="mr-2 h-4 w-4" />
-                {isSending ? 'Sending...' : `Send to ${getSegmentCount(userSegment)} Users`}
+                {isSending ? 'Sending...' : `Send to ${subscriptionCount} ${subscriptionCount === 1 ? 'Subscription' : 'Subscriptions'}`}
               </Button>
             </TabsContent>
 

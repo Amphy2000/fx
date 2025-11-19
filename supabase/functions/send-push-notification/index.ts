@@ -231,7 +231,7 @@ async function sendWebPushNotification(
   subscription: { endpoint: string; p256dh_key: string; auth_key: string },
   payload: any,
   vapidDetails: { subject: string; publicKey: string; privateKey: string }
-): Promise<{ success: boolean; status?: number }> {
+): Promise<{ success: boolean; status?: number; error?: string }> {
   try {
     console.log('Sending to endpoint:', subscription.endpoint.substring(0, 50) + '...');
     
@@ -267,7 +267,7 @@ async function sendWebPushNotification(
     if (!response.ok) {
       console.error('Push failed with status:', response.status);
       console.error('Response body:', responseText);
-      return { success: false, status: response.status };
+      return { success: false, status: response.status, error: `HTTP ${response.status}: ${responseText}` };
     }
 
     console.log('Push sent successfully');
@@ -275,7 +275,7 @@ async function sendWebPushNotification(
   } catch (error) {
     console.error('Failed to send push notification:', error);
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
-    return { success: false };
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
@@ -467,7 +467,7 @@ Deno.serve(async (req) => {
       console.log('Sending notifications to', subscriptions.length, 'devices...');
       const results = await Promise.allSettled(
         subscriptions.map((sub, index) => {
-          console.log(`Sending to device ${index + 1}/${subscriptions.length}`);
+          console.log(`Sending to device ${index + 1}/${subscriptions.length} (${sub.device_info || 'Unknown'})`);
           return sendWebPushNotification(sub, payload, vapidDetails);
         })
       );
@@ -479,7 +479,7 @@ Deno.serve(async (req) => {
         
         if (result.status === 'fulfilled' && result.value.success) {
           sentCount++;
-          console.log('Push sent successfully');
+          console.log(`✓ Successfully sent to ${currentSub.device_info || 'Unknown device'}`);
           // Reset failed attempts on success
           await supabaseClient
             .from('push_subscriptions')
@@ -488,10 +488,16 @@ Deno.serve(async (req) => {
         } else {
           failedCount++;
           
+          const errorMsg = result.status === 'fulfilled' 
+            ? (result.value.error || 'Push failed') 
+            : (result.reason?.message || 'Unknown error');
+          
+          console.error(`✗ Failed to send to ${currentSub.device_info || 'Unknown device'}:`, errorMsg);
+          
           // Check if it's a 410 Gone error (expired/unsubscribed)
           const status = result.status === 'fulfilled' ? result.value.status : undefined;
           
-          if (status === 410) {
+          if (status === 410 || status === 404) {
             // Immediately deactivate expired/unsubscribed subscriptions
             await supabaseClient
               .from('push_subscriptions')
@@ -500,12 +506,9 @@ Deno.serve(async (req) => {
                 failed_attempts: (currentSub.failed_attempts || 0) + 1
               })
               .eq('id', currentSub.id);
-            console.log(`Deactivated expired subscription ${currentSub.id} (410 Gone)`);
+            console.log(`Deactivated expired subscription ${currentSub.id} (${status} error)`);
           } else {
             // For other errors, increment failed attempts
-            const errorMsg = result.status === 'rejected' ? result.reason : 'Unknown';
-            console.log(`Failed to send to device ${i + 1}:`, errorMsg);
-            
             const newFailedAttempts = (currentSub.failed_attempts || 0) + 1;
             
             // Mark inactive after 3 failures for non-410 errors
