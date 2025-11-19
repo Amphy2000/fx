@@ -127,9 +127,11 @@ const Settings = () => {
     if (!confirmed) return;
     
     try {
+      toast.info("Deleting all data... This may take a moment.");
+      
       // Delete all user data from all tables (order matters for foreign key constraints)
       // First delete dependent records
-      await Promise.all([
+      const deleteDependentResults = await Promise.allSettled([
         supabase.from("trade_tags").delete().eq("user_id", profile.id),
         supabase.from("trade_screenshots").delete().eq("user_id", profile.id),
         supabase.from("trade_insights").delete().eq("user_id", profile.id),
@@ -137,8 +139,16 @@ const Settings = () => {
         supabase.from("sync_logs").delete().eq("user_id", profile.id),
       ]);
 
+      // Log any failures from dependent records
+      deleteDependentResults.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          const tables = ["trade_tags", "trade_screenshots", "trade_insights", "chat_messages", "sync_logs"];
+          console.error(`Failed to delete from ${tables[index]}:`, result.reason);
+        }
+      });
+
       // Then delete main records
-      await Promise.all([
+      const deleteMainResults = await Promise.allSettled([
         supabase.from("trades").delete().eq("user_id", profile.id),
         supabase.from("journal_entries").delete().eq("user_id", profile.id),
         supabase.from("achievements").delete().eq("user_id", profile.id),
@@ -159,9 +169,21 @@ const Settings = () => {
         supabase.from("subscriptions").delete().eq("user_id", profile.id),
         supabase.from("feedback").delete().eq("user_id", profile.id),
       ]);
+
+      // Log any failures from main records
+      const mainTables = ["trades", "journal_entries", "achievements", "daily_checkins", "streaks", 
+                          "mt5_accounts", "mt5_connections", "routine_entries", "targets", 
+                          "performance_metrics", "equity_snapshots", "setup_performance", 
+                          "chat_conversations", "copilot_feedback", "journal_insights", "setups", 
+                          "leaderboard_profiles", "subscriptions", "feedback"];
+      deleteMainResults.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          console.error(`Failed to delete from ${mainTables[index]}:`, result.reason);
+        }
+      });
       
       // Reset profile to fresh free tier account
-      const { error } = await supabase
+      const { error: profileError } = await supabase
         .from("profiles")
         .update({ 
           trades_count: 0,
@@ -170,25 +192,28 @@ const Settings = () => {
           last_trade_date: null,
           onboarding_completed: false,
           onboarding_step: 0,
-          ai_credits: 100, // Reset to free tier credits
+          ai_credits: 100,
           subscription_tier: 'free',
           subscription_status: 'active',
           subscription_expires_at: null,
-          monthly_trade_limit: 50 // Free tier limit
+          monthly_trade_limit: 50
         })
         .eq("id", profile.id);
 
-      if (error) throw error;
+      if (profileError) {
+        console.error("Profile reset error:", profileError);
+        throw profileError;
+      }
       
       toast.success("Account reset successfully! Redirecting to fresh dashboard...");
       
-      // Refresh the page to show fresh state
+      // Force a hard refresh to clear all cached data
       setTimeout(() => {
         window.location.href = "/dashboard";
       }, 1500);
     } catch (error) {
       console.error("Error resetting account:", error);
-      toast.error("Failed to reset account");
+      toast.error("Failed to reset account. Check console for details.");
     }
   };
 
