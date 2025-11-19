@@ -45,39 +45,32 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error(`Campaign not found: ${campaignError?.message}`);
     }
 
+    if (!campaign.list_id) {
+      throw new Error("Campaign must have an email list selected");
+    }
+
     // Update campaign status
     await supabaseClient
       .from("email_campaigns")
       .update({ status: "sending" })
       .eq("id", campaignId);
 
-    // Get recipients based on user segment
-    let query = supabaseClient.from("profiles").select("id, email, full_name");
-    
-    const segment = campaign.user_segment;
-    
-    // Apply segmentation filters
-    if (segment.subscription_tier) {
-      query = query.eq("subscription_tier", segment.subscription_tier);
-    }
-    if (segment.has_trades !== undefined) {
-      if (segment.has_trades) {
-        query = query.gt("trades_count", 0);
-      } else {
-        query = query.eq("trades_count", 0);
-      }
-    }
-    if (segment.min_streak) {
-      query = query.gte("current_streak", segment.min_streak);
-    }
-
-    const { data: recipients, error: recipientsError } = await query;
+    // Get active contacts from the campaign's email list
+    const { data: recipients, error: recipientsError } = await supabaseClient
+      .from("email_contacts")
+      .select("id, email, first_name, last_name, custom_fields")
+      .eq("list_id", campaign.list_id)
+      .eq("status", "active");
 
     if (recipientsError) {
       throw new Error(`Failed to fetch recipients: ${recipientsError.message}`);
     }
 
-    console.log(`Found ${recipients?.length || 0} recipients`);
+    if (!recipients || recipients.length === 0) {
+      throw new Error("No active contacts found in the selected email list");
+    }
+
+    console.log(`Found ${recipients.length} active contacts in list`);
 
     const totalRecipients = recipients?.length || 0;
     let sentCount = 0;
@@ -229,9 +222,13 @@ const handler = async (req: Request): Promise<Response> => {
         }
         
         // Replace template variables
-        htmlContent = htmlContent.replace(/{{name}}/g, recipient.full_name || "User");
+        const recipientName = recipient.first_name 
+          ? `${recipient.first_name}${recipient.last_name ? ' ' + recipient.last_name : ''}`
+          : "there";
+        
+        htmlContent = htmlContent.replace(/{{name}}/g, recipientName);
         htmlContent = htmlContent.replace(/{{email}}/g, recipient.email);
-        subject = subject.replace(/{{name}}/g, recipient.full_name || "User");
+        subject = subject.replace(/{{name}}/g, recipientName);
 
         // Add unsubscribe link
         const unsubscribeUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/handle-unsubscribe?email=${encodeURIComponent(recipient.email)}&campaign_id=${campaignId}`;
