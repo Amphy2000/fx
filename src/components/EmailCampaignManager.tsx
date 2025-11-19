@@ -16,6 +16,7 @@ import { Plus, Send, Calendar, BarChart3 } from "lucide-react";
 export const EmailCampaignManager = () => {
   const queryClient = useQueryClient();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState<any>(null);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -101,6 +102,46 @@ export const EmailCampaignManager = () => {
     },
     onError: (error: any) => {
       toast.error(`Failed to send campaign: ${error.message}`);
+    },
+  });
+
+  // Delete campaign
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("email_campaigns")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["email-campaigns"] });
+      toast.success("Campaign deleted successfully");
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to delete campaign: ${error.message}`);
+    },
+  });
+
+  // Update campaign
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const { error } = await supabase
+        .from("email_campaigns")
+        .update(data)
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["email-campaigns"] });
+      toast.success("Campaign updated successfully");
+      setIsCreateOpen(false);
+      resetForm();
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to update campaign: ${error.message}`);
     },
   });
 

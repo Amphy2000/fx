@@ -1,12 +1,20 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ModernDonutChart } from "./ModernDonutChart";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, Send, MousePointerClick, Eye, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TrendingUp, Send, MousePointerClick, Eye, AlertTriangle, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 export const NotificationAnalytics = () => {
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
   const { data: notifications, isLoading } = useQuery({
     queryKey: ["notification-analytics"],
     queryFn: async () => {
@@ -209,43 +217,143 @@ export const NotificationAnalytics = () => {
       <Card>
         <CardHeader>
           <CardTitle>Recent Notifications</CardTitle>
-          <CardDescription>Detailed performance metrics</CardDescription>
+          <CardDescription>Detailed performance metrics with filtering</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Filters */}
+          <div className="flex flex-wrap gap-4 mb-6">
+            <div className="flex-1 min-w-[200px]">
+              <Input
+                placeholder="Search notifications..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="sent">Sent</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Notifications List */}
           <div className="space-y-2">
-            {notifications?.slice(0, 10).map((notification) => (
-              <div
-                key={notification.id}
-                className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{notification.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(notification.created_at!).toLocaleDateString()}
+            {(() => {
+              const filtered = notifications?.filter(n => {
+                const matchesSearch = searchQuery === "" || 
+                  n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (n.body && n.body.toLowerCase().includes(searchQuery.toLowerCase()));
+                const matchesStatus = statusFilter === "all" || n.status === statusFilter;
+                return matchesSearch && matchesStatus;
+              }) || [];
+
+              const startIndex = (currentPage - 1) * itemsPerPage;
+              const paginatedNotifications = filtered.slice(startIndex, startIndex + itemsPerPage);
+              const totalPages = Math.ceil(filtered.length / itemsPerPage);
+
+              if (paginatedNotifications.length === 0) {
+                return (
+                  <p className="text-center text-muted-foreground py-8">
+                    No notifications found
                   </p>
-                </div>
-                <div className="flex items-center gap-4 ml-4">
-                  <div className="text-center">
-                    <p className="text-xs text-muted-foreground">Sent</p>
-                    <p className="text-sm font-medium">{notification.sent_count || 0}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-muted-foreground">Opened</p>
-                    <p className="text-sm font-medium">{notification.opened_count || 0}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-muted-foreground">Clicked</p>
-                    <p className="text-sm font-medium">{notification.clicked_count || 0}</p>
-                  </div>
-                  {notification.failed_count > 0 && (
-                    <div className="text-center">
-                      <AlertTriangle className="h-4 w-4 text-destructive mx-auto" />
-                      <p className="text-xs text-destructive">{notification.failed_count}</p>
+                );
+              }
+
+              return (
+                <>
+                  {paginatedNotifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0 mr-4">
+                        <p className="text-sm font-medium truncate">{notification.title}</p>
+                        <p className="text-xs text-muted-foreground truncate max-w-[300px]">
+                          {notification.body}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs px-2 py-0.5 rounded bg-muted">
+                            {notification.status}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(notification.created_at!).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-center">
+                          <p className="text-xs text-muted-foreground">Sent</p>
+                          <p className="text-sm font-medium">{notification.sent_count || 0}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs text-muted-foreground">Opened</p>
+                          <p className="text-sm font-medium">{notification.opened_count || 0}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs text-muted-foreground">Clicked</p>
+                          <p className="text-sm font-medium">{notification.clicked_count || 0}</p>
+                        </div>
+                        {notification.failed_count > 0 && (
+                          <div className="text-center">
+                            <AlertTriangle className="h-4 w-4 text-destructive mx-auto" />
+                            <p className="text-xs text-destructive">{notification.failed_count}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between pt-4 border-t">
+                      <p className="text-sm text-muted-foreground">
+                        Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filtered.length)} of {filtered.length} notifications
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          Previous
+                        </Button>
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                            <Button
+                              key={page}
+                              variant={currentPage === page ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setCurrentPage(page)}
+                              className="w-8 h-8 p-0"
+                            >
+                              {page}
+                            </Button>
+                          ))}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                        >
+                          Next
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   )}
-                </div>
-              </div>
-            ))}
+                </>
+              );
+            })()}
           </div>
         </CardContent>
       </Card>
