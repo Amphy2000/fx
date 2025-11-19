@@ -243,6 +243,10 @@ export const EnhancedNotificationSender = () => {
   };
 
   const getSegmentCount = (segment: string) => {
+    if (segment === 'specific') {
+      return selectedUsers.length;
+    }
+    
     // This is approximate - you'd query the database for exact counts
     const total = stats?.activeSubscriptions || 0;
     switch (segment) {
