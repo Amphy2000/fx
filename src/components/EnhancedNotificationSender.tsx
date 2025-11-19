@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ interface ActionButton {
 }
 
 export const EnhancedNotificationSender = () => {
+  const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [userSegment, setUserSegment] = useState("all");
@@ -123,6 +124,8 @@ export const EnhancedNotificationSender = () => {
 
     setIsSending(true);
     try {
+      console.log('Sending notification...', { title, body, userSegment, selectedUsers });
+      
       const { data, error } = await supabase.functions.invoke('send-push-notification', {
         body: {
           title: title.trim(),
@@ -136,13 +139,32 @@ export const EnhancedNotificationSender = () => {
         }
       });
 
-      if (error) throw error;
+      console.log('Response:', { data, error });
+
+      if (error) {
+        console.error('Function invocation error:', error);
+        throw new Error(error.message || 'Failed to send notification');
+      }
+
+      if (!data) {
+        throw new Error('No response data from notification service');
+      }
+
+      if (data.sentCount === 0 && data.totalSubscriptions === 0) {
+        toast.error('No active subscribers found for this segment');
+        return;
+      }
 
       toast.success(`Notification sent to ${data.sentCount} users!`);
       resetForm();
-    } catch (error) {
+      
+      // Refetch stats
+      queryClient.invalidateQueries({ queryKey: ['push-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['recent-notifications'] });
+    } catch (error: any) {
       console.error('Error sending notification:', error);
-      toast.error('Failed to send notification');
+      const errorMessage = error?.message || error?.details || 'Failed to send notification';
+      toast.error(errorMessage);
     } finally {
       setIsSending(false);
     }
