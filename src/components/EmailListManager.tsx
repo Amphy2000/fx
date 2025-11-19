@@ -519,11 +519,12 @@ export const EmailListManager = () => {
 
       {/* Manage Contacts Dialog */}
       <Dialog open={isManageContactsOpen} onOpenChange={setIsManageContactsOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Manage Contacts - {selectedList?.name}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <ScrollArea className="flex-1 pr-4">
+            <div className="space-y-4">
             {/* Add Contact Form */}
             <div className="border rounded-lg p-4 space-y-3 bg-accent/20">
               <h3 className="font-medium">Add New Contact</h3>
@@ -587,7 +588,7 @@ export const EmailListManager = () => {
             {/* Contact List */}
             <div>
               <h3 className="font-medium mb-2">Current Contacts ({listContacts?.length || 0})</h3>
-              <ScrollArea className="h-[300px] border rounded-lg">
+              <div className="border rounded-lg max-h-[250px] overflow-y-auto">
                 <div className="p-4 space-y-2">
                   {listContacts?.map((contact: any) => (
                     <div
@@ -627,9 +628,10 @@ export const EmailListManager = () => {
                     </p>
                   )}
                 </div>
-              </ScrollArea>
+              </div>
             </div>
           </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
