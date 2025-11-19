@@ -166,12 +166,22 @@ async function generateVAPIDHeaders(
     sub: vapidDetails.subject
   };
 
-  // Import private key - Create a new Uint8Array with proper ArrayBuffer type
-  const tempArray = urlBase64ToUint8Array(vapidDetails.privateKey);
-  const privateKeyData = new Uint8Array(tempArray);
+  // Import private key - VAPID keys are raw 32-byte private keys, need to convert to JWK
+  const privateKeyBytes = urlBase64ToUint8Array(vapidDetails.privateKey);
+  
+  // Convert raw private key bytes to JWK format for P-256
+  const d = encodeBase64Url(privateKeyBytes);
+  
+  const jwk = {
+    kty: 'EC',
+    crv: 'P-256',
+    d: d,
+    ext: true,
+  };
+  
   const privateKey = await crypto.subtle.importKey(
-    'pkcs8',
-    privateKeyData,
+    'jwk',
+    jwk,
     { name: 'ECDSA', namedCurve: 'P-256' },
     false,
     ['sign']
