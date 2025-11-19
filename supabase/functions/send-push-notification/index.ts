@@ -108,14 +108,16 @@ async function sendWebPushNotification(
 }
 
 Deno.serve(async (req) => {
-  console.log('=== Push notification request received ===');
-  console.log('Method:', req.method);
-  
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
   try {
+    console.log('=== Push notification request received ===');
+    console.log('Method:', req.method);
+    console.log('Has Authorization header:', !!req.headers.get('Authorization'));
+    
+    if (req.method === 'OPTIONS') {
+      console.log('Handling OPTIONS request');
+      return new Response(null, { headers: corsHeaders });
+    }
+
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       console.error('No authorization header provided');
