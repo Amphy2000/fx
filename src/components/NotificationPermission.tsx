@@ -76,7 +76,6 @@ export const NotificationPermission = () => {
       }
 
       const { publicKey } = vapidData;
-      console.log('Received public key, length:', publicKey?.length);
 
       if (!publicKey || publicKey.length !== 87) {
         throw new Error(`Invalid VAPID public key format (expected 87 chars, got ${publicKey?.length})`);
@@ -93,12 +92,9 @@ export const NotificationPermission = () => {
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(publicKey)
         });
-        console.log('Created new subscription');
-      } else {
-        console.log('Using existing subscription');
       }
 
-      // Send subscription to backend (auth token is automatically included by Supabase client)
+      // Send subscription to backend
       const deviceInfo = `${navigator.userAgent}`;
 
       const { error: subError } = await supabase.functions.invoke('subscribe-push', {
