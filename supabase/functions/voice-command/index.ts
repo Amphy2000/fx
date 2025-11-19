@@ -585,7 +585,7 @@ serve(async (req) => {
       default:
         return new Response(JSON.stringify({
           success: false,
-          message: "Unknown action"
+          message: "I didn't understand that command. Try saying 'show my trades' or 'navigate to dashboard'"
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
@@ -599,6 +599,7 @@ serve(async (req) => {
     console.error('Voice command error:', error);
     return new Response(JSON.stringify({ 
       success: false,
+      message: "I had trouble processing that. Please try again or use different words.",
       error: error.message 
     }), {
       status: 500,
