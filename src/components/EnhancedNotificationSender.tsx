@@ -45,10 +45,14 @@ export const EnhancedNotificationSender = () => {
   const { data: stats } = useQuery({
     queryKey: ['push-stats'],
     queryFn: async () => {
+      // Count unique users with active subscriptions
       const { data: subscriptions } = await supabase
         .from('push_subscriptions')
-        .select('id', { count: 'exact' })
+        .select('user_id')
         .eq('is_active', true);
+
+      // Get unique user count
+      const uniqueUsers = new Set(subscriptions?.map(s => s.user_id) || []);
 
       const { data: notifications } = await supabase
         .from('push_notifications')
@@ -57,7 +61,7 @@ export const EnhancedNotificationSender = () => {
         .limit(10);
 
       return {
-        activeSubscriptions: subscriptions?.length || 0,
+        activeSubscriptions: uniqueUsers.size,
         recentNotifications: notifications || []
       };
     }
