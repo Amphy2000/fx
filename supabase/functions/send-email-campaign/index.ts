@@ -27,10 +27,17 @@ const handler = async (req: Request): Promise<Response> => {
     const { campaignId }: CampaignRequest = await req.json();
     console.log(`Processing email campaign: ${campaignId}`);
 
-    // Get campaign details
+    // Get campaign details with A/B test info
     const { data: campaign, error: campaignError } = await supabaseClient
       .from("email_campaigns")
-      .select("*, email_templates(*)")
+      .select(`
+        *,
+        email_templates(*),
+        email_ab_tests(
+          id,
+          email_ab_variants(*)
+        )
+      `)
       .eq("id", campaignId)
       .single();
 
@@ -90,10 +97,65 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       try {
-        // Replace template variables
         let htmlContent = campaign.email_templates.html_content;
         let subject = campaign.email_templates.subject;
+        let variantId = null;
+
+        // Handle A/B testing
+        if (campaign.email_ab_tests?.id && campaign.email_ab_tests.email_ab_variants) {
+          const variants = campaign.email_ab_tests.email_ab_variants;
+          
+          // Select variant based on traffic percentage
+          const random = Math.random() * 100;
+          let cumulative = 0;
+          let selectedVariant = null;
+          
+          for (const variant of variants) {
+            cumulative += variant.traffic_percentage;
+            if (random <= cumulative) {
+              selectedVariant = variant;
+              break;
+            }
+          }
+          
+          if (selectedVariant) {
+            variantId = selectedVariant.id;
+            
+            // Override subject or template based on test type
+            if (selectedVariant.subject_line) {
+              subject = selectedVariant.subject_line;
+            }
+            if (selectedVariant.template_id) {
+              const { data: template } = await supabaseClient
+                .from("email_templates")
+                .select("*")
+                .eq("id", selectedVariant.template_id)
+                .single();
+              
+              if (template) {
+                htmlContent = template.html_content;
+                if (!selectedVariant.subject_line) {
+                  subject = template.subject;
+                }
+              }
+            }
+            
+            // Record A/B assignment
+            await supabaseClient.from("email_ab_assignments").insert({
+              ab_test_id: campaign.email_ab_tests.id,
+              variant_id: selectedVariant.id,
+              user_id: recipient.id,
+            });
+            
+            // Increment variant sent count
+            await supabaseClient.rpc("increment_variant_stat", {
+              variant_id: selectedVariant.id,
+              stat_name: "sent_count",
+            });
+          }
+        }
         
+        // Replace template variables
         htmlContent = htmlContent.replace(/{{name}}/g, recipient.full_name || "User");
         htmlContent = htmlContent.replace(/{{email}}/g, recipient.email);
         subject = subject.replace(/{{name}}/g, recipient.full_name || "User");
@@ -110,14 +172,15 @@ const handler = async (req: Request): Promise<Response> => {
         });
 
         // Record the send
-        await supabaseClient.from("email_sends").insert({
+        const { data: sendRecord } = await supabaseClient.from("email_sends").insert({
           campaign_id: campaignId,
           user_id: recipient.id,
           email_address: recipient.email,
           status: "sent",
           sent_at: new Date().toISOString(),
+          variant_id: variantId,
           metadata: { resend_id: emailResponse.data?.id },
-        });
+        }).select().single();
 
         sentCount++;
         console.log(`Email sent to ${recipient.email}`);

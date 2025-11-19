@@ -27,10 +27,10 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Get email_send_id
+    // Get email_send_id and variant_id
     const { data: emailSend } = await supabaseClient
       .from("email_sends")
-      .select("id")
+      .select("id, variant_id")
       .eq("campaign_id", campaign_id)
       .eq("user_id", user_id)
       .single();
@@ -84,6 +84,14 @@ const handler = async (req: Request): Promise<Response> => {
         stat_name: "opened_count",
       });
       
+      // Update variant stats if this is an A/B test
+      if (emailSend.variant_id) {
+        await supabaseClient.rpc("increment_variant_stat", {
+          variant_id: emailSend.variant_id,
+          stat_name: "opened_count",
+        });
+      }
+      
       // Update email_send delivered_at
       await supabaseClient
         .from("email_sends")
@@ -97,6 +105,14 @@ const handler = async (req: Request): Promise<Response> => {
         campaign_id,
         stat_name: "clicked_count",
       });
+      
+      // Update variant stats if this is an A/B test
+      if (emailSend.variant_id) {
+        await supabaseClient.rpc("increment_variant_stat", {
+          variant_id: emailSend.variant_id,
+          stat_name: "clicked_count",
+        });
+      }
     }
 
     console.log(`Tracked ${event_type} event for campaign ${campaign_id}`);
