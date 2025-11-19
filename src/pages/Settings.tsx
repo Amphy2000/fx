@@ -229,11 +229,12 @@ const Settings = () => {
         throw profileError;
       }
       
-      toast.success("Account reset successfully! Redirecting to fresh dashboard...");
+      toast.success("Account reset successfully! Signing out for fresh start...");
       
-      // Force a hard refresh to clear all cached data
-      setTimeout(() => {
-        window.location.href = "/dashboard";
+      // Sign out to clear all session data and caches
+      setTimeout(async () => {
+        await supabase.auth.signOut();
+        window.location.href = "/auth";
       }, 1500);
     } catch (error) {
       console.error("Error resetting account:", error);
