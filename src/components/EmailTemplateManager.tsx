@@ -57,8 +57,8 @@ export const EmailTemplateManager = () => {
   // Export design from visual editor
   const exportHtml = async () => {
     return new Promise<string>((resolve) => {
-      if (emailEditorRef.current && useVisualEditor) {
-        emailEditorRef.current.exportHtml((data: any) => {
+      if (emailEditorRef.current?.editor && useVisualEditor) {
+        emailEditorRef.current.editor.exportHtml((data: any) => {
           const { html } = data;
           resolve(html);
         });
