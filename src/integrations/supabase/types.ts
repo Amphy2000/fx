@@ -204,8 +204,177 @@ export type Database = {
         }
         Relationships: []
       }
+      email_ab_assignments: {
+        Row: {
+          ab_test_id: string
+          assigned_at: string | null
+          email_send_id: string | null
+          id: string
+          user_id: string
+          variant_id: string
+        }
+        Insert: {
+          ab_test_id: string
+          assigned_at?: string | null
+          email_send_id?: string | null
+          id?: string
+          user_id: string
+          variant_id: string
+        }
+        Update: {
+          ab_test_id?: string
+          assigned_at?: string | null
+          email_send_id?: string | null
+          id?: string
+          user_id?: string
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_ab_assignments_ab_test_id_fkey"
+            columns: ["ab_test_id"]
+            isOneToOne: false
+            referencedRelation: "email_ab_tests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_ab_assignments_email_send_id_fkey"
+            columns: ["email_send_id"]
+            isOneToOne: false
+            referencedRelation: "email_sends"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_ab_assignments_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "email_ab_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_ab_tests: {
+        Row: {
+          campaign_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          started_at: string | null
+          status: string | null
+          test_type: string
+          updated_at: string | null
+          winner_variant_id: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          started_at?: string | null
+          status?: string | null
+          test_type: string
+          updated_at?: string | null
+          winner_variant_id?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          started_at?: string | null
+          status?: string | null
+          test_type?: string
+          updated_at?: string | null
+          winner_variant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_ab_tests_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "email_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_ab_variants: {
+        Row: {
+          ab_test_id: string
+          clicked_count: number | null
+          conversion_count: number | null
+          created_at: string | null
+          delivered_count: number | null
+          id: string
+          name: string
+          opened_count: number | null
+          send_time: string | null
+          sent_count: number | null
+          subject_line: string | null
+          template_id: string | null
+          traffic_percentage: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ab_test_id: string
+          clicked_count?: number | null
+          conversion_count?: number | null
+          created_at?: string | null
+          delivered_count?: number | null
+          id?: string
+          name: string
+          opened_count?: number | null
+          send_time?: string | null
+          sent_count?: number | null
+          subject_line?: string | null
+          template_id?: string | null
+          traffic_percentage?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ab_test_id?: string
+          clicked_count?: number | null
+          conversion_count?: number | null
+          created_at?: string | null
+          delivered_count?: number | null
+          id?: string
+          name?: string
+          opened_count?: number | null
+          send_time?: string | null
+          sent_count?: number | null
+          subject_line?: string | null
+          template_id?: string | null
+          traffic_percentage?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_ab_variants_ab_test_id_fkey"
+            columns: ["ab_test_id"]
+            isOneToOne: false
+            referencedRelation: "email_ab_tests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_ab_variants_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_campaigns: {
         Row: {
+          ab_test_id: string | null
           bounced_count: number | null
           clicked_count: number | null
           created_at: string
@@ -226,6 +395,7 @@ export type Database = {
           user_segment: Json
         }
         Insert: {
+          ab_test_id?: string | null
           bounced_count?: number | null
           clicked_count?: number | null
           created_at?: string
@@ -246,6 +416,7 @@ export type Database = {
           user_segment?: Json
         }
         Update: {
+          ab_test_id?: string | null
           bounced_count?: number | null
           clicked_count?: number | null
           created_at?: string
@@ -266,6 +437,13 @@ export type Database = {
           user_segment?: Json
         }
         Relationships: [
+          {
+            foreignKeyName: "email_campaigns_ab_test_id_fkey"
+            columns: ["ab_test_id"]
+            isOneToOne: false
+            referencedRelation: "email_ab_tests"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "email_campaigns_template_id_fkey"
             columns: ["template_id"]
@@ -331,6 +509,7 @@ export type Database = {
           sent_at: string | null
           status: string
           user_id: string
+          variant_id: string | null
         }
         Insert: {
           campaign_id: string
@@ -342,6 +521,7 @@ export type Database = {
           sent_at?: string | null
           status?: string
           user_id: string
+          variant_id?: string | null
         }
         Update: {
           campaign_id?: string
@@ -353,6 +533,7 @@ export type Database = {
           sent_at?: string | null
           status?: string
           user_id?: string
+          variant_id?: string | null
         }
         Relationships: [
           {
@@ -360,6 +541,13 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "email_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sends_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "email_ab_variants"
             referencedColumns: ["id"]
           },
         ]
@@ -1864,6 +2052,10 @@ export type Database = {
       }
       increment_campaign_stat: {
         Args: { campaign_id: string; stat_name: string }
+        Returns: undefined
+      }
+      increment_variant_stat: {
+        Args: { stat_name: string; variant_id: string }
         Returns: undefined
       }
       reset_monthly_credits: { Args: never; Returns: undefined }
