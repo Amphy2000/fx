@@ -7,12 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Loader2, Download, Search, Eye, Crown, Bell } from "lucide-react";
+import { Loader2, Download, Search, Eye, Crown, Bell, Mail, BarChart3 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminNotificationSender } from "@/components/AdminNotificationSender";
+import { EmailTemplateManager } from "@/components/EmailTemplateManager";
+import { EmailCampaignManager } from "@/components/EmailCampaignManager";
+import { EmailAnalyticsDashboard } from "@/components/EmailAnalyticsDashboard";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -207,6 +210,18 @@ const Admin = () => {
               <Bell className="mr-2 h-4 w-4" />
               Push Notifications
             </TabsTrigger>
+            <TabsTrigger value="email-templates">
+              <Mail className="mr-2 h-4 w-4" />
+              Email Templates
+            </TabsTrigger>
+            <TabsTrigger value="email-campaigns">
+              <Mail className="mr-2 h-4 w-4" />
+              Email Campaigns
+            </TabsTrigger>
+            <TabsTrigger value="email-analytics">
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Email Analytics
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-6">
@@ -314,6 +329,18 @@ const Admin = () => {
 
           <TabsContent value="notifications">
             <AdminNotificationSender />
+          </TabsContent>
+
+          <TabsContent value="email-templates">
+            <EmailTemplateManager />
+          </TabsContent>
+
+          <TabsContent value="email-campaigns">
+            <EmailCampaignManager />
+          </TabsContent>
+
+          <TabsContent value="email-analytics">
+            <EmailAnalyticsDashboard />
           </TabsContent>
         </Tabs>
 
