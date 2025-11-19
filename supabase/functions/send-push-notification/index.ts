@@ -231,7 +231,7 @@ async function sendWebPushNotification(
   subscription: { endpoint: string; p256dh_key: string; auth_key: string },
   payload: any,
   vapidDetails: { subject: string; publicKey: string; privateKey: string }
-): Promise<boolean> {
+): Promise<{ success: boolean; status?: number }> {
   try {
     console.log('Sending to endpoint:', subscription.endpoint.substring(0, 50) + '...');
     
@@ -267,15 +267,15 @@ async function sendWebPushNotification(
     if (!response.ok) {
       console.error('Push failed with status:', response.status);
       console.error('Response body:', responseText);
-      return false;
+      return { success: false, status: response.status };
     }
 
     console.log('Push sent successfully');
-    return true;
+    return { success: true };
   } catch (error) {
     console.error('Failed to send push notification:', error);
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
-    return false;
+    return { success: false };
   }
 }
 
@@ -416,10 +416,13 @@ Deno.serve(async (req) => {
       .select('*')
       .eq('is_active', true);
 
-    if (userSegment && userSegment !== 'all' && userIds.length > 0) {
-      query = query.in('user_id', userIds);
-    } else if (targetUsers && targetUsers.length > 0 && targetUsers[0] !== 'all') {
+    // Filter by specific users if provided
+    if (userSegment === 'specific' && targetUsers && targetUsers.length > 0) {
+      console.log('Filtering for specific users:', targetUsers);
       query = query.in('user_id', targetUsers);
+    } else if (userSegment && userSegment !== 'all' && userSegment !== 'specific' && userIds.length > 0) {
+      console.log('Filtering for segment:', userSegment, 'User IDs:', userIds.length);
+      query = query.in('user_id', userIds);
     }
 
     const { data: subscriptions, error: subError } = await query;
@@ -472,38 +475,56 @@ Deno.serve(async (req) => {
       console.log('Processing results...');
       for (let i = 0; i < results.length; i++) {
         const result = results[i];
-        if (result.status === 'fulfilled' && result.value) {
+        const currentSub = subscriptions[i];
+        
+        if (result.status === 'fulfilled' && result.value.success) {
           sentCount++;
+          console.log('Push sent successfully');
           // Reset failed attempts on success
           await supabaseClient
             .from('push_subscriptions')
             .update({ failed_attempts: 0 })
-            .eq('id', subscriptions[i].id);
+            .eq('id', currentSub.id);
         } else {
           failedCount++;
-          const errorMsg = result.status === 'rejected' ? result.reason : 'Unknown';
-          console.log(`Failed to send to device ${i + 1}:`, errorMsg);
           
-          // Increment failed attempts
-          const currentSub = subscriptions[i];
-          const newFailedAttempts = (currentSub.failed_attempts || 0) + 1;
+          // Check if it's a 410 Gone error (expired/unsubscribed)
+          const status = result.status === 'fulfilled' ? result.value.status : undefined;
           
-          // Only mark inactive after 3 failures
-          if (newFailedAttempts >= 3) {
+          if (status === 410) {
+            // Immediately deactivate expired/unsubscribed subscriptions
             await supabaseClient
               .from('push_subscriptions')
               .update({ 
                 is_active: false,
-                failed_attempts: newFailedAttempts 
+                failed_attempts: (currentSub.failed_attempts || 0) + 1
               })
               .eq('id', currentSub.id);
-            console.log(`Marked subscription ${currentSub.id} as inactive after ${newFailedAttempts} failures`);
+            console.log(`Deactivated expired subscription ${currentSub.id} (410 Gone)`);
           } else {
-            await supabaseClient
-              .from('push_subscriptions')
-              .update({ failed_attempts: newFailedAttempts })
-              .eq('id', currentSub.id);
-            console.log(`Incremented failed attempts for ${currentSub.id} to ${newFailedAttempts}`);
+            // For other errors, increment failed attempts
+            const errorMsg = result.status === 'rejected' ? result.reason : 'Unknown';
+            console.log(`Failed to send to device ${i + 1}:`, errorMsg);
+            
+            const newFailedAttempts = (currentSub.failed_attempts || 0) + 1;
+            
+            // Mark inactive after 3 failures for non-410 errors
+            if (newFailedAttempts >= 3) {
+              await supabaseClient
+                .from('push_subscriptions')
+                .update({ 
+                  is_active: false,
+                  failed_attempts: newFailedAttempts 
+                })
+                .eq('id', currentSub.id);
+              console.log(`Marked subscription ${currentSub.id} as inactive after ${newFailedAttempts} failures`);
+            } else {
+              await supabaseClient
+                .from('push_subscriptions')
+                .update({ failed_attempts: newFailedAttempts })
+                .eq('id', currentSub.id);
+              console.log(`Incremented failed attempts for ${currentSub.id} to ${newFailedAttempts}`);
+            }
           }
         }
       }

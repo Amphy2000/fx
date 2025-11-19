@@ -150,7 +150,7 @@ export const EnhancedNotificationSender = () => {
         body: {
           title: title.trim(),
           body: body.trim(),
-          userSegment: userSegment === 'specific' ? 'all' : userSegment,
+          userSegment: userSegment,
           targetUsers: userSegment === 'specific' ? selectedUsers : undefined,
           templateId: selectedTemplate || null,
           actionButtons: actionButtons.filter(b => b.action && b.title).length > 0 
