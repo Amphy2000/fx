@@ -46,14 +46,29 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (error) throw error;
 
+    // Handle empty list - return empty CSV/JSON with headers
     if (!contacts || contacts.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "No contacts found" }),
-        {
-          status: 404,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+      if (format === "json") {
+        return new Response(JSON.stringify([]), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "Content-Disposition": `attachment; filename="contacts-${list_id}.json"`,
+            ...corsHeaders,
+          },
+        });
+      }
+      
+      // Return empty CSV with headers only
+      const emptyCSV = "Email,First Name,Last Name,Status,Created At\n";
+      return new Response(emptyCSV, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/csv",
+          "Content-Disposition": `attachment; filename="contacts-${list_id}.csv"`,
+          ...corsHeaders,
+        },
+      });
     }
 
     // Type the contacts properly
