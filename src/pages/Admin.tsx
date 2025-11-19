@@ -198,10 +198,10 @@ const Admin = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-4xl font-bold text-foreground">Admin Panel</h1>
-          <Button onClick={handleExportCSV} variant="outline">
+      <div className="w-full max-w-full overflow-x-hidden">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground">Admin Panel</h1>
+          <Button onClick={handleExportCSV} variant="outline" className="w-full sm:w-auto">
             <Download className="mr-2 h-4 w-4" />
             Export All
           </Button>
@@ -209,45 +209,47 @@ const Admin = () => {
 
         {/* Stats Cards */}
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="users">Users Management</TabsTrigger>
-            <TabsTrigger value="notifications">
-              <Bell className="mr-2 h-4 w-4" />
-              Push Notifications
-            </TabsTrigger>
-            <TabsTrigger value="email-lists">
-              <Mail className="mr-2 h-4 w-4" />
-              Email Lists
-            </TabsTrigger>
-            <TabsTrigger value="email-templates">
-              <Mail className="mr-2 h-4 w-4" />
-              Templates
-            </TabsTrigger>
-            <TabsTrigger value="email-campaigns">
-              <Mail className="mr-2 h-4 w-4" />
-              Campaigns
-            </TabsTrigger>
-            <TabsTrigger value="email-workflows">
-              <Mail className="mr-2 h-4 w-4" />
-              Workflows
-            </TabsTrigger>
-            <TabsTrigger value="ab-tests">
-              <BarChart3 className="mr-2 h-4 w-4" />
-              A/B Tests
-            </TabsTrigger>
-            <TabsTrigger value="personalization">
-              <BarChart3 className="mr-2 h-4 w-4" />
-              Personalization
-            </TabsTrigger>
-            <TabsTrigger value="warmup">
-              <Mail className="mr-2 h-4 w-4" />
-              Warm-Up
-            </TabsTrigger>
-            <TabsTrigger value="email-analytics">
-              <BarChart3 className="mr-2 h-4 w-4" />
-              Analytics
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+            <TabsList className="mb-6 flex-wrap sm:flex-nowrap min-w-min">
+              <TabsTrigger value="users" className="whitespace-nowrap">Users Management</TabsTrigger>
+              <TabsTrigger value="notifications" className="whitespace-nowrap">
+                <Bell className="mr-2 h-4 w-4" />
+                Push Notifications
+              </TabsTrigger>
+              <TabsTrigger value="email-lists" className="whitespace-nowrap">
+                <Mail className="mr-2 h-4 w-4" />
+                Email Lists
+              </TabsTrigger>
+              <TabsTrigger value="email-templates" className="whitespace-nowrap">
+                <Mail className="mr-2 h-4 w-4" />
+                Templates
+              </TabsTrigger>
+              <TabsTrigger value="email-campaigns" className="whitespace-nowrap">
+                <Mail className="mr-2 h-4 w-4" />
+                Campaigns
+              </TabsTrigger>
+              <TabsTrigger value="email-workflows" className="whitespace-nowrap">
+                <Mail className="mr-2 h-4 w-4" />
+                Workflows
+              </TabsTrigger>
+              <TabsTrigger value="ab-tests" className="whitespace-nowrap">
+                <BarChart3 className="mr-2 h-4 w-4" />
+                A/B Tests
+              </TabsTrigger>
+              <TabsTrigger value="personalization" className="whitespace-nowrap">
+                <BarChart3 className="mr-2 h-4 w-4" />
+                Personalization
+              </TabsTrigger>
+              <TabsTrigger value="warmup" className="whitespace-nowrap">
+                <Mail className="mr-2 h-4 w-4" />
+                Warm-Up
+              </TabsTrigger>
+              <TabsTrigger value="email-analytics" className="whitespace-nowrap">
+                <BarChart3 className="mr-2 h-4 w-4" />
+                Analytics
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="users" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
