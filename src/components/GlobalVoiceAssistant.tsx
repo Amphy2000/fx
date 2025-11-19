@@ -126,22 +126,24 @@ export const GlobalVoiceAssistant = ({
 
         // Handle navigation
         if (data.action === 'navigate' && data.data?.destination) {
-          const routes: Record<string, string> = {
-            'dashboard': '/',
-            'journal': '/journal',
-            'trades': '/',
-            'analytics': '/analytics',
-            'targets': '/targets',
-            'achievements': '/achievements',
-            'leaderboard': '/leaderboard',
-            'streaks': '/streaks',
-            'settings': '/settings',
-            'pricing': '/pricing',
-            'integrations': '/integrations'
+          const routes: Record<string, { path: string; name: string }> = {
+            'dashboard': { path: '/dashboard', name: 'Dashboard' },
+            'journal': { path: '/journal', name: 'Journal' },
+            'trades': { path: '/dashboard', name: 'Trades' },
+            'analytics': { path: '/analytics', name: 'Analytics' },
+            'targets': { path: '/targets', name: 'Targets' },
+            'achievements': { path: '/achievements', name: 'Achievements' },
+            'leaderboard': { path: '/leaderboard', name: 'Leaderboard' },
+            'streaks': { path: '/streaks', name: 'Streaks' },
+            'settings': { path: '/settings', name: 'Settings' },
+            'pricing': { path: '/pricing', name: 'Pricing' },
+            'integrations': { path: '/integrations', name: 'Integrations' }
           };
           const route = routes[data.data.destination];
           if (route) {
-            navigate(route);
+            navigate(route.path);
+            // Speak the actual destination name
+            speak(`Navigating to ${route.name}`);
           }
         }
 

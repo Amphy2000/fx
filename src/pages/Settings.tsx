@@ -119,6 +119,7 @@ const Settings = () => {
       "• Achievements\n" +
       "• Check-ins\n" +
       "• Streaks\n" +
+      "• Analytics data\n" +
       "• MT5 connections\n\n" +
       "This action CANNOT be undone. Are you absolutely sure?"
     );
@@ -126,7 +127,7 @@ const Settings = () => {
     if (!confirmed) return;
     
     try {
-      // Delete all user data
+      // Delete all user data from all tables
       await Promise.all([
         supabase.from("trades").delete().eq("user_id", profile.id),
         supabase.from("journal_entries").delete().eq("user_id", profile.id),
@@ -136,9 +137,17 @@ const Settings = () => {
         supabase.from("mt5_accounts").delete().eq("user_id", profile.id),
         supabase.from("routine_entries").delete().eq("user_id", profile.id),
         supabase.from("targets").delete().eq("user_id", profile.id),
+        supabase.from("performance_metrics").delete().eq("user_id", profile.id),
+        supabase.from("equity_snapshots").delete().eq("user_id", profile.id),
+        supabase.from("setup_performance").delete().eq("user_id", profile.id),
+        supabase.from("chat_conversations").delete().eq("user_id", profile.id),
+        supabase.from("chat_messages").delete().eq("user_id", profile.id),
+        supabase.from("trade_insights").delete().eq("user_id", profile.id),
+        supabase.from("copilot_feedback").delete().eq("user_id", profile.id),
+        supabase.from("journal_insights").delete().eq("user_id", profile.id),
       ]);
       
-      // Reset profile stats
+      // Reset profile to fresh free tier account
       const { error } = await supabase
         .from("profiles")
         .update({ 
@@ -147,14 +156,23 @@ const Settings = () => {
           longest_streak: 0,
           last_trade_date: null,
           onboarding_completed: false,
-          onboarding_step: 0
+          onboarding_step: 0,
+          ai_credits: 100, // Reset to free tier credits
+          subscription_tier: 'free',
+          subscription_status: 'active',
+          subscription_expires_at: null,
+          monthly_trade_limit: 50 // Free tier limit
         })
         .eq("id", profile.id);
 
       if (error) throw error;
       
-      toast.success("Account reset successfully");
-      navigate("/dashboard");
+      toast.success("Account reset successfully! Redirecting to fresh dashboard...");
+      
+      // Refresh the page to show fresh state
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 1500);
     } catch (error) {
       console.error("Error resetting account:", error);
       toast.error("Failed to reset account");
