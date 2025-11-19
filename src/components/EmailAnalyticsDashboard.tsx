@@ -2,9 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Mail, MousePointerClick, Eye, AlertCircle } from "lucide-react";
+import { Mail, MousePointerClick, Eye, AlertCircle, TrendingUp, TrendingDown, Activity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line, Area, AreaChart } from "recharts";
+import { motion } from "framer-motion";
 
 export const EmailAnalyticsDashboard = () => {
   // Fetch overall stats
@@ -32,6 +33,7 @@ export const EmailAnalyticsDashboard = () => {
         deliveryRate: totalSent > 0 ? (totalDelivered / totalSent) * 100 : 0,
         openRate: totalSent > 0 ? (totalOpened / totalSent) * 100 : 0,
         clickRate: totalSent > 0 ? (totalClicked / totalSent) * 100 : 0,
+        clickToOpenRate: totalOpened > 0 ? (totalClicked / totalOpened) * 100 : 0,
         failureRate: totalSent > 0 ? (totalFailed / totalSent) * 100 : 0,
       };
     },
@@ -85,72 +87,67 @@ export const EmailAnalyticsDashboard = () => {
     },
   });
 
-  const chartData = campaigns?.map((campaign) => ({
-    name: campaign.name.length > 20 ? campaign.name.substring(0, 20) + "..." : campaign.name,
-    sent: campaign.sent_count || 0,
-    opened: campaign.opened_count || 0,
-    clicked: campaign.clicked_count || 0,
-  })) || [];
+  const StatCard = ({ title, value, subtitle, icon: Icon, trend, trendValue }: any) => (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card className="border-border/50 hover:border-border transition-all hover:shadow-md">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">{title}</CardTitle>
+          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <Icon className="h-5 w-5 text-primary" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="text-3xl font-bold">{value}</div>
+          <div className="flex items-center gap-2 mt-2">
+            <p className="text-sm text-muted-foreground">{subtitle}</p>
+            {trend && (
+              <Badge variant={trend === "up" ? "default" : "destructive"} className="gap-1">
+                {trend === "up" ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                {trendValue}
+              </Badge>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Email Analytics</h2>
-        <p className="text-muted-foreground">Monitor your email campaign performance</p>
+    <div className="space-y-8">
+      <div className="space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">Email Analytics</h2>
+        <p className="text-muted-foreground text-lg">Monitor your email campaign performance and engagement</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Sent</CardTitle>
-            <Mail className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalSent || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats?.deliveryRate.toFixed(1)}% delivery rate
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Open Rate</CardTitle>
-            <Eye className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.openRate.toFixed(1)}%</div>
-            <p className="text-xs text-muted-foreground">
-              {stats?.totalOpened || 0} emails opened
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Click Rate</CardTitle>
-            <MousePointerClick className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.clickRate.toFixed(1)}%</div>
-            <p className="text-xs text-muted-foreground">
-              {stats?.totalClicked || 0} clicks
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Failed</CardTitle>
-            <AlertCircle className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">{stats?.totalFailed || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats?.failureRate.toFixed(1)}% failure rate
-            </p>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Total Sent"
+          value={stats?.totalSent.toLocaleString() || "0"}
+          subtitle={`${stats?.deliveryRate.toFixed(1)}% delivered`}
+          icon={Mail}
+        />
+        <StatCard
+          title="Open Rate"
+          value={`${stats?.openRate.toFixed(1)}%`}
+          subtitle={`${stats?.totalOpened.toLocaleString()} opens`}
+          icon={Eye}
+        />
+        <StatCard
+          title="Click Rate"
+          value={`${stats?.clickRate.toFixed(1)}%`}
+          subtitle={`${stats?.totalClicked.toLocaleString()} clicks`}
+          icon={MousePointerClick}
+        />
+        <StatCard
+          title="Click-to-Open"
+          value={`${stats?.clickToOpenRate.toFixed(1)}%`}
+          subtitle="Engagement quality"
+          icon={Activity}
+        />
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
