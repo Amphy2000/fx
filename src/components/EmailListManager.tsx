@@ -86,6 +86,45 @@ export const EmailListManager = () => {
     },
   });
 
+  // Import all registered users
+  const importAllUsersMutation = useMutation({
+    mutationFn: async (listId: string) => {
+      const { data: profiles, error } = await supabase
+        .from("profiles")
+        .select("id, email, full_name");
+
+      if (error) throw error;
+
+      const contacts = profiles
+        .filter(p => p.email)
+        .map(p => {
+          const names = p.full_name?.split(" ") || [];
+          return {
+            list_id: listId,
+            email: p.email,
+            first_name: names[0] || "",
+            last_name: names.slice(1).join(" ") || "",
+            source: "app_users",
+          };
+        });
+
+      const { data, error: insertError } = await supabase
+        .from("email_contacts")
+        .upsert(contacts, { onConflict: "list_id,email" });
+
+      if (insertError) throw insertError;
+      return contacts.length;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ["email-lists"] });
+      toast.success(`Imported ${count} registered users`);
+      setSelectedList(null);
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to import users: ${error.message}`);
+    },
+  });
+
   // Import contacts
   const importMutation = useMutation({
     mutationFn: async ({ listId, file }: { listId: string; file: File }) => {
