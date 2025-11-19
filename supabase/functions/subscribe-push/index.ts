@@ -11,8 +11,11 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log('Subscribe-push function called');
+    
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error('No authorization header');
       return new Response(
         JSON.stringify({ error: 'No authorization header' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
@@ -25,70 +28,61 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    console.log('Getting user...');
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError) {
+      console.error('User error:', userError);
+      return new Response(
+        JSON.stringify({ error: userError.message }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
     if (!user) {
+      console.error('No user found');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
       );
     }
 
+    console.log('User authenticated:', user.id);
+
     const { subscription, deviceInfo } = await req.json();
+    console.log('Subscription data received');
     
     if (!subscription || !subscription.endpoint || !subscription.keys) {
+      console.error('Invalid subscription data');
       return new Response(
         JSON.stringify({ error: 'Invalid subscription data' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
 
-    // Check if subscription already exists
-    const { data: existing } = await supabaseClient
+    // Use upsert to avoid checking for existing subscription
+    console.log('Upserting subscription...');
+    const { error: upsertError } = await supabaseClient
       .from('push_subscriptions')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('endpoint', subscription.endpoint)
-      .maybeSingle();
-
-    if (existing) {
-      // Update existing subscription
-      const { error: updateError } = await supabaseClient
-        .from('push_subscriptions')
-        .update({
-          p256dh_key: subscription.keys.p256dh,
-          auth_key: subscription.keys.auth,
-          device_info: deviceInfo,
-          is_active: true,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existing.id);
-
-      if (updateError) throw updateError;
-
-      return new Response(
-        JSON.stringify({ success: true, message: 'Subscription updated' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      );
-    }
-
-    // Insert new subscription
-    const { error: insertError } = await supabaseClient
-      .from('push_subscriptions')
-      .insert({
+      .upsert({
         user_id: user.id,
         endpoint: subscription.endpoint,
         p256dh_key: subscription.keys.p256dh,
         auth_key: subscription.keys.auth,
         device_info: deviceInfo,
-        is_active: true
+        is_active: true,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,endpoint'
       });
 
-    if (insertError) throw insertError;
+    if (upsertError) {
+      console.error('Upsert error:', upsertError);
+      throw upsertError;
+    }
 
-    console.log(`Push subscription created for user ${user.id}`);
+    console.log('Subscription saved successfully for user:', user.id);
 
     return new Response(
-      JSON.stringify({ success: true, message: 'Subscription created' }),
+      JSON.stringify({ success: true, message: 'Subscription saved' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
   } catch (error) {
