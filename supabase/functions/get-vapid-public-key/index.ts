@@ -19,13 +19,12 @@ Deno.serve(async (req) => {
 
     console.log('VAPID_PUBLIC_KEY received, length:', publicKeyJwkString.length);
 
-    // Check if it's already in base64url format (legacy) or JWK format (new)
     let publicKey: string;
     
     try {
-      // Try to parse as JWK JSON
+      // First, try to parse as plain JWK JSON
       const jwk = JSON.parse(publicKeyJwkString);
-      console.log('Parsed JWK successfully, kty:', jwk.kty, 'crv:', jwk.crv);
+      console.log('Parsed as plain JWK successfully');
       
       if (!jwk.x || !jwk.y) {
         throw new Error('Invalid JWK: missing x or y coordinates');
@@ -35,24 +34,53 @@ Deno.serve(async (req) => {
       const xBytes = decodeBase64Url(jwk.x);
       const yBytes = decodeBase64Url(jwk.y);
       
-      console.log('x length:', xBytes.length, 'y length:', yBytes.length);
-      
       if (xBytes.length !== 32 || yBytes.length !== 32) {
         throw new Error(`Invalid coordinate lengths: x=${xBytes.length}, y=${yBytes.length}`);
       }
       
       // Create uncompressed public key (0x04 + x + y)
       const publicKeyBytes = new Uint8Array(65);
-      publicKeyBytes[0] = 0x04; // Uncompressed point indicator
+      publicKeyBytes[0] = 0x04;
       publicKeyBytes.set(xBytes, 1);
       publicKeyBytes.set(yBytes, 33);
       
       publicKey = encodeBase64Url(publicKeyBytes);
-      console.log('Generated public key, length:', publicKey.length);
+      console.log('Generated public key from JWK, length:', publicKey.length);
     } catch (parseError) {
-      // If parsing fails, assume it's already in base64url format (legacy)
-      console.log('Using legacy base64url VAPID public key format, error:', parseError);
-      publicKey = publicKeyJwkString;
+      console.log('Failed to parse as plain JWK, trying base64url-encoded JWK:', parseError);
+      
+      try {
+        // Try to decode as base64url-encoded JWK
+        const decodedBytes = decodeBase64Url(publicKeyJwkString);
+        const decodedString = new TextDecoder().decode(decodedBytes);
+        console.log('Decoded base64url to string, length:', decodedString.length);
+        
+        const jwk = JSON.parse(decodedString);
+        console.log('Parsed decoded JWK successfully');
+        
+        if (!jwk.x || !jwk.y) {
+          throw new Error('Invalid JWK: missing x or y coordinates');
+        }
+        
+        const xBytes = decodeBase64Url(jwk.x);
+        const yBytes = decodeBase64Url(jwk.y);
+        
+        if (xBytes.length !== 32 || yBytes.length !== 32) {
+          throw new Error(`Invalid coordinate lengths: x=${xBytes.length}, y=${yBytes.length}`);
+        }
+        
+        const publicKeyBytes = new Uint8Array(65);
+        publicKeyBytes[0] = 0x04;
+        publicKeyBytes.set(xBytes, 1);
+        publicKeyBytes.set(yBytes, 33);
+        
+        publicKey = encodeBase64Url(publicKeyBytes);
+        console.log('Generated public key from base64url-encoded JWK, length:', publicKey.length);
+      } catch (decodeError) {
+        // Last resort: assume it's already in the correct 87-char format
+        console.log('Using as-is, assuming legacy 87-char format:', decodeError);
+        publicKey = publicKeyJwkString;
+      }
     }
 
     return new Response(
