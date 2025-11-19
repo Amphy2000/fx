@@ -2391,6 +2391,7 @@ export type Database = {
         Args: { check_domain: string; email_count?: number }
         Returns: boolean
       }
+      delete_all_user_data: { Args: { p_user_id: string }; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
