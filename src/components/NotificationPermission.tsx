@@ -82,9 +82,10 @@ export const NotificationPermission = () => {
 
       setIsSubscribed(true);
       toast.success('Push notifications enabled!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error subscribing to push:', error);
-      toast.error('Failed to enable push notifications');
+      const errorMsg = error?.message || 'Failed to enable push notifications';
+      toast.error(errorMsg);
     } finally {
       setIsLoading(false);
     }
