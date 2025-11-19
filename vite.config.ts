@@ -21,6 +21,8 @@ export default defineConfig(() => {
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,woff2}"],
         maximumFileSizeToCacheInBytes: 5000000,
+        // Import push notification handlers
+        importScripts: ['/sw-push-handlers.js'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

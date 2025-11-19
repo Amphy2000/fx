@@ -1,24 +1,19 @@
-// Register custom push notification service worker
+// Get the existing service worker registration (from VitePWA)
 export async function registerPushServiceWorker() {
   if (!('serviceWorker' in navigator)) {
-    console.log('Service Worker not supported');
+    console.log('[Push SW] Service Worker not supported');
     return null;
   }
 
   try {
-    // Register the push notification service worker
-    const registration = await navigator.serviceWorker.register('/sw.js', {
-      scope: '/',
-    });
+    // Wait for the VitePWA service worker to be ready
+    const registration = await navigator.serviceWorker.ready;
     
-    console.log('Push SW registered:', registration);
-    
-    // Wait for the service worker to be ready
-    await navigator.serviceWorker.ready;
+    console.log('[Push SW] Using existing SW registration:', registration);
     
     return registration;
   } catch (error) {
-    console.error('Push SW registration failed:', error);
+    console.error('[Push SW] Failed to get SW registration:', error);
     return null;
   }
 }
