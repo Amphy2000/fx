@@ -19,17 +19,27 @@ const Auth = () => {
   const [resetEmail, setResetEmail] = useState("");
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [isPasswordReset, setIsPasswordReset] = useState(false);
 
-  // Redirect if already logged in
+  // Check for password reset flow
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('reset') === 'true') {
+      setIsPasswordReset(true);
+    }
+  }, []);
+
+  // Redirect if already logged in (but not during password reset)
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+      if (session && !isPasswordReset) {
         navigate("/dashboard");
       }
     };
     checkSession();
-  }, [navigate]);
+  }, [navigate, isPasswordReset]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,6 +130,64 @@ const Auth = () => {
       setIsResetting(false);
     }
   };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) throw error;
+
+      toast.success("Password updated successfully!");
+      setIsPasswordReset(false);
+      navigate("/dashboard");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update password");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isPasswordReset) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 gradient-dark">
+        <Card className="w-full max-w-md border-border/50 shadow-xl">
+          <CardHeader className="space-y-1 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <TrendingUp className="h-8 w-8 text-primary" />
+              <CardTitle className="text-2xl font-bold">Set New Password</CardTitle>
+            </div>
+            <CardDescription>
+              Enter your new password below
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleUpdatePassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New Password</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Updating..." : "Update Password"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 gradient-dark">
