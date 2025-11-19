@@ -1,12 +1,78 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
-import * as webpush from 'https://esm.sh/web-push@3.6.6';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Web Push helper function with proper VAPID signing
+// VAPID helper functions using native Web Crypto API
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/\-/g, '+')
+    .replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+async function generateVAPIDHeaders(
+  endpoint: string,
+  vapidDetails: { subject: string; publicKey: string; privateKey: string }
+): Promise<Record<string, string>> {
+  const url = new URL(endpoint);
+  const audience = `${url.protocol}//${url.host}`;
+  
+  const vapidHeaders = {
+    typ: 'JWT',
+    alg: 'ES256'
+  };
+
+  const exp = Math.floor(Date.now() / 1000) + (12 * 60 * 60); // 12 hours
+  
+  const vapidClaims = {
+    aud: audience,
+    exp: exp,
+    sub: vapidDetails.subject
+  };
+
+  // Import private key
+  const privateKeyData = urlBase64ToUint8Array(vapidDetails.privateKey);
+  const privateKey = await crypto.subtle.importKey(
+    'pkcs8',
+    privateKeyData.buffer,
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    false,
+    ['sign']
+  );
+
+  // Create JWT
+  const encoder = new TextEncoder();
+  const headerBase64 = btoa(JSON.stringify(vapidHeaders)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  const claimsBase64 = btoa(JSON.stringify(vapidClaims)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  const unsignedToken = `${headerBase64}.${claimsBase64}`;
+  
+  const signature = await crypto.subtle.sign(
+    { name: 'ECDSA', hash: 'SHA-256' },
+    privateKey,
+    encoder.encode(unsignedToken)
+  );
+
+  const signatureBase64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  
+  const jwt = `${unsignedToken}.${signatureBase64}`;
+
+  return {
+    'Authorization': `vapid t=${jwt}, k=${vapidDetails.publicKey}`,
+    'Crypto-Key': `p256ecdsa=${vapidDetails.publicKey}`
+  };
+}
+
+// Web Push notification sender with proper VAPID
 async function sendWebPushNotification(
   subscription: { endpoint: string; p256dh_key: string; auth_key: string },
   payload: any,
@@ -15,26 +81,22 @@ async function sendWebPushNotification(
   try {
     console.log('Sending to endpoint:', subscription.endpoint.substring(0, 50) + '...');
     
-    const pushSubscription = {
-      endpoint: subscription.endpoint,
-      keys: {
-        p256dh: subscription.p256dh_key,
-        auth: subscription.auth_key
-      }
-    };
+    const vapidHeaders = await generateVAPIDHeaders(subscription.endpoint, vapidDetails);
+    
+    const response = await fetch(subscription.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'TTL': '86400',
+        ...vapidHeaders
+      },
+      body: JSON.stringify(payload)
+    });
 
-    // Set VAPID details for web-push
-    webpush.setVapidDetails(
-      vapidDetails.subject,
-      vapidDetails.publicKey,
-      vapidDetails.privateKey
-    );
-
-    // Send notification with proper VAPID signing
-    await webpush.sendNotification(
-      pushSubscription,
-      JSON.stringify(payload)
-    );
+    if (!response.ok) {
+      console.error('Push failed:', response.status, await response.text());
+      return false;
+    }
 
     console.log('Push sent successfully');
     return true;
@@ -254,7 +316,7 @@ Deno.serve(async (req) => {
       .update({
         sent_count: sentCount,
         failed_count: failedCount,
-        status: failedCount === 0 ? 'completed' : 'completed'
+        status: sentCount > 0 ? 'completed' : 'failed'
       })
       .eq('id', notificationLog.id);
 
