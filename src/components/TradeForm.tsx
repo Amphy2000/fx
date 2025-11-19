@@ -375,10 +375,19 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
                 </SelectTrigger>
                 <SelectContent className="bg-card border-border/50">
                   <SelectItem value="calm">😌 Calm</SelectItem>
+                  <SelectItem value="confident">😎 Confident</SelectItem>
+                  <SelectItem value="disciplined">🎯 Disciplined</SelectItem>
+                  <SelectItem value="focused">🧠 Focused</SelectItem>
+                  <SelectItem value="patient">⏳ Patient</SelectItem>
+                  <SelectItem value="optimistic">✨ Optimistic</SelectItem>
                   <SelectItem value="neutral">😐 Neutral</SelectItem>
                   <SelectItem value="anxious">😟 Anxious</SelectItem>
+                  <SelectItem value="greedy">🤑 Greedy</SelectItem>
+                  <SelectItem value="fearful">😨 Fearful</SelectItem>
                   <SelectItem value="impatient">😤 Impatient</SelectItem>
-                  <SelectItem value="confident">😎 Confident</SelectItem>
+                  <SelectItem value="impulsive">⚡ Impulsive</SelectItem>
+                  <SelectItem value="stressed">😰 Stressed</SelectItem>
+                  <SelectItem value="uncertain">🤔 Uncertain</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -394,10 +403,16 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
                 </SelectTrigger>
                 <SelectContent className="bg-card border-border/50">
                   <SelectItem value="satisfied">😁 Satisfied</SelectItem>
-                  <SelectItem value="regretful">😔 Regretful</SelectItem>
-                  <SelectItem value="frustrated">😤 Frustrated</SelectItem>
-                  <SelectItem value="neutral">😐 Neutral</SelectItem>
+                  <SelectItem value="excited">🎉 Excited</SelectItem>
                   <SelectItem value="content">😌 Content</SelectItem>
+                  <SelectItem value="relieved">😮‍💨 Relieved</SelectItem>
+                  <SelectItem value="proud">🏆 Proud</SelectItem>
+                  <SelectItem value="neutral">😐 Neutral</SelectItem>
+                  <SelectItem value="frustrated">😤 Frustrated</SelectItem>
+                  <SelectItem value="regretful">😔 Regretful</SelectItem>
+                  <SelectItem value="disappointed">😞 Disappointed</SelectItem>
+                  <SelectItem value="angry">😠 Angry</SelectItem>
+                  <SelectItem value="stressed">😰 Stressed</SelectItem>
                 </SelectContent>
               </Select>
             </div>

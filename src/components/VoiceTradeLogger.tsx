@@ -98,7 +98,7 @@ export const VoiceTradeLogger = ({ onTradeDataParsed }: VoiceTradeLoggerProps) =
       recognitionRef.current.start();
       setIsRecording(true);
       toast.success("Listening...", {
-        description: "Speak clearly: 'Buy EUR/USD at 1.0850, stop 1.0800, target 1.0950'"
+        description: "Say: 'Long EUR/USD at 1.0850, stop 1.0800, target 1.0950, feeling confident, it was a win, followed my setup'"
       });
     } catch (error) {
       console.error("Error starting recognition:", error);
@@ -184,7 +184,7 @@ export const VoiceTradeLogger = ({ onTradeDataParsed }: VoiceTradeLoggerProps) =
               Voice Trade Logger
             </CardTitle>
             <CardDescription>
-              Speak your trade details hands-free - powered by your browser
+              Speak ALL trade details: pair, direction, prices, result, emotions & notes
             </CardDescription>
           </div>
           <Badge variant="outline" className="gap-1 bg-primary/10 text-primary border-primary/20">
@@ -218,6 +218,19 @@ export const VoiceTradeLogger = ({ onTradeDataParsed }: VoiceTradeLoggerProps) =
               </>
             )}
           </Button>
+        </div>
+
+        {/* Example phrases to help users */}
+        <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
+          <p className="text-xs font-semibold mb-2 text-foreground">Example phrases:</p>
+          <ul className="text-xs space-y-1 text-muted-foreground">
+            <li>• "Long EUR/USD at 1.0850, stop 1.0800, target 1.0950, feeling confident"</li>
+            <li>• "Sold gold at 2050, stop 2060, target 2030, was anxious, it was a loss"</li>
+            <li>• "Bought GBP/USD 1.2650, stop 1.2620, still open, felt disciplined"</li>
+          </ul>
+          <p className="text-xs mt-2 text-muted-foreground italic">
+            Tip: Include emotions before/after and any notes about your setup or mistakes
+          </p>
         </div>
 
         {transcript && !isProcessing && (
