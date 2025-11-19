@@ -23,7 +23,7 @@ export const EmailCampaignManager = () => {
     description: "",
     template_id: "",
     user_segment: {
-      subscription_tier: "",
+      subscription_tier: "all",
       has_trades: undefined as boolean | undefined,
       min_streak: undefined as number | undefined,
     },
@@ -151,7 +151,7 @@ export const EmailCampaignManager = () => {
       description: "",
       template_id: "",
       user_segment: {
-        subscription_tier: "",
+        subscription_tier: "all",
         has_trades: undefined,
         min_streak: undefined,
       },
@@ -259,7 +259,7 @@ export const EmailCampaignManager = () => {
                       <SelectValue placeholder="All users" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All users</SelectItem>
+                      <SelectItem value="all">All users</SelectItem>
                       <SelectItem value="free">Free users</SelectItem>
                       <SelectItem value="monthly">Monthly subscribers</SelectItem>
                       <SelectItem value="lifetime">Lifetime subscribers</SelectItem>
