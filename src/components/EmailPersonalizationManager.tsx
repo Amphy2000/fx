@@ -202,14 +202,15 @@ export const EmailPersonalizationManager = () => {
                   Create Block
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl max-h-[90vh]">
                 <DialogHeader>
                   <DialogTitle>Create Content Block</DialogTitle>
                   <DialogDescription>
                     Create reusable content for dynamic email personalization
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
+                <div className="max-h-[60vh] overflow-y-auto pr-2 -mr-2">
+                  <div className="space-y-4">
                   <div>
                     <Label>Block Name</Label>
                     <Input
@@ -255,6 +256,7 @@ export const EmailPersonalizationManager = () => {
                       rows={5}
                       className="font-mono text-sm"
                     />
+                  </div>
                   </div>
                 </div>
                 <DialogFooter>
@@ -311,14 +313,15 @@ export const EmailPersonalizationManager = () => {
                   Create Rule
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl max-h-[90vh]">
                 <DialogHeader>
                   <DialogTitle>Create Personalization Rule</DialogTitle>
                   <DialogDescription>
                     Define conditions for showing personalized content
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
+                <div className="max-h-[60vh] overflow-y-auto pr-2 -mr-2">
+                  <div className="space-y-4">
                   <div>
                     <Label>Rule Name</Label>
                     <Input
@@ -394,6 +397,7 @@ export const EmailPersonalizationManager = () => {
                       onCheckedChange={(checked) => setRuleData({ ...ruleData, is_active: checked })}
                     />
                     <Label>Active</Label>
+                  </div>
                   </div>
                 </div>
                 <DialogFooter>
