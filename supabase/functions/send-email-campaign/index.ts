@@ -33,7 +33,7 @@ const handler = async (req: Request): Promise<Response> => {
       .select(`
         *,
         email_templates(*),
-        email_ab_tests(
+        email_ab_tests!email_campaigns_ab_test_id_fkey(
           id,
           email_ab_variants(*)
         )
