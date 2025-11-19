@@ -27,7 +27,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Sending first sync notification to ${email} for account ${accountNumber}`);
 
     const emailResponse = await resend.emails.send({
-      from: "TradeJournal <onboarding@resend.dev>",
+      from: "Amphy AI <onboarding@resend.dev>",
       to: [email],
       subject: "🎉 MT5 Account Successfully Connected!",
       html: `
@@ -74,7 +74,7 @@ const handler = async (req: Request): Promise<Response> => {
                 <p>Ready to view your trading dashboard?</p>
                 
                 <center>
-                  <a href="${Deno.env.get('SUPABASE_URL')?.replace('supabase.co', 'lovableproject.com') || 'https://app.lovableproject.com'}/dashboard" class="cta-button">
+                  <a href="https://yvclpmdgrwugayrvjtqg.lovableproject.com/dashboard" class="cta-button">
                     View Dashboard →
                   </a>
                 </center>
@@ -85,7 +85,7 @@ const handler = async (req: Request): Promise<Response> => {
               </div>
               
               <div class="footer">
-                <p>You're receiving this email because you connected an MT5 account to TradeJournal.</p>
+                <p>You're receiving this email because you connected an MT5 account to Amphy AI.</p>
                 <p>If you didn't initiate this connection, please contact support immediately.</p>
               </div>
             </div>
