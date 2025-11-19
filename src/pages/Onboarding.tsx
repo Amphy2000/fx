@@ -546,7 +546,7 @@ export default function Onboarding() {
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
 
       {/* Skip button */}
-      <div className="absolute top-4 right-4 z-10">
+      <div className="absolute top-4 right-4 z-50">
         <Button onClick={skipOnboarding} variant="ghost" size="sm">
           Skip All
           <X className="ml-2 h-4 w-4" />
