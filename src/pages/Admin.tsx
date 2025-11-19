@@ -7,12 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Loader2, Download, Search, Eye, Crown, Bell, Mail, BarChart3 } from "lucide-react";
+import { Loader2, Download, Search, Eye, Crown, Mail, BarChart3 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AdminNotificationSender } from "@/components/AdminNotificationSender";
 import { EmailTemplateManager } from "@/components/EmailTemplateManager";
 import { EmailCampaignManager } from "@/components/EmailCampaignManager";
 import { EmailAnalyticsDashboard } from "@/components/EmailAnalyticsDashboard";
@@ -212,10 +211,6 @@ const Admin = () => {
           <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
             <TabsList className="mb-6 flex-wrap sm:flex-nowrap min-w-min">
               <TabsTrigger value="users" className="whitespace-nowrap">Users Management</TabsTrigger>
-              <TabsTrigger value="notifications" className="whitespace-nowrap">
-                <Bell className="mr-2 h-4 w-4" />
-                Push Notifications
-              </TabsTrigger>
               <TabsTrigger value="email-lists" className="whitespace-nowrap">
                 <Mail className="mr-2 h-4 w-4" />
                 Email Lists
@@ -352,10 +347,6 @@ const Admin = () => {
               </div>
             </CardContent>
           </Card>
-          </TabsContent>
-
-          <TabsContent value="notifications">
-            <AdminNotificationSender />
           </TabsContent>
 
           <TabsContent value="email-lists">
