@@ -90,6 +90,10 @@ export const CampaignManager = () => {
       queryClient.invalidateQueries({ queryKey: ["notification-campaigns"] });
       toast.success("Campaign updated");
     },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to update campaign");
+      console.error("Campaign toggle error:", error);
+    },
   });
 
   const deleteCampaignMutation = useMutation({
@@ -105,6 +109,10 @@ export const CampaignManager = () => {
       queryClient.invalidateQueries({ queryKey: ["notification-campaigns"] });
       toast.success("Campaign deleted");
     },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to delete campaign");
+      console.error("Campaign delete error:", error);
+    },
   });
 
   const runCampaignsMutation = useMutation({
@@ -117,9 +125,9 @@ export const CampaignManager = () => {
       queryClient.invalidateQueries({ queryKey: ["notification-campaigns"] });
       toast.success(`Processed ${data.campaigns_processed} campaigns, sent ${data.total_notifications_sent} notifications`);
     },
-    onError: (error) => {
-      toast.error("Failed to run campaigns");
-      console.error(error);
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to run campaigns");
+      console.error("Run campaigns error:", error);
     },
   });
 
