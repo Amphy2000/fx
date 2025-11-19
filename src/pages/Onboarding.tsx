@@ -121,13 +121,16 @@ export default function Onboarding() {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ onboarding_completed: true })
+        .update({ 
+          onboarding_completed: true,
+          onboarding_step: 5 
+        })
         .eq('id', userId);
       
       if (error) throw error;
       
       toast.success("Onboarding skipped");
-      navigate("/dashboard");
+      setTimeout(() => navigate("/dashboard"), 100);
     } catch (error) {
       console.error('Error skipping onboarding:', error);
       toast.error('Failed to skip onboarding. Please try again.');
