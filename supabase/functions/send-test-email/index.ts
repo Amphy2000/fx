@@ -144,7 +144,7 @@ const handler = async (req: Request): Promise<Response> => {
                 </p>
                 
                 <center>
-                  <a href="https://yvclpmdgrwugayrvjtqg.lovableproject.com/dashboard" class="cta-button">
+                  <a href="https://fx.lovable.app/dashboard" class="cta-button">
                     View Your Dashboard →
                   </a>
                 </center>

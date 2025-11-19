@@ -74,7 +74,7 @@ const handler = async (req: Request): Promise<Response> => {
                 <p>Ready to view your trading dashboard?</p>
                 
                 <center>
-                  <a href="https://yvclpmdgrwugayrvjtqg.lovableproject.com/dashboard" class="cta-button">
+                  <a href="https://fx.lovable.app/dashboard" class="cta-button">
                     View Dashboard →
                   </a>
                 </center>
