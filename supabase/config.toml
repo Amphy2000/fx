@@ -117,6 +117,9 @@ verify_jwt = false
 [functions.handle-unsubscribe]
 verify_jwt = false
 
+[functions.process-warmup-schedules]
+verify_jwt = false
+
 [functions.import-email-contacts]
 
 [functions.export-email-contacts]

@@ -20,6 +20,7 @@ import { EmailWorkflowManager } from "@/components/EmailWorkflowManager";
 import { EmailABTestManager } from "@/components/EmailABTestManager";
 import { EmailListManager } from "@/components/EmailListManager";
 import { EmailPersonalizationManager } from "@/components/EmailPersonalizationManager";
+import { EmailWarmUpManager } from "@/components/EmailWarmUpManager";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -238,6 +239,10 @@ const Admin = () => {
               <BarChart3 className="mr-2 h-4 w-4" />
               Personalization
             </TabsTrigger>
+            <TabsTrigger value="warmup">
+              <Mail className="mr-2 h-4 w-4" />
+              Warm-Up
+            </TabsTrigger>
             <TabsTrigger value="email-analytics">
               <BarChart3 className="mr-2 h-4 w-4" />
               Analytics
@@ -373,6 +378,10 @@ const Admin = () => {
 
           <TabsContent value="personalization">
             <EmailPersonalizationManager />
+          </TabsContent>
+
+          <TabsContent value="warmup">
+            <EmailWarmUpManager />
           </TabsContent>
 
           <TabsContent value="email-analytics">

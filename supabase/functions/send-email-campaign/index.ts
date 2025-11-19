@@ -83,6 +83,56 @@ const handler = async (req: Request): Promise<Response> => {
     let sentCount = 0;
     let failedCount = 0;
 
+    // Extract domain from email sender
+    const senderDomain = "resend.dev"; // Update this based on your actual sender domain
+
+    // Check warm-up limits
+    const { data: canSend } = await supabaseClient.rpc("can_send_email", {
+      check_domain: senderDomain,
+      email_count: totalRecipients,
+    });
+
+    if (!canSend) {
+      // Get current limit and sends
+      const { data: schedule } = await supabaseClient
+        .from("email_warm_up_schedules")
+        .select("current_daily_limit")
+        .eq("domain", senderDomain)
+        .eq("is_active", true)
+        .single();
+
+      const today = new Date().toISOString().split("T")[0];
+      const { data: tracking } = await supabaseClient
+        .from("email_send_tracking")
+        .select("emails_sent")
+        .eq("domain", senderDomain)
+        .eq("send_date", today)
+        .single();
+
+      const limit = schedule?.current_daily_limit || 0;
+      const sent = tracking?.emails_sent || 0;
+
+      await supabaseClient
+        .from("email_campaigns")
+        .update({ 
+          status: "failed",
+          failed_count: totalRecipients,
+        })
+        .eq("id", campaignId);
+
+      return new Response(
+        JSON.stringify({
+          error: `Daily sending limit reached. Current limit: ${limit}, Already sent: ${sent}. Campaign scheduled for tomorrow.`,
+          limit,
+          sent,
+        }),
+        {
+          status: 429,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
     // Update total recipients
     await supabaseClient
       .from("email_campaigns")
@@ -229,6 +279,14 @@ const handler = async (req: Request): Promise<Response> => {
           error_message: error.message,
         });
       }
+    }
+
+    // Record sends for warm-up tracking
+    if (sentCount > 0) {
+      await supabaseClient.rpc("record_email_send", {
+        send_domain: senderDomain,
+        send_count: sentCount,
+      });
     }
 
     // Update campaign stats
