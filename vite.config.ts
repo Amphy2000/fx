@@ -21,8 +21,12 @@ export default defineConfig(({ mode }) => {
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'public',
+      filename: 'sw.js',
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "robots.txt", "hero-bg.jpg", "sw.js"],
+      injectRegister: 'auto',
+      includeAssets: ["favicon.ico", "robots.txt", "hero-bg.jpg"],
       manifest: {
         name: "Amphy AI Trade Journal",
         short_name: "Amphy AI",
@@ -48,31 +52,13 @@ export default defineConfig(({ mode }) => {
           },
         ],
       },
-      workbox: {
+      injectManifest: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,woff2}"],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "supabase-cache",
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24, // 24 hours
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-        ],
-        // Add custom push event handlers
-        additionalManifestEntries: [],
-        skipWaiting: true,
-        clientsClaim: true,
+        maximumFileSizeToCacheInBytes: 5000000,
       },
       devOptions: {
         enabled: true,
+        type: 'module',
       },
     }),
   ].filter(Boolean),
