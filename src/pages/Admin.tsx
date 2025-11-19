@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { Loader2, Download, Search, Eye, Crown, Mail, BarChart3 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -197,54 +198,29 @@ const Admin = () => {
 
   return (
     <Layout>
-      <div className="w-full max-w-full overflow-x-hidden">
+      <div className="container mx-auto p-4 max-w-7xl">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-foreground">Admin Panel</h1>
-          <Button onClick={handleExportCSV} variant="outline" className="w-full sm:w-auto">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Admin Panel</h1>
+          <Button onClick={handleExportCSV} variant="outline" size="sm">
             <Download className="mr-2 h-4 w-4" />
-            Export All
+            Export
           </Button>
         </div>
 
-        {/* Stats Cards */}
         <Tabs defaultValue="users" className="w-full">
-          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-            <TabsList className="mb-6 flex-wrap sm:flex-nowrap min-w-min">
-              <TabsTrigger value="users" className="whitespace-nowrap">Users Management</TabsTrigger>
-              <TabsTrigger value="email-lists" className="whitespace-nowrap">
-                <Mail className="mr-2 h-4 w-4" />
-                Email Lists
-              </TabsTrigger>
-              <TabsTrigger value="email-templates" className="whitespace-nowrap">
-                <Mail className="mr-2 h-4 w-4" />
-                Templates
-              </TabsTrigger>
-              <TabsTrigger value="email-campaigns" className="whitespace-nowrap">
-                <Mail className="mr-2 h-4 w-4" />
-                Campaigns
-              </TabsTrigger>
-              <TabsTrigger value="email-workflows" className="whitespace-nowrap">
-                <Mail className="mr-2 h-4 w-4" />
-                Workflows
-              </TabsTrigger>
-              <TabsTrigger value="ab-tests" className="whitespace-nowrap">
-                <BarChart3 className="mr-2 h-4 w-4" />
-                A/B Tests
-              </TabsTrigger>
-              <TabsTrigger value="personalization" className="whitespace-nowrap">
-                <BarChart3 className="mr-2 h-4 w-4" />
-                Personalization
-              </TabsTrigger>
-              <TabsTrigger value="warmup" className="whitespace-nowrap">
-                <Mail className="mr-2 h-4 w-4" />
-                Warm-Up
-              </TabsTrigger>
-              <TabsTrigger value="email-analytics" className="whitespace-nowrap">
-                <BarChart3 className="mr-2 h-4 w-4" />
-                Analytics
-              </TabsTrigger>
+          <ScrollArea className="w-full">
+            <TabsList className="inline-flex mb-6">
+              <TabsTrigger value="users">Users</TabsTrigger>
+              <TabsTrigger value="email-lists">Lists</TabsTrigger>
+              <TabsTrigger value="email-templates">Templates</TabsTrigger>
+              <TabsTrigger value="email-campaigns">Campaigns</TabsTrigger>
+              <TabsTrigger value="email-workflows">Workflows</TabsTrigger>
+              <TabsTrigger value="ab-tests">A/B Tests</TabsTrigger>
+              <TabsTrigger value="personalization">Personalization</TabsTrigger>
+              <TabsTrigger value="warmup">Warm-Up</TabsTrigger>
+              <TabsTrigger value="email-analytics">Analytics</TabsTrigger>
             </TabsList>
-          </div>
+          </ScrollArea>
 
           <TabsContent value="users" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -285,68 +261,70 @@ const Admin = () => {
               <CardHeader>
                 <CardTitle className="text-foreground">All Users</CardTitle>
               </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Trades</TableHead>
-                    <TableHead>Subscription</TableHead>
-                    <TableHead>Joined</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="text-foreground">{user.email}</TableCell>
-                      <TableCell className="text-foreground">{user.full_name || "N/A"}</TableCell>
-                      <TableCell className="text-foreground">{user.trades_count || 0}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getSubscriptionBadge(user.subscription_tier || 'free')}
-                          <Select
-                            value={user.subscription_tier || 'free'}
-                            onValueChange={(value) => handleUpdateSubscription(user.id, value)}
-                          >
-                            <SelectTrigger className="w-[130px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="free">Free</SelectItem>
-                              <SelectItem value="monthly">Monthly</SelectItem>
-                              <SelectItem value="lifetime">
-                                <div className="flex items-center gap-1">
-                                  <Crown className="h-3 w-3" />
-                                  Lifetime
-                                </div>
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(user.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewDetails(user)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              </div>
-            </CardContent>
-          </Card>
+              <CardContent className="p-0">
+                <ScrollArea className="h-[600px] w-full">
+                  <div className="min-w-[800px]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Trades</TableHead>
+                          <TableHead>Subscription</TableHead>
+                          <TableHead>Joined</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredUsers.map((user) => (
+                          <TableRow key={user.id}>
+                            <TableCell className="text-foreground">{user.email}</TableCell>
+                            <TableCell className="text-foreground">{user.full_name || "N/A"}</TableCell>
+                            <TableCell className="text-foreground">{user.trades_count || 0}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                {getSubscriptionBadge(user.subscription_tier || 'free')}
+                                <Select
+                                  value={user.subscription_tier || 'free'}
+                                  onValueChange={(value) => handleUpdateSubscription(user.id, value)}
+                                >
+                                  <SelectTrigger className="w-[130px]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="free">Free</SelectItem>
+                                    <SelectItem value="monthly">Monthly</SelectItem>
+                                    <SelectItem value="lifetime">
+                                      <div className="flex items-center gap-1">
+                                        <Crown className="h-3 w-3" />
+                                        Lifetime
+                                      </div>
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {new Date(user.created_at).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleViewDetails(user)}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                View
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="email-lists">
