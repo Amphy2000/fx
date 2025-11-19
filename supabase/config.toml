@@ -1,5 +1,8 @@
 project_id = "yvclpmdgrwugayrvjtqg"
 
+[functions.generate-vapid-keys]
+verify_jwt = false
+
 [functions.get-vapid-public-key]
 verify_jwt = false
 

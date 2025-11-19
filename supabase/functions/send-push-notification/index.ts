@@ -166,22 +166,20 @@ async function generateVAPIDHeaders(
     sub: vapidDetails.subject
   };
 
-  // Import private key - VAPID keys are raw 32-byte private keys, need to convert to JWK
-  const privateKeyBytes = urlBase64ToUint8Array(vapidDetails.privateKey);
-  
-  // Convert raw private key bytes to JWK format for P-256
-  const d = encodeBase64Url(privateKeyBytes);
-  
-  const jwk = {
-    kty: 'EC',
-    crv: 'P-256',
-    d: d,
-    ext: true,
-  };
+  // Import private key - VAPID keys should be stored as JWK
+  let privateKeyJwk;
+  try {
+    // Try to parse as JWK JSON string
+    privateKeyJwk = JSON.parse(vapidDetails.privateKey);
+  } catch {
+    // If not JSON, assume it's a raw base64url encoded key (fallback)
+    console.error('VAPID private key must be in JWK format. Use generate-vapid-keys function to create proper keys.');
+    throw new Error('Invalid VAPID private key format');
+  }
   
   const privateKey = await crypto.subtle.importKey(
     'jwk',
-    jwk,
+    privateKeyJwk,
     { name: 'ECDSA', namedCurve: 'P-256' },
     false,
     ['sign']
