@@ -27,6 +27,7 @@ export const EnhancedNotificationSender = () => {
   const [recurrence, setRecurrence] = useState("");
   const [actionButtons, setActionButtons] = useState<ActionButton[]>([]);
   const [isSending, setIsSending] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
   const { data: templates } = useQuery({
     queryKey: ['notification-templates'],
@@ -61,6 +62,29 @@ export const EnhancedNotificationSender = () => {
     }
   });
 
+  const { data: usersWithPush } = useQuery({
+    queryKey: ['users-with-push'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('push_subscriptions')
+        .select('user_id')
+        .eq('is_active', true);
+      
+      if (error) throw error;
+      
+      const uniqueUserIds = [...new Set(data.map(s => s.user_id))];
+      
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', uniqueUserIds);
+      
+      if (profilesError) throw profilesError;
+      
+      return profiles;
+    }
+  });
+
   const handleTemplateSelect = (templateId: string) => {
     setSelectedTemplate(templateId);
     const template = templates?.find(t => t.id === templateId);
@@ -92,13 +116,19 @@ export const EnhancedNotificationSender = () => {
       return;
     }
 
+    if (userSegment === 'specific' && selectedUsers.length === 0) {
+      toast.error('Please select at least one user');
+      return;
+    }
+
     setIsSending(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-push-notification', {
         body: {
           title: title.trim(),
           body: body.trim(),
-          userSegment,
+          userSegment: userSegment === 'specific' ? 'all' : userSegment,
+          targetUsers: userSegment === 'specific' ? selectedUsers : undefined,
           templateId: selectedTemplate || null,
           actionButtons: actionButtons.filter(b => b.action && b.title).length > 0 
             ? JSON.parse(JSON.stringify(actionButtons.filter(b => b.action && b.title)))
@@ -167,6 +197,7 @@ export const EnhancedNotificationSender = () => {
     setScheduledFor("");
     setRecurrence("");
     setActionButtons([]);
+    setSelectedUsers([]);
   };
 
   const getSegmentCount = (segment: string) => {
@@ -275,6 +306,10 @@ export const EnhancedNotificationSender = () => {
                     <SelectItem value="all">
                       All Users ({stats?.activeSubscriptions || 0})
                     </SelectItem>
+                    <SelectItem value="specific">
+                      <Target className="inline mr-2 h-4 w-4" />
+                      Specific Users (Test)
+                    </SelectItem>
                     <SelectItem value="free">
                       Free Users (~{getSegmentCount('free')})
                     </SelectItem>
@@ -293,6 +328,45 @@ export const EnhancedNotificationSender = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Specific Users Selection */}
+              {userSegment === 'specific' && (
+                <div className="space-y-2">
+                  <Label>Select Users</Label>
+                  <div className="border rounded-md p-4 max-h-60 overflow-y-auto space-y-2">
+                    {usersWithPush && usersWithPush.length > 0 ? (
+                      usersWithPush.map((user) => (
+                        <div key={user.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={user.id}
+                            checked={selectedUsers.includes(user.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedUsers([...selectedUsers, user.id]);
+                              } else {
+                                setSelectedUsers(selectedUsers.filter(id => id !== user.id));
+                              }
+                            }}
+                          />
+                          <label
+                            htmlFor={user.id}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
+                            {user.full_name || user.email}
+                          </label>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No users with push notifications enabled</p>
+                    )}
+                  </div>
+                  {selectedUsers.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {selectedUsers.length} user{selectedUsers.length > 1 ? 's' : ''} selected
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Title & Body */}
               <div className="space-y-2">
