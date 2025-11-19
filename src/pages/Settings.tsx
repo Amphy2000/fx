@@ -127,7 +127,17 @@ const Settings = () => {
     if (!confirmed) return;
     
     try {
-      // Delete all user data from all tables
+      // Delete all user data from all tables (order matters for foreign key constraints)
+      // First delete dependent records
+      await Promise.all([
+        supabase.from("trade_tags").delete().eq("user_id", profile.id),
+        supabase.from("trade_screenshots").delete().eq("user_id", profile.id),
+        supabase.from("trade_insights").delete().eq("user_id", profile.id),
+        supabase.from("chat_messages").delete().eq("user_id", profile.id),
+        supabase.from("sync_logs").delete().eq("user_id", profile.id),
+      ]);
+
+      // Then delete main records
       await Promise.all([
         supabase.from("trades").delete().eq("user_id", profile.id),
         supabase.from("journal_entries").delete().eq("user_id", profile.id),
@@ -135,19 +145,19 @@ const Settings = () => {
         supabase.from("daily_checkins").delete().eq("user_id", profile.id),
         supabase.from("streaks").delete().eq("user_id", profile.id),
         supabase.from("mt5_accounts").delete().eq("user_id", profile.id),
+        supabase.from("mt5_connections").delete().eq("user_id", profile.id),
         supabase.from("routine_entries").delete().eq("user_id", profile.id),
         supabase.from("targets").delete().eq("user_id", profile.id),
         supabase.from("performance_metrics").delete().eq("user_id", profile.id),
         supabase.from("equity_snapshots").delete().eq("user_id", profile.id),
         supabase.from("setup_performance").delete().eq("user_id", profile.id),
         supabase.from("chat_conversations").delete().eq("user_id", profile.id),
-        supabase.from("chat_messages").delete().eq("user_id", profile.id),
-        supabase.from("trade_insights").delete().eq("user_id", profile.id),
         supabase.from("copilot_feedback").delete().eq("user_id", profile.id),
         supabase.from("journal_insights").delete().eq("user_id", profile.id),
         supabase.from("setups").delete().eq("user_id", profile.id),
-        supabase.from("trade_screenshots").delete().eq("user_id", profile.id),
         supabase.from("leaderboard_profiles").delete().eq("user_id", profile.id),
+        supabase.from("subscriptions").delete().eq("user_id", profile.id),
+        supabase.from("feedback").delete().eq("user_id", profile.id),
       ]);
       
       // Reset profile to fresh free tier account
