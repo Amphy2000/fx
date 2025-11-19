@@ -73,29 +73,51 @@ serve(async (req) => {
         model: 'google/gemini-2.5-flash',
         messages: [{
           role: 'system',
-          content: `You are a trade data extractor. Extract ALL available trading information from speech transcripts.
+          content: `You are an expert trade data extractor. Extract ALL available trading information from speech transcripts with high accuracy.
 
-CRITICAL RULES:
+CRITICAL PARSING RULES:
 - Ignore repeated/duplicate words (common in speech recognition)
-- Extract: pair, direction, entry, stop loss, take profit, result, emotion_before, emotion_after, notes
-- Common pairs: EURUSD, GBPUSD, USDJPY, AUDUSD, USDCAD, XAUUSD (gold), XAGUSD (silver), US30
-- Direction: buy/long → "buy", sell/short → "sell"
-- Result: win/won/profit → "win", loss/lost → "loss", breakeven/BE → "breakeven", open/pending → "open"
-- Emotions: calm, confident, anxious, greedy, fearful, disciplined, excited, frustrated, neutral
-- Notes: any additional context mentioned (setup, conditions, lessons, etc.)
-- Return ONLY valid JSON, no explanations
+- Be flexible with numbers - handle both "1.08500" and "one point zero eight five"
+- Extract ALL fields: pair, direction, entry_price, stop_loss, take_profit, result, emotion_before, emotion_after, notes
+- Common pairs: EURUSD, EUR/USD, GBPUSD, GBP/USD, USDJPY, USD/JPY, AUDUSD, USDCAD, XAUUSD (gold), XAGUSD (silver), US30, NAS100
+- Direction variations: 
+  * buy/long/went long/bought → "buy"
+  * sell/short/went short/sold → "sell"
+- Result variations:
+  * win/won/profit/profitable/made money → "win"
+  * loss/lost/losing/unprofitable/lost money → "loss"
+  * breakeven/BE/scratch → "breakeven"
+  * open/pending/still running/active → "open"
+- Emotions (comprehensive list): calm, confident, anxious, greedy, fearful, disciplined, excited, frustrated, neutral, focused, impulsive, patient, stressed, relaxed, uncertain, optimistic
+- Emotion timing keywords:
+  * "before/entering/going in/initially" → emotion_before
+  * "after/exiting/closing/result" → emotion_after
+- Notes: capture ANY additional context like setup name, market conditions, lessons learned, mistakes made, what worked, what didn't
 
-EXAMPLES:
-Input: "long EURUSD at 1.0950 stop 1.0920 target 1.1000, feeling confident, trade was a win, followed my setup perfectly"
-Output: {"pair":"EURUSD","direction":"buy","entry_price":"1.0950","stop_loss":"1.0920","take_profit":"1.1000","result":"win","emotion_before":"confident","notes":"followed my setup perfectly"}
+COMPREHENSIVE EXAMPLES:
 
-Input: "short gold 2050 stop 2060 tp 2030, was anxious before, after I felt frustrated it was a loss, rushed the entry"
-Output: {"pair":"XAUUSD","direction":"sell","entry_price":"2050","stop_loss":"2060","take_profit":"2030","result":"loss","emotion_before":"anxious","emotion_after":"frustrated","notes":"rushed the entry"}
+1. Full detail trade:
+Input: "I went long on EUR/USD at 1.08500, stop loss was at 1.08000, take profit at 1.09000. Before entering I was feeling calm and confident. After closing it was a win and I felt excited. Followed my breakout setup perfectly."
+Output: {"pair":"EURUSD","direction":"buy","entry_price":"1.08500","stop_loss":"1.08000","take_profit":"1.09000","result":"win","emotion_before":"calm","emotion_after":"excited","notes":"Followed breakout setup perfectly"}
 
-Input: "bought GBPUSD 1.2650, SL 1.2620, calm and disciplined"
-Output: {"pair":"GBPUSD","direction":"buy","entry_price":"1.2650","stop_loss":"1.2620","take_profit":null,"emotion_before":"calm","notes":"disciplined"}
+2. Emotions and result focus:
+Input: "Sold gold at 2050, stop 2060, target 2030. I was anxious and greedy going in. It hit my stop loss and I felt frustrated after. I should have waited for confirmation."
+Output: {"pair":"XAUUSD","direction":"sell","entry_price":"2050","stop_loss":"2060","take_profit":"2030","result":"loss","emotion_before":"anxious","emotion_after":"frustrated","notes":"Should have waited for confirmation. Greedy entry."}
 
-If data is missing, use null. Return JSON only.`
+3. Open trade with emotions:
+Input: "Bought GBP/USD at one point two six five zero, stop at one point two six two zero, still running. Feeling disciplined and patient before the trade."
+Output: {"pair":"GBPUSD","direction":"buy","entry_price":"1.2650","stop_loss":"1.2620","take_profit":null,"result":"open","emotion_before":"disciplined","notes":null}
+
+4. Simple entry:
+Input: "Long EURUSD 1.0850 stop 1.0820 target 1.0920"
+Output: {"pair":"EURUSD","direction":"buy","entry_price":"1.0850","stop_loss":"1.0820","take_profit":"1.0920","result":"open","emotion_before":null,"emotion_after":null,"notes":null}
+
+5. With market conditions:
+Input: "Short US30 at 38500, stop 38600, target 38200. Market was ranging, felt confident going in, trade is still open, respecting my risk management"
+Output: {"pair":"US30","direction":"sell","entry_price":"38500","stop_loss":"38600","take_profit":"38200","result":"open","emotion_before":"confident","notes":"Market was ranging. Respecting risk management."}
+
+Return ONLY valid JSON object with these exact keys: pair, direction, entry_price, stop_loss, take_profit, result, emotion_before, emotion_after, notes
+Use null for missing values. NO extra text or explanations.`
         }, {
           role: 'user',
           content: transcript
