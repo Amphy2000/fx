@@ -447,6 +447,8 @@ export const EmailListManager = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => exportMutation.mutate({ listId: list.id, format: "csv" })}
+                    disabled={exportMutation.isPending || (list.total_contacts || 0) === 0}
+                    title={(list.total_contacts || 0) === 0 ? "No contacts to export" : "Export contacts"}
                   >
                     <Download className="h-4 w-4" />
                   </Button>
