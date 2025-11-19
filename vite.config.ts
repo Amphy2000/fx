@@ -26,7 +26,6 @@ export default defineConfig(({ mode }) => {
       filename: 'sw.js',
       registerType: "autoUpdate",
       injectRegister: 'auto',
-      includeAssets: ["favicon.ico", "robots.txt", "hero-bg.jpg"],
       manifest: {
         name: "Amphy AI Trade Journal",
         short_name: "Amphy AI",
@@ -55,6 +54,7 @@ export default defineConfig(({ mode }) => {
       injectManifest: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,woff2}"],
         maximumFileSizeToCacheInBytes: 5000000,
+        swDest: 'dist/sw.js',
       },
       devOptions: {
         enabled: true,
