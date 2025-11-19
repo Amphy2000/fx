@@ -2,7 +2,7 @@
 /* eslint-disable */
 
 // Workbox will inject the manifest here
-const manifest = self.__WB_MANIFEST;
+self.__WB_MANIFEST;
 
 self.addEventListener('push', function(event) {
   console.log('Push notification received:', event);
