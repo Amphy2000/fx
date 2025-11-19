@@ -17,21 +17,29 @@ Deno.serve(async (req) => {
       throw new Error('VAPID_PUBLIC_KEY not configured');
     }
 
-    // Parse the JWK
-    const jwk = JSON.parse(publicKeyJwkString);
+    // Check if it's already in base64url format (legacy) or JWK format (new)
+    let publicKey: string;
     
-    // Convert JWK x and y coordinates to base64url format for browser
-    // The browser expects a 65-byte uncompressed public key
-    const xBytes = decodeBase64Url(jwk.x);
-    const yBytes = decodeBase64Url(jwk.y);
-    
-    // Create uncompressed public key (0x04 + x + y)
-    const publicKeyBytes = new Uint8Array(65);
-    publicKeyBytes[0] = 0x04; // Uncompressed point indicator
-    publicKeyBytes.set(xBytes, 1);
-    publicKeyBytes.set(yBytes, 33);
-    
-    const publicKey = encodeBase64Url(publicKeyBytes);
+    try {
+      // Try to parse as JWK JSON
+      const jwk = JSON.parse(publicKeyJwkString);
+      
+      // Convert JWK x and y coordinates to base64url format for browser
+      const xBytes = decodeBase64Url(jwk.x);
+      const yBytes = decodeBase64Url(jwk.y);
+      
+      // Create uncompressed public key (0x04 + x + y)
+      const publicKeyBytes = new Uint8Array(65);
+      publicKeyBytes[0] = 0x04; // Uncompressed point indicator
+      publicKeyBytes.set(xBytes, 1);
+      publicKeyBytes.set(yBytes, 33);
+      
+      publicKey = encodeBase64Url(publicKeyBytes);
+    } catch (parseError) {
+      // If parsing fails, assume it's already in base64url format (legacy)
+      console.log('Using legacy base64url VAPID public key format');
+      publicKey = publicKeyJwkString;
+    }
 
     return new Response(
       JSON.stringify({ publicKey }),
