@@ -9,14 +9,24 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Upload, Download, Users, Trash2, Settings } from "lucide-react";
+import { Plus, Upload, Download, Users, Trash2, Edit, UserPlus, X } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const EmailListManager = () => {
   const queryClient = useQueryClient();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isManageContactsOpen, setIsManageContactsOpen] = useState(false);
   const [selectedList, setSelectedList] = useState<any>(null);
+  const [editingList, setEditingList] = useState<any>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactData, setContactData] = useState({
+    firstName: "",
+    lastName: "",
+    tags: "",
+  });
   
   const [formData, setFormData] = useState({
     name: "",
@@ -67,6 +77,43 @@ export const EmailListManager = () => {
     },
   });
 
+  // Fetch contacts for selected list
+  const { data: listContacts } = useQuery({
+    queryKey: ["email-contacts", selectedList?.id],
+    queryFn: async () => {
+      if (!selectedList?.id) return [];
+      const { data, error } = await supabase
+        .from("email_contacts")
+        .select("*")
+        .eq("list_id", selectedList.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedList?.id && isManageContactsOpen,
+  });
+
+  // Update list
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const { error } = await supabase
+        .from("email_lists")
+        .update(data)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["email-lists"] });
+      toast.success("List updated successfully");
+      setIsEditOpen(false);
+      setEditingList(null);
+      setFormData({ name: "", description: "" });
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to update list: ${error.message}`);
+    },
+  });
+
   // Delete list
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -83,6 +130,69 @@ export const EmailListManager = () => {
     },
     onError: (error: any) => {
       toast.error(`Failed to delete list: ${error.message}`);
+    },
+  });
+
+  // Add contact to list
+  const addContactMutation = useMutation({
+    mutationFn: async ({ listId, contact }: { listId: string; contact: any }) => {
+      const { data: insertedContact, error } = await supabase
+        .from("email_contacts")
+        .insert({
+          list_id: listId,
+          email: contact.email,
+          first_name: contact.firstName || "",
+          last_name: contact.lastName || "",
+          status: "active",
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Add tags if provided
+      if (contact.tags && insertedContact) {
+        const tags = contact.tags.split(",").map((t: string) => t.trim()).filter(Boolean);
+        if (tags.length > 0) {
+          const tagInserts = tags.map((tag: string) => ({
+            contact_id: insertedContact.id,
+            tag,
+          }));
+          const { error: tagError } = await supabase
+            .from("email_contact_tags")
+            .insert(tagInserts);
+          if (tagError) console.error("Failed to add tags:", tagError);
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["email-contacts"] });
+      queryClient.invalidateQueries({ queryKey: ["email-lists"] });
+      toast.success("Contact added successfully");
+      setContactEmail("");
+      setContactData({ firstName: "", lastName: "", tags: "" });
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to add contact: ${error.message}`);
+    },
+  });
+
+  // Delete contact
+  const deleteContactMutation = useMutation({
+    mutationFn: async (contactId: string) => {
+      const { error } = await supabase
+        .from("email_contacts")
+        .delete()
+        .eq("id", contactId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["email-contacts"] });
+      queryClient.invalidateQueries({ queryKey: ["email-lists"] });
+      toast.success("Contact removed successfully");
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to remove contact: ${error.message}`);
     },
   });
 
@@ -117,8 +227,7 @@ export const EmailListManager = () => {
     },
     onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ["email-lists"] });
-      toast.success(`Imported ${count} registered users`);
-      setSelectedList(null);
+      toast.success(`Successfully imported ${count} app users`);
     },
     onError: (error: any) => {
       toast.error(`Failed to import users: ${error.message}`);
@@ -293,8 +402,29 @@ export const EmailListManager = () => {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="flex justify-between gap-2">
-                <div className="flex gap-2">
+              <CardFooter>
+                <div className="flex gap-1 flex-wrap w-full">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditingList(list);
+                      setFormData({ name: list.name, description: list.description || "" });
+                      setIsEditOpen(true);
+                    }}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedList(list);
+                      setIsManageContactsOpen(true);
+                    }}
+                  >
+                    <UserPlus className="h-4 w-4" />
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -308,27 +438,198 @@ export const EmailListManager = () => {
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => importAllUsersMutation.mutate(list.id)}
+                    disabled={importAllUsersMutation.isPending}
+                  >
+                    <Users className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => exportMutation.mutate({ listId: list.id, format: "csv" })}
                   >
                     <Download className="h-4 w-4" />
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (confirm("Are you sure? This will delete all contacts in this list.")) {
+                        deleteMutation.mutate(list.id);
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    if (confirm("Are you sure? This will delete all contacts in this list.")) {
-                      deleteMutation.mutate(list.id);
-                    }
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
               </CardFooter>
             </Card>
           ))}
         </div>
       )}
+
+      {/* Edit List Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Email List</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>List Name</Label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Newsletter Subscribers"
+              />
+            </div>
+            <div>
+              <Label>Description</Label>
+              <Textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Describe this list..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
+            <Button
+              onClick={() => {
+                if (editingList) {
+                  updateMutation.mutate({
+                    id: editingList.id,
+                    data: {
+                      name: formData.name,
+                      description: formData.description,
+                    },
+                  });
+                }
+              }}
+              disabled={!formData.name || updateMutation.isPending}
+            >
+              Update List
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Contacts Dialog */}
+      <Dialog open={isManageContactsOpen} onOpenChange={setIsManageContactsOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Manage Contacts - {selectedList?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Add Contact Form */}
+            <div className="border rounded-lg p-4 space-y-3 bg-accent/20">
+              <h3 className="font-medium">Add New Contact</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <Label>Email *</Label>
+                  <Input
+                    type="email"
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    placeholder="email@example.com"
+                  />
+                </div>
+                <div>
+                  <Label>First Name</Label>
+                  <Input
+                    value={contactData.firstName}
+                    onChange={(e) => setContactData({ ...contactData, firstName: e.target.value })}
+                    placeholder="John"
+                  />
+                </div>
+                <div>
+                  <Label>Last Name</Label>
+                  <Input
+                    value={contactData.lastName}
+                    onChange={(e) => setContactData({ ...contactData, lastName: e.target.value })}
+                    placeholder="Doe"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label>Tags (comma-separated)</Label>
+                  <Input
+                    value={contactData.tags}
+                    onChange={(e) => setContactData({ ...contactData, tags: e.target.value })}
+                    placeholder="vip, premium, active-trader"
+                  />
+                </div>
+              </div>
+              <Button
+                onClick={() => {
+                  if (selectedList?.id && contactEmail) {
+                    addContactMutation.mutate({
+                      listId: selectedList.id,
+                      contact: {
+                        email: contactEmail,
+                        firstName: contactData.firstName,
+                        lastName: contactData.lastName,
+                        tags: contactData.tags,
+                      },
+                    });
+                  }
+                }}
+                disabled={!contactEmail || addContactMutation.isPending}
+                className="w-full"
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add Contact
+              </Button>
+            </div>
+
+            {/* Contact List */}
+            <div>
+              <h3 className="font-medium mb-2">Current Contacts ({listContacts?.length || 0})</h3>
+              <ScrollArea className="h-[300px] border rounded-lg">
+                <div className="p-4 space-y-2">
+                  {listContacts?.map((contact: any) => (
+                    <div
+                      key={contact.id}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent"
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium">{contact.email}</p>
+                        {(contact.first_name || contact.last_name) && (
+                          <p className="text-sm text-muted-foreground">
+                            {contact.first_name} {contact.last_name}
+                          </p>
+                        )}
+                        {contact.source && (
+                          <Badge variant="outline" className="text-xs mt-1">
+                            {contact.source}
+                          </Badge>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm("Remove this contact from the list?")) {
+                            deleteContactMutation.mutate(contact.id);
+                          }
+                        }}
+                        disabled={deleteContactMutation.isPending}
+                      >
+                        <X className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                  {(!listContacts || listContacts.length === 0) && (
+                    <p className="text-center text-muted-foreground py-8">
+                      No contacts yet. Add your first contact above.
+                    </p>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Import Dialog */}
       <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
