@@ -145,6 +145,9 @@ const Settings = () => {
         supabase.from("trade_insights").delete().eq("user_id", profile.id),
         supabase.from("copilot_feedback").delete().eq("user_id", profile.id),
         supabase.from("journal_insights").delete().eq("user_id", profile.id),
+        supabase.from("setups").delete().eq("user_id", profile.id),
+        supabase.from("trade_screenshots").delete().eq("user_id", profile.id),
+        supabase.from("leaderboard_profiles").delete().eq("user_id", profile.id),
       ]);
       
       // Reset profile to fresh free tier account
