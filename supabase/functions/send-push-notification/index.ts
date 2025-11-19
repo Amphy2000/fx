@@ -129,10 +129,10 @@ Deno.serve(async (req) => {
 
     console.log('Auth header present, creating client...');
 
-    // Use service role key for admin operations
-    const supabaseClient = createClient(
+    // Create client with anon key to verify JWT
+    const supabaseAuth = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
           headers: {
@@ -142,8 +142,8 @@ Deno.serve(async (req) => {
       }
     );
 
-    // Verify admin role
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    // Verify user from JWT
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
     if (userError || !user) {
       console.error('Failed to get user:', userError);
       return new Response(
@@ -153,6 +153,12 @@ Deno.serve(async (req) => {
     }
 
     console.log('User authenticated:', user.id);
+
+    // Create service role client for admin operations
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
     const { data: isAdmin, error: roleError } = await supabaseClient.rpc('has_role', {
       _user_id: user.id,
