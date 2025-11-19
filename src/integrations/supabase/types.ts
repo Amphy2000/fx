@@ -38,6 +38,44 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_logs: {
+        Row: {
+          campaign_id: string
+          error_message: string | null
+          executed_at: string
+          execution_time_ms: number | null
+          id: string
+          notifications_sent: number
+          users_matched: number
+        }
+        Insert: {
+          campaign_id: string
+          error_message?: string | null
+          executed_at?: string
+          execution_time_ms?: number | null
+          id?: string
+          notifications_sent?: number
+          users_matched?: number
+        }
+        Update: {
+          campaign_id?: string
+          error_message?: string | null
+          executed_at?: string
+          execution_time_ms?: number | null
+          id?: string
+          notifications_sent?: number
+          users_matched?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_logs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "notification_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_conversations: {
         Row: {
           created_at: string
@@ -473,6 +511,74 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      notification_campaigns: {
+        Row: {
+          action_buttons: Json | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean
+          last_run_at: string | null
+          name: string
+          notification_body: string
+          notification_template_id: string | null
+          notification_title: string
+          total_sent: number
+          total_triggered: number
+          trigger_conditions: Json
+          trigger_type: string
+          updated_at: string
+          user_segment: string
+        }
+        Insert: {
+          action_buttons?: Json | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          last_run_at?: string | null
+          name: string
+          notification_body: string
+          notification_template_id?: string | null
+          notification_title: string
+          total_sent?: number
+          total_triggered?: number
+          trigger_conditions: Json
+          trigger_type: string
+          updated_at?: string
+          user_segment?: string
+        }
+        Update: {
+          action_buttons?: Json | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          last_run_at?: string | null
+          name?: string
+          notification_body?: string
+          notification_template_id?: string | null
+          notification_title?: string
+          total_sent?: number
+          total_triggered?: number
+          trigger_conditions?: Json
+          trigger_type?: string
+          updated_at?: string
+          user_segment?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_campaigns_notification_template_id_fkey"
+            columns: ["notification_template_id"]
+            isOneToOne: false
+            referencedRelation: "notification_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notification_clicks: {
         Row: {

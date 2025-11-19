@@ -2,7 +2,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EnhancedNotificationSender } from "./EnhancedNotificationSender";
 import { NotificationTemplateManager } from "./NotificationTemplateManager";
 import { NotificationAnalytics } from "./NotificationAnalytics";
-import { FileText, Send, BarChart3 } from "lucide-react";
+import { CampaignManager } from "./CampaignManager";
+import { FileText, Send, BarChart3, Zap } from "lucide-react";
 
 export const AdminNotificationSender = () => {
   return (
@@ -11,6 +12,10 @@ export const AdminNotificationSender = () => {
         <TabsTrigger value="send">
           <Send className="mr-2 h-4 w-4" />
           Send Notifications
+        </TabsTrigger>
+        <TabsTrigger value="campaigns">
+          <Zap className="mr-2 h-4 w-4" />
+          Campaigns
         </TabsTrigger>
         <TabsTrigger value="templates">
           <FileText className="mr-2 h-4 w-4" />
@@ -24,6 +29,10 @@ export const AdminNotificationSender = () => {
 
       <TabsContent value="send">
         <EnhancedNotificationSender />
+      </TabsContent>
+
+      <TabsContent value="campaigns">
+        <CampaignManager />
       </TabsContent>
 
       <TabsContent value="templates">
