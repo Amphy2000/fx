@@ -22,6 +22,7 @@ export const EmailCampaignManager = () => {
     name: "",
     description: "",
     template_id: "",
+    list_id: "",
     user_segment: {
       subscription_tier: "all",
       has_trades: undefined as boolean | undefined,
@@ -57,6 +58,20 @@ export const EmailCampaignManager = () => {
     },
   });
 
+  // Fetch email lists
+  const { data: emailLists } = useQuery({
+    queryKey: ["email-lists"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("email_lists")
+        .select("id, name, total_contacts, active_contacts")
+        .order("name");
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Get current user
   const { data: currentUser } = useQuery({
     queryKey: ["current-user"],
@@ -69,30 +84,24 @@ export const EmailCampaignManager = () => {
   // Create campaign
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      // Calculate recipients count based on user segment
-      let query = supabase.from("profiles").select("id", { count: "exact", head: true });
+      // Calculate recipients count from selected list
+      let count = 0;
       
-      const segment = data.user_segment;
-      if (segment.subscription_tier && segment.subscription_tier !== "all") {
-        query = query.eq("subscription_tier", segment.subscription_tier);
-      }
-      if (segment.has_trades !== undefined) {
-        if (segment.has_trades) {
-          query = query.gt("trades_count", 0);
-        } else {
-          query = query.eq("trades_count", 0);
-        }
-      }
-      if (segment.min_streak) {
-        query = query.gte("current_streak", segment.min_streak);
-      }
+      if (data.list_id) {
+        let query = supabase
+          .from("email_contacts")
+          .select("id", { count: "exact", head: true })
+          .eq("list_id", data.list_id)
+          .eq("status", "active");
 
-      const { count } = await query;
+        const result = await query;
+        count = result.count || 0;
+      }
 
       const { error } = await supabase.from("email_campaigns").insert({
         ...data,
         created_by: currentUser?.id,
-        total_recipients: count || 0,
+        total_recipients: count,
       });
 
       if (error) throw error;
@@ -148,27 +157,16 @@ export const EmailCampaignManager = () => {
   // Update campaign
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      // Recalculate recipients if user_segment changed
-      if (data.user_segment) {
-        let query = supabase.from("profiles").select("id", { count: "exact", head: true });
-        
-        const segment = data.user_segment;
-        if (segment.subscription_tier && segment.subscription_tier !== "all") {
-          query = query.eq("subscription_tier", segment.subscription_tier);
-        }
-        if (segment.has_trades !== undefined) {
-          if (segment.has_trades) {
-            query = query.gt("trades_count", 0);
-          } else {
-            query = query.eq("trades_count", 0);
-          }
-        }
-        if (segment.min_streak) {
-          query = query.gte("current_streak", segment.min_streak);
-        }
+      // Recalculate recipients if list_id changed
+      if (data.list_id) {
+        let query = supabase
+          .from("email_contacts")
+          .select("id", { count: "exact", head: true })
+          .eq("list_id", data.list_id)
+          .eq("status", "active");
 
-        const { count } = await query;
-        data.total_recipients = count || 0;
+        const result = await query;
+        data.total_recipients = result.count || 0;
       }
 
       const { error } = await supabase
@@ -195,6 +193,7 @@ export const EmailCampaignManager = () => {
       name: "",
       description: "",
       template_id: "",
+      list_id: "",
       user_segment: {
         subscription_tier: "all",
         has_trades: undefined,
@@ -210,6 +209,7 @@ export const EmailCampaignManager = () => {
       name: campaign.name,
       description: campaign.description || "",
       template_id: campaign.template_id || "",
+      list_id: campaign.list_id || "",
       user_segment: campaign.user_segment || {
         subscription_tier: "all",
         has_trades: undefined,
@@ -282,6 +282,31 @@ export const EmailCampaignManager = () => {
                   rows={3}
                 />
               </div>
+              <div>
+                <Label>Email List</Label>
+                {emailLists && emailLists.length > 0 ? (
+                  <Select
+                    value={formData.list_id}
+                    onValueChange={(value) => setFormData({ ...formData, list_id: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select email list" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {emailLists.map((list) => (
+                        <SelectItem key={list.id} value={list.id}>
+                          {list.name} ({list.active_contacts || 0} active contacts)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="text-sm text-muted-foreground p-4 border rounded-md bg-muted/50">
+                    No email lists available. Please create a list first in the Lists tab.
+                  </div>
+                )}
+              </div>
+
               <div>
                 <Label>Email Template</Label>
                 {templates && templates.length > 0 ? (
@@ -382,7 +407,7 @@ export const EmailCampaignManager = () => {
                     createMutation.mutate(formData);
                   }
                 }}
-                disabled={!formData.name || !formData.template_id || createMutation.isPending || updateMutation.isPending}
+                disabled={!formData.name || !formData.template_id || !formData.list_id || createMutation.isPending || updateMutation.isPending}
               >
                 {editingCampaign ? "Update" : "Create"} Campaign
               </Button>

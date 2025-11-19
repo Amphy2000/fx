@@ -418,6 +418,7 @@ export type Database = {
           description: string | null
           failed_count: number | null
           id: string
+          list_id: string | null
           name: string
           opened_count: number | null
           scheduled_for: string | null
@@ -439,6 +440,7 @@ export type Database = {
           description?: string | null
           failed_count?: number | null
           id?: string
+          list_id?: string | null
           name: string
           opened_count?: number | null
           scheduled_for?: string | null
@@ -460,6 +462,7 @@ export type Database = {
           description?: string | null
           failed_count?: number | null
           id?: string
+          list_id?: string | null
           name?: string
           opened_count?: number | null
           scheduled_for?: string | null
@@ -477,6 +480,13 @@ export type Database = {
             columns: ["ab_test_id"]
             isOneToOne: false
             referencedRelation: "email_ab_tests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_campaigns_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "email_lists"
             referencedColumns: ["id"]
           },
           {
