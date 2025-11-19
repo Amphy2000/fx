@@ -1,56 +1,23 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { EnhancedNotificationSender } from "./EnhancedNotificationSender";
-import { NotificationTemplateManager } from "./NotificationTemplateManager";
-import { NotificationAnalytics } from "./NotificationAnalytics";
-import { CampaignManager } from "./CampaignManager";
-import { CampaignComparison } from "./CampaignComparison";
-import { FileText, Send, BarChart3, Zap, GitCompare } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Mail } from "lucide-react";
 
 export const AdminNotificationSender = () => {
   return (
-    <Tabs defaultValue="send" className="w-full">
-      <TabsList>
-        <TabsTrigger value="send">
-          <Send className="mr-2 h-4 w-4" />
-          Send
-        </TabsTrigger>
-        <TabsTrigger value="campaigns">
-          <Zap className="mr-2 h-4 w-4" />
-          Campaigns
-        </TabsTrigger>
-        <TabsTrigger value="comparison">
-          <GitCompare className="mr-2 h-4 w-4" />
-          Compare
-        </TabsTrigger>
-        <TabsTrigger value="templates">
-          <FileText className="mr-2 h-4 w-4" />
-          Templates
-        </TabsTrigger>
-        <TabsTrigger value="analytics">
-          <BarChart3 className="mr-2 h-4 w-4" />
-          Analytics
-        </TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="send">
-        <EnhancedNotificationSender />
-      </TabsContent>
-
-      <TabsContent value="campaigns">
-        <CampaignManager />
-      </TabsContent>
-
-      <TabsContent value="comparison">
-        <CampaignComparison />
-      </TabsContent>
-
-      <TabsContent value="templates">
-        <NotificationTemplateManager />
-      </TabsContent>
-
-      <TabsContent value="analytics">
-        <NotificationAnalytics />
-      </TabsContent>
-    </Tabs>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Mail className="h-5 w-5" />
+          <CardTitle>Email Marketing</CardTitle>
+        </div>
+        <CardDescription>
+          Manage your email campaigns, templates, and analytics
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground">
+          Use the tabs above to access email templates, campaigns, analytics, workflows, A/B testing, lists, personalization, and warm-up features.
+        </p>
+      </CardContent>
+    </Card>
   );
 };
