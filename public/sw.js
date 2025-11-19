@@ -1,8 +1,8 @@
 // Service Worker for Push Notifications and PWA caching
-/// <reference lib="webworker" />
+/* eslint-disable */
 
-// PWA caching will be injected here by Workbox during build
-self.__WB_MANIFEST;
+// Workbox will inject the manifest here
+const manifest = self.__WB_MANIFEST;
 
 self.addEventListener('push', function(event) {
   console.log('Push notification received:', event);
