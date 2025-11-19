@@ -163,9 +163,14 @@ export const EmailAnalyticsDashboard = () => {
               <CardDescription>Performance metrics for recent campaigns</CardDescription>
             </CardHeader>
             <CardContent>
-              {chartData.length > 0 ? (
+              {campaigns && campaigns.length > 0 ? (
                 <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={chartData}>
+                  <BarChart data={campaigns.map(c => ({
+                    name: c.name,
+                    sent: c.sent_count || 0,
+                    opened: c.opened_count || 0,
+                    clicked: c.clicked_count || 0
+                  }))}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                     <XAxis 
                       dataKey="name" 
