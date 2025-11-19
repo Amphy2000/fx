@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Bell, BellOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { registerPushServiceWorker } from "@/utils/registerPushSW";
 
 export const NotificationPermission = () => {
   const [permission, setPermission] = useState<NotificationPermission>("default");
@@ -67,6 +68,9 @@ export const NotificationPermission = () => {
         toast.error('Notification permission denied');
         return;
       }
+
+      // Register our custom push notification service worker
+      await registerPushServiceWorker();
 
       // Get VAPID public key
       const { data: vapidData, error: vapidError } = await supabase.functions.invoke('get-vapid-public-key');
