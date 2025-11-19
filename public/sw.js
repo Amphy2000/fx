@@ -1,5 +1,8 @@
-// Service Worker for Push Notifications
-// This handles push events and notification actions
+// Service Worker for Push Notifications and PWA caching
+/// <reference lib="webworker" />
+
+// PWA caching will be injected here by Workbox during build
+self.__WB_MANIFEST;
 
 self.addEventListener('push', function(event) {
   console.log('Push notification received:', event);
