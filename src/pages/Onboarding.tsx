@@ -115,11 +115,20 @@ export default function Onboarding() {
 
   const skipOnboarding = async () => {
     if (!userId) return;
-    await supabase
-      .from('profiles')
-      .update({ onboarding_completed: true })
-      .eq('id', userId);
-    navigate("/dashboard");
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ onboarding_completed: true })
+        .eq('id', userId);
+      
+      if (error) throw error;
+      
+      toast.success("Onboarding skipped");
+      navigate("/dashboard");
+    } catch (error) {
+      console.error('Error skipping onboarding:', error);
+      toast.error('Failed to skip onboarding');
+    }
   };
 
   const handleTradeAdded = () => {
@@ -261,6 +270,11 @@ export default function Onboarding() {
                 </p>
               </div>
               <TradeForm onTradeAdded={handleTradeAdded} />
+              <div className="mt-4 flex justify-end">
+                <Button onClick={skipStep} variant="outline" size="sm">
+                  Skip this step
+                </Button>
+              </div>
             </>
           ) : (
             <div className="text-center py-8 space-y-4">
