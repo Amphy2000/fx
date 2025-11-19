@@ -17,6 +17,18 @@ export const NotificationPermission = () => {
     }
   }, []);
 
+  // Recheck subscription when page becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkSubscription();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
   const checkSubscription = async () => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
@@ -58,16 +70,33 @@ export const NotificationPermission = () => {
 
       // Get VAPID public key
       const { data: vapidData, error: vapidError } = await supabase.functions.invoke('get-vapid-public-key');
-      if (vapidError) throw vapidError;
+      if (vapidError) {
+        console.error('VAPID key error:', vapidError);
+        throw vapidError;
+      }
 
       const { publicKey } = vapidData;
+      console.log('Received public key, length:', publicKey?.length);
+
+      if (!publicKey || publicKey.length !== 87) {
+        throw new Error(`Invalid VAPID public key format (expected 87 chars, got ${publicKey?.length})`);
+      }
 
       // Subscribe to push notifications
       const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey)
-      });
+      
+      // Check if already subscribed
+      let subscription = await registration.pushManager.getSubscription();
+      
+      if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey)
+        });
+        console.log('Created new subscription');
+      } else {
+        console.log('Using existing subscription');
+      }
 
       // Send subscription to backend (auth token is automatically included by Supabase client)
       const deviceInfo = `${navigator.userAgent}`;
