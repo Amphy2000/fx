@@ -129,58 +129,15 @@ const Settings = () => {
     try {
       toast.info("Deleting all data... This may take a moment.");
       
-      // Delete all user data from all tables (order matters for foreign key constraints)
-      // First delete dependent records
-      const deleteDependentResults = await Promise.allSettled([
-        supabase.from("trade_tags").delete().eq("user_id", profile.id),
-        supabase.from("trade_screenshots").delete().eq("user_id", profile.id),
-        supabase.from("trade_insights").delete().eq("user_id", profile.id),
-        supabase.from("chat_messages").delete().eq("user_id", profile.id),
-        supabase.from("sync_logs").delete().eq("user_id", profile.id),
-      ]);
-
-      // Log any failures from dependent records
-      deleteDependentResults.forEach((result, index) => {
-        if (result.status === 'rejected') {
-          const tables = ["trade_tags", "trade_screenshots", "trade_insights", "chat_messages", "sync_logs"];
-          console.error(`Failed to delete from ${tables[index]}:`, result.reason);
-        }
+      // Use database function to efficiently delete all user data (handles large datasets without timeout)
+      const { error: deleteError } = await supabase.rpc('delete_all_user_data', {
+        p_user_id: profile.id
       });
 
-      // Then delete main records
-      const deleteMainResults = await Promise.allSettled([
-        supabase.from("trades").delete().eq("user_id", profile.id),
-        supabase.from("journal_entries").delete().eq("user_id", profile.id),
-        supabase.from("achievements").delete().eq("user_id", profile.id),
-        supabase.from("daily_checkins").delete().eq("user_id", profile.id),
-        supabase.from("streaks").delete().eq("user_id", profile.id),
-        supabase.from("mt5_accounts").delete().eq("user_id", profile.id),
-        supabase.from("mt5_connections").delete().eq("user_id", profile.id),
-        supabase.from("routine_entries").delete().eq("user_id", profile.id),
-        supabase.from("targets").delete().eq("user_id", profile.id),
-        supabase.from("performance_metrics").delete().eq("user_id", profile.id),
-        supabase.from("equity_snapshots").delete().eq("user_id", profile.id),
-        supabase.from("setup_performance").delete().eq("user_id", profile.id),
-        supabase.from("chat_conversations").delete().eq("user_id", profile.id),
-        supabase.from("copilot_feedback").delete().eq("user_id", profile.id),
-        supabase.from("journal_insights").delete().eq("user_id", profile.id),
-        supabase.from("setups").delete().eq("user_id", profile.id),
-        supabase.from("leaderboard_profiles").delete().eq("user_id", profile.id),
-        supabase.from("subscriptions").delete().eq("user_id", profile.id),
-        supabase.from("feedback").delete().eq("user_id", profile.id),
-      ]);
-
-      // Log any failures from main records
-      const mainTables = ["trades", "journal_entries", "achievements", "daily_checkins", "streaks", 
-                          "mt5_accounts", "mt5_connections", "routine_entries", "targets", 
-                          "performance_metrics", "equity_snapshots", "setup_performance", 
-                          "chat_conversations", "copilot_feedback", "journal_insights", "setups", 
-                          "leaderboard_profiles", "subscriptions", "feedback"];
-      deleteMainResults.forEach((result, index) => {
-        if (result.status === 'rejected') {
-          console.error(`Failed to delete from ${mainTables[index]}:`, result.reason);
-        }
-      });
+      if (deleteError) {
+        console.error("Error deleting user data:", deleteError);
+        throw deleteError;
+      }
       
       // Reset profile to fresh free tier account
       const { error: profileError } = await supabase
