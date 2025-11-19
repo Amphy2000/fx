@@ -191,14 +191,14 @@ export const EmailCampaignManager = () => {
               Create Campaign
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>Create Email Campaign</DialogTitle>
               <DialogDescription>
                 Create a new email campaign with user segmentation
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4">
+            <div className="grid gap-4 overflow-y-auto pr-2">
               <div>
                 <Label>Campaign Name</Label>
                 <Input
