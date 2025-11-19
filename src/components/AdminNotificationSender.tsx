@@ -3,7 +3,8 @@ import { EnhancedNotificationSender } from "./EnhancedNotificationSender";
 import { NotificationTemplateManager } from "./NotificationTemplateManager";
 import { NotificationAnalytics } from "./NotificationAnalytics";
 import { CampaignManager } from "./CampaignManager";
-import { FileText, Send, BarChart3, Zap } from "lucide-react";
+import { CampaignComparison } from "./CampaignComparison";
+import { FileText, Send, BarChart3, Zap, GitCompare } from "lucide-react";
 
 export const AdminNotificationSender = () => {
   return (
@@ -11,11 +12,15 @@ export const AdminNotificationSender = () => {
       <TabsList>
         <TabsTrigger value="send">
           <Send className="mr-2 h-4 w-4" />
-          Send Notifications
+          Send
         </TabsTrigger>
         <TabsTrigger value="campaigns">
           <Zap className="mr-2 h-4 w-4" />
           Campaigns
+        </TabsTrigger>
+        <TabsTrigger value="comparison">
+          <GitCompare className="mr-2 h-4 w-4" />
+          Compare
         </TabsTrigger>
         <TabsTrigger value="templates">
           <FileText className="mr-2 h-4 w-4" />
@@ -33,6 +38,10 @@ export const AdminNotificationSender = () => {
 
       <TabsContent value="campaigns">
         <CampaignManager />
+      </TabsContent>
+
+      <TabsContent value="comparison">
+        <CampaignComparison />
       </TabsContent>
 
       <TabsContent value="templates">
