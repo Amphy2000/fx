@@ -380,6 +380,25 @@ export const EmailTemplateManager = () => {
           <DialogHeader>
             <DialogTitle>Edit Email Template</DialogTitle>
           </DialogHeader>
+          <div className="space-y-4 mb-4">
+            <div className="flex items-center gap-2">
+              <Label>Editor Mode:</Label>
+              <Button
+                variant={useVisualEditor ? "default" : "outline"}
+                size="sm"
+                onClick={() => setUseVisualEditor(true)}
+              >
+                Visual
+              </Button>
+              <Button
+                variant={!useVisualEditor ? "default" : "outline"}
+                size="sm"
+                onClick={() => setUseVisualEditor(false)}
+              >
+                HTML
+              </Button>
+            </div>
+          </div>
           <Tabs defaultValue="design">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="design">Design</TabsTrigger>
@@ -422,15 +441,43 @@ export const EmailTemplateManager = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label>HTML Content</Label>
-                  <Textarea
-                    value={formData.html_content}
-                    onChange={(e) => setFormData({ ...formData, html_content: e.target.value })}
-                    rows={15}
-                    className="font-mono text-sm"
-                  />
-                </div>
+                {useVisualEditor ? (
+                  <div>
+                    <Label>Email Design</Label>
+                    <div className="border rounded-lg overflow-hidden" style={{ height: "600px" }}>
+                      <EmailEditor
+                        ref={emailEditorRef}
+                        minHeight="600px"
+                        options={{
+                          appearance: {
+                            theme: "modern_light",
+                          },
+                          mergeTags: {
+                            name: { name: "Name", value: "{{name}}", sample: "John Doe" },
+                            email: { name: "Email", value: "{{email}}", sample: "john@example.com" },
+                          },
+                        }}
+                        onReady={() => {
+                          if (emailEditorRef.current?.editor && selectedTemplate?.html_content) {
+                            emailEditorRef.current.editor.loadDesign({
+                              html: selectedTemplate.html_content,
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <Label>HTML Content</Label>
+                    <textarea
+                      value={formData.html_content}
+                      onChange={(e) => setFormData({ ...formData, html_content: e.target.value })}
+                      rows={15}
+                      className="w-full p-3 border rounded-md font-mono text-sm"
+                    />
+                  </div>
+                )}
               </div>
             </TabsContent>
             <TabsContent value="preview">

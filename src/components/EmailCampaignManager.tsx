@@ -218,21 +218,27 @@ export const EmailCampaignManager = () => {
               </div>
               <div>
                 <Label>Email Template</Label>
-                <Select
-                  value={formData.template_id}
-                  onValueChange={(value) => setFormData({ ...formData, template_id: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select template" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {templates?.map((template) => (
-                      <SelectItem key={template.id} value={template.id}>
-                        {template.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {templates && templates.length > 0 ? (
+                  <Select
+                    value={formData.template_id}
+                    onValueChange={(value) => setFormData({ ...formData, template_id: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select template" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templates.map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="text-sm text-muted-foreground p-4 border rounded-md bg-muted/50">
+                    No email templates available. Please create a template first in the Templates tab.
+                  </div>
+                )}
               </div>
               
               <div className="border rounded-lg p-4 space-y-4">
