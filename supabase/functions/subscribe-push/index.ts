@@ -22,23 +22,24 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Use service role to bypass RLS for user verification
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Create client with user's token for verification
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    console.log('Getting user...');
+    console.log('Verifying JWT...');
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError) {
-      console.error('User error:', userError);
-      return new Response(
-        JSON.stringify({ error: userError.message }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
-      );
-    }
-    if (!user) {
-      console.error('No user found');
+    
+    if (userError || !user) {
+      console.error('Auth error:', userError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
@@ -58,9 +59,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Use upsert to avoid checking for existing subscription
-    console.log('Upserting subscription...');
-    const { error: upsertError } = await supabaseClient
+    // Use admin client to insert subscription (bypasses RLS)
+    console.log('Upserting subscription with admin client...');
+    const { error: upsertError } = await supabaseAdmin
       .from('push_subscriptions')
       .upsert({
         user_id: user.id,
@@ -76,7 +77,10 @@ Deno.serve(async (req) => {
 
     if (upsertError) {
       console.error('Upsert error:', upsertError);
-      throw upsertError;
+      return new Response(
+        JSON.stringify({ error: upsertError.message }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
     }
 
     console.log('Subscription saved successfully for user:', user.id);
