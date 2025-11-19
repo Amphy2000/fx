@@ -166,6 +166,16 @@ async function generateVAPIDHeaders(
     sub: vapidDetails.subject
   };
 
+  // Parse public key JWK to get the base64url public key for the header
+  const publicKeyJwk = JSON.parse(vapidDetails.publicKey);
+  const xBytes = urlBase64ToUint8Array(publicKeyJwk.x);
+  const yBytes = urlBase64ToUint8Array(publicKeyJwk.y);
+  const publicKeyBytes = new Uint8Array(65);
+  publicKeyBytes[0] = 0x04;
+  publicKeyBytes.set(xBytes, 1);
+  publicKeyBytes.set(yBytes, 33);
+  const publicKeyBase64 = encodeBase64Url(publicKeyBytes);
+
   // Import private key - VAPID keys should be stored as JWK
   let privateKeyJwk;
   try {
@@ -203,8 +213,8 @@ async function generateVAPIDHeaders(
   const jwt = `${unsignedToken}.${signatureBase64}`;
 
   return {
-    'Authorization': `vapid t=${jwt}, k=${vapidDetails.publicKey}`,
-    'Crypto-Key': `p256ecdsa=${vapidDetails.publicKey}`
+    'Authorization': `vapid t=${jwt}, k=${publicKeyBase64}`,
+    'Crypto-Key': `p256ecdsa=${publicKeyBase64}`
   };
 }
 
