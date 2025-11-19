@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, PlayCircle, PauseCircle, Trash2, TrendingUp } from "lucide-react";
+import { Plus, PlayCircle, PauseCircle, Trash2, TrendingUp, Zap } from "lucide-react";
 
 export const CampaignManager = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -107,6 +107,22 @@ export const CampaignManager = () => {
     },
   });
 
+  const runCampaignsMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("process-campaigns");
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["notification-campaigns"] });
+      toast.success(`Processed ${data.campaigns_processed} campaigns, sent ${data.total_notifications_sent} notifications`);
+    },
+    onError: (error) => {
+      toast.error("Failed to run campaigns");
+      console.error(error);
+    },
+  });
+
   const handleCreateCampaign = () => {
     createCampaignMutation.mutate(newCampaign);
   };
@@ -135,14 +151,23 @@ export const CampaignManager = () => {
           <h3 className="text-lg font-semibold">Automated Campaigns</h3>
           <p className="text-sm text-muted-foreground">Create rule-based notification campaigns</p>
         </div>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Campaign
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => runCampaignsMutation.mutate()}
+            disabled={runCampaignsMutation.isPending}
+          >
+            <Zap className="mr-2 h-4 w-4" />
+            {runCampaignsMutation.isPending ? "Running..." : "Run Now"}
+          </Button>
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Campaign
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create Automated Campaign</DialogTitle>
               <DialogDescription>Set up a rule-based notification campaign</DialogDescription>
@@ -260,6 +285,7 @@ export const CampaignManager = () => {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="grid gap-4">
