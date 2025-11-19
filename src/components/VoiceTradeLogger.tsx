@@ -204,11 +204,11 @@ export const VoiceTradeLogger = ({
           <p className="text-xs font-semibold mb-2 text-foreground">Example phrases:</p>
           <ul className="text-xs space-y-1 text-muted-foreground">
             <li>• "Long EUR/USD at 1.0850, stop 1.0800, target 1.0950, feeling confident"</li>
-            <li>• "Sold gold at 2050, stop 2060, target 2030, was anxious, it was a loss"</li>
-            <li>• "Bought GBP/USD 1.2650, stop 1.2620, still open, felt disciplined"</li>
+            <li>• "Sold gold at 2050, stop 2060, closed at 2031, made 380 dollars, was anxious before, relieved after winning"</li>
+            <li>• "Bought GBP/USD 1.2650, stop 1.2620, exited at 1.2615, lost 70 bucks, felt impulsive"</li>
           </ul>
           <p className="text-xs mt-2 text-muted-foreground italic">
-            Tip: Include emotions before/after and any notes about your setup or mistakes
+            Tip: For closed trades, mention exit price and profit/loss. Include emotions before/after.
           </p>
         </div>
 

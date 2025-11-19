@@ -78,7 +78,7 @@ serve(async (req) => {
 CRITICAL PARSING RULES:
 - Ignore repeated/duplicate words (common in speech recognition)
 - Be flexible with numbers - handle both "1.08500" and "one point zero eight five"
-- Extract ALL fields: pair, direction, entry_price, stop_loss, take_profit, result, emotion_before, emotion_after, notes
+- Extract ALL fields: pair, direction, entry_price, stop_loss, take_profit, exit_price, profit_loss, result, emotion_before, emotion_after, notes
 - Common pairs: EURUSD, EUR/USD, GBPUSD, GBP/USD, USDJPY, USD/JPY, AUDUSD, USDCAD, XAUUSD (gold), XAGUSD (silver), US30, NAS100
 - Direction variations: 
   * buy/long/went long/bought → "buy"
@@ -88,6 +88,9 @@ CRITICAL PARSING RULES:
   * loss/lost/losing/unprofitable/lost money → "loss"
   * breakeven/BE/scratch → "breakeven"
   * open/pending/still running/active → "open"
+- For CLOSED trades (win/loss/breakeven):
+  * exit_price: extract the closing/exit price (keywords: "closed at", "exited at", "exit price", "got out at")
+  * profit_loss: extract P&L in dollars (keywords: "made", "lost", "profit", "loss", "plus", "minus", "+", "-", "$")
 - Emotions (comprehensive list): calm, confident, anxious, greedy, fearful, disciplined, excited, frustrated, neutral, focused, impulsive, patient, stressed, relaxed, uncertain, optimistic
 - Emotion timing keywords:
   * "before/entering/going in/initially" → emotion_before
@@ -96,13 +99,13 @@ CRITICAL PARSING RULES:
 
 COMPREHENSIVE EXAMPLES:
 
-1. Full detail trade:
-Input: "I went long on EUR/USD at 1.08500, stop loss was at 1.08000, take profit at 1.09000. Before entering I was feeling calm and confident. After closing it was a win and I felt excited. Followed my breakout setup perfectly."
-Output: {"pair":"EURUSD","direction":"buy","entry_price":"1.08500","stop_loss":"1.08000","take_profit":"1.09000","result":"win","emotion_before":"calm","emotion_after":"excited","notes":"Followed breakout setup perfectly"}
+1. Closed winning trade with full details:
+Input: "I went long on EUR/USD at 1.08500, stop loss was at 1.08000, take profit at 1.09000. Closed at 1.08950, made 450 dollars. Before entering I was feeling calm and confident. After closing it was a win and I felt excited. Followed my breakout setup perfectly."
+Output: {"pair":"EURUSD","direction":"buy","entry_price":"1.08500","stop_loss":"1.08000","take_profit":"1.09000","exit_price":"1.08950","profit_loss":"450","result":"win","emotion_before":"calm","emotion_after":"excited","notes":"Followed breakout setup perfectly"}
 
-2. Emotions and result focus:
-Input: "Sold gold at 2050, stop 2060, target 2030. I was anxious and greedy going in. It hit my stop loss and I felt frustrated after. I should have waited for confirmation."
-Output: {"pair":"XAUUSD","direction":"sell","entry_price":"2050","stop_loss":"2060","take_profit":"2030","result":"loss","emotion_before":"anxious","emotion_after":"frustrated","notes":"Should have waited for confirmation. Greedy entry."}
+2. Closed losing trade:
+Input: "Sold gold at 2050, stop 2060, target 2030. I was anxious and greedy going in. It hit my stop loss and I felt frustrated after. Exited at 2061, lost 220 dollars. I should have waited for confirmation."
+Output: {"pair":"XAUUSD","direction":"sell","entry_price":"2050","stop_loss":"2060","take_profit":"2030","exit_price":"2061","profit_loss":"-220","result":"loss","emotion_before":"anxious","emotion_after":"frustrated","notes":"Should have waited for confirmation. Greedy entry."}
 
 3. Open trade with emotions:
 Input: "Bought GBP/USD at one point two six five zero, stop at one point two six two zero, still running. Feeling disciplined and patient before the trade."
@@ -116,7 +119,11 @@ Output: {"pair":"EURUSD","direction":"buy","entry_price":"1.0850","stop_loss":"1
 Input: "Short US30 at 38500, stop 38600, target 38200. Market was ranging, felt confident going in, trade is still open, respecting my risk management"
 Output: {"pair":"US30","direction":"sell","entry_price":"38500","stop_loss":"38600","take_profit":"38200","result":"open","emotion_before":"confident","notes":"Market was ranging. Respecting risk management."}
 
-Return ONLY valid JSON object with these exact keys: pair, direction, entry_price, stop_loss, take_profit, result, emotion_before, emotion_after, notes
+6. Breakeven trade:
+Input: "Bought GBP/USD at 1.2650, stop 1.2620, target 1.2700. Got out at breakeven 1.2651, made like 5 bucks. Was disciplined before, relieved after."
+Output: {"pair":"GBPUSD","direction":"buy","entry_price":"1.2650","stop_loss":"1.2620","take_profit":"1.2700","exit_price":"1.2651","profit_loss":"5","result":"breakeven","emotion_before":"disciplined","emotion_after":"relieved","notes":null}
+
+Return ONLY valid JSON object with these exact keys: pair, direction, entry_price, stop_loss, take_profit, exit_price, profit_loss, result, emotion_before, emotion_after, notes
 Use null for missing values. NO extra text or explanations.`
         }, {
           role: 'user',
