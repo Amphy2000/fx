@@ -56,7 +56,7 @@ const handler = async (req: Request): Promise<Response> => {
       .eq("id", campaignId);
 
     // Get active contacts from the campaign's email list
-    const { data: recipients, error: recipientsError } = await supabaseClient
+    const { data: contacts, error: recipientsError } = await supabaseClient
       .from("email_contacts")
       .select("id, email, first_name, last_name, custom_fields")
       .eq("list_id", campaign.list_id)
@@ -66,11 +66,67 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error(`Failed to fetch recipients: ${recipientsError.message}`);
     }
 
-    if (!recipients || recipients.length === 0) {
+    if (!contacts || contacts.length === 0) {
       throw new Error("No active contacts found in the selected email list");
     }
 
-    console.log(`Found ${recipients.length} active contacts in list`);
+    console.log(`Found ${contacts.length} active contacts in list`);
+
+    // Apply user segmentation filters if specified
+    let recipients = contacts;
+    const userSegment = campaign.user_segment as any;
+
+    if (userSegment && (userSegment.subscription_tier !== "all" || userSegment.has_trades || userSegment.min_streak)) {
+      console.log("Applying user segmentation filters:", userSegment);
+      
+      // Get all contact emails to match with profiles
+      const contactEmails = contacts.map(c => c.email);
+      
+      // Build profile query with filters
+      let profileQuery = supabaseClient
+        .from("profiles")
+        .select("id, email, subscription_tier, current_streak")
+        .in("email", contactEmails);
+
+      // Apply subscription tier filter
+      if (userSegment.subscription_tier && userSegment.subscription_tier !== "all") {
+        profileQuery = profileQuery.eq("subscription_tier", userSegment.subscription_tier);
+      }
+
+      // Apply minimum streak filter
+      if (userSegment.min_streak) {
+        profileQuery = profileQuery.gte("current_streak", userSegment.min_streak);
+      }
+
+      const { data: filteredProfiles, error: profileError } = await profileQuery;
+
+      if (profileError) {
+        console.error("Profile filtering error:", profileError);
+        throw new Error(`Failed to filter profiles: ${profileError.message}`);
+      }
+
+      // If has_trades filter is active, check for trades
+      if (userSegment.has_trades && filteredProfiles) {
+        const profileIds = filteredProfiles.map(p => p.id);
+        const { data: usersWithTrades } = await supabaseClient
+          .from("trades")
+          .select("user_id")
+          .in("user_id", profileIds);
+
+        const userIdsWithTrades = new Set((usersWithTrades || []).map(t => t.user_id));
+        const finalProfiles = filteredProfiles.filter(p => userIdsWithTrades.has(p.id));
+        
+        // Match contacts with filtered profiles
+        const filteredEmails = new Set(finalProfiles.map(p => p.email));
+        recipients = contacts.filter(c => filteredEmails.has(c.email));
+      } else if (filteredProfiles) {
+        // Match contacts with filtered profiles
+        const filteredEmails = new Set(filteredProfiles.map(p => p.email));
+        recipients = contacts.filter(c => filteredEmails.has(c.email));
+      }
+
+      console.log(`After segmentation: ${recipients.length} recipients`);
+    }
 
     const totalRecipients = recipients?.length || 0;
     let sentCount = 0;

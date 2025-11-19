@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Plus, Send, Calendar, BarChart3 } from "lucide-react";
+import { Plus, Send, Users, Mail, TrendingUp, Clock, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
 
 export const EmailCampaignManager = () => {
   const queryClient = useQueryClient();
@@ -36,7 +37,7 @@ export const EmailCampaignManager = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("email_campaigns")
-        .select("*, email_templates(name)")
+        .select("*, email_templates(name), email_lists(name)")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -50,7 +51,7 @@ export const EmailCampaignManager = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("email_templates")
-        .select("id, name")
+        .select("id, name, category")
         .order("name");
 
       if (error) throw error;
@@ -219,11 +220,11 @@ export const EmailCampaignManager = () => {
     setIsCreateOpen(true);
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
       case "draft": return "secondary";
       case "sending": return "default";
-      case "sent": return "success";
+      case "sent": return "outline";
       case "scheduled": return "outline";
       default: return "secondary";
     }
@@ -231,19 +232,20 @@ export const EmailCampaignManager = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "sending": return "⏳";
-      case "sent": return "✓";
-      case "scheduled": return "📅";
-      default: return "📝";
+      case "sending": return <Loader2 className="h-4 w-4 animate-spin" />;
+      case "sent": return <CheckCircle2 className="h-4 w-4 text-success" />;
+      case "failed": return <XCircle className="h-4 w-4 text-destructive" />;
+      case "scheduled": return <Clock className="h-4 w-4 text-primary" />;
+      default: return <Mail className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Email Campaigns</h2>
-          <p className="text-muted-foreground">Create and manage email campaigns</p>
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <h2 className="text-3xl font-bold tracking-tight">Email Campaigns</h2>
+          <p className="text-muted-foreground">Create, manage, and track your email campaigns</p>
         </div>
         <Dialog open={isCreateOpen} onOpenChange={(open) => {
           setIsCreateOpen(open);
@@ -252,19 +254,19 @@ export const EmailCampaignManager = () => {
           }
         }}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Campaign
+            <Button size="lg" className="gap-2">
+              <Plus className="h-5 w-5" />
+              New Campaign
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{editingCampaign ? "Edit" : "Create"} Email Campaign</DialogTitle>
+              <DialogTitle className="text-2xl">{editingCampaign ? "Edit" : "Create New"} Campaign</DialogTitle>
               <DialogDescription>
-                {editingCampaign ? "Update your email campaign settings" : "Create a new email campaign with user segmentation"}
+                {editingCampaign ? "Update your email campaign settings" : "Set up a new email campaign with advanced targeting"}
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 overflow-y-auto pr-2">
+            <div className="grid gap-6 py-4">
               <div>
                 <Label>Campaign Name</Label>
                 <Input
@@ -431,9 +433,9 @@ export const EmailCampaignManager = () => {
                     </CardTitle>
                     <CardDescription>{campaign.description}</CardDescription>
                   </div>
-                  <Badge variant={getStatusColor(campaign.status) as any}>
-                    {campaign.status}
-                  </Badge>
+                    <Badge variant={getStatusVariant(campaign.status)} className="text-sm px-3 py-1 capitalize">
+                      {campaign.status}
+                    </Badge>
                 </div>
               </CardHeader>
               <CardContent>
