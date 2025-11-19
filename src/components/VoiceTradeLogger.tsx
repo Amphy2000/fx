@@ -5,7 +5,6 @@ import { Mic, MicOff, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-
 interface VoiceTradeLoggerProps {
   onTradeDataParsed: (data: any) => void;
 }
@@ -17,14 +16,14 @@ declare global {
     webkitSpeechRecognition: any;
   }
 }
-
-export const VoiceTradeLogger = ({ onTradeDataParsed }: VoiceTradeLoggerProps) => {
+export const VoiceTradeLogger = ({
+  onTradeDataParsed
+}: VoiceTradeLoggerProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [isSupported, setIsSupported] = useState(true);
   const recognitionRef = useRef<any>(null);
-
   useEffect(() => {
     // Check if Speech Recognition is supported
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -39,18 +38,16 @@ export const VoiceTradeLogger = ({ onTradeDataParsed }: VoiceTradeLoggerProps) =
     recognition.interimResults = false; // Only final results
     recognition.lang = 'en-US';
     recognition.maxAlternatives = 1;
-
     recognition.onresult = (event: any) => {
       const result = event.results[0][0].transcript;
       setTranscript(result);
       setIsRecording(false);
-      
+
       // Automatically process after recording stops
       setTimeout(() => {
         processTranscript(result);
       }, 100);
     };
-
     recognition.onerror = (event: any) => {
       console.error('Speech recognition error:', event.error);
       if (event.error === 'no-speech') {
@@ -66,13 +63,10 @@ export const VoiceTradeLogger = ({ onTradeDataParsed }: VoiceTradeLoggerProps) =
       }
       setIsRecording(false);
     };
-
     recognition.onend = () => {
       setIsRecording(false);
     };
-
     recognitionRef.current = recognition;
-
     return () => {
       if (recognitionRef.current) {
         try {
@@ -83,7 +77,6 @@ export const VoiceTradeLogger = ({ onTradeDataParsed }: VoiceTradeLoggerProps) =
       }
     };
   }, []);
-
   const startRecording = async () => {
     if (!isSupported) {
       toast.error("Speech recognition not supported", {
@@ -91,7 +84,6 @@ export const VoiceTradeLogger = ({ onTradeDataParsed }: VoiceTradeLoggerProps) =
       });
       return;
     }
-
     try {
       setTranscript("");
       setIsProcessing(false);
@@ -105,7 +97,6 @@ export const VoiceTradeLogger = ({ onTradeDataParsed }: VoiceTradeLoggerProps) =
       toast.error("Could not start recording");
     }
   };
-
   const stopRecording = () => {
     if (recognitionRef.current && isRecording) {
       try {
@@ -116,7 +107,6 @@ export const VoiceTradeLogger = ({ onTradeDataParsed }: VoiceTradeLoggerProps) =
       setIsRecording(false);
     }
   };
-
   const processTranscript = async (text: string) => {
     if (!text.trim()) {
       toast.error("No speech detected", {
@@ -124,24 +114,29 @@ export const VoiceTradeLogger = ({ onTradeDataParsed }: VoiceTradeLoggerProps) =
       });
       return;
     }
-
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('parse-voice-trade', {
-        body: { transcript: text }
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('parse-voice-trade', {
+        body: {
+          transcript: text
+        }
       });
-
       if (error) {
         if ((error as any)?.status === 402) {
           toast.error("Insufficient credits", {
             description: "You need 1 credit to parse voice trades. Upgrade to continue.",
-            action: { label: "Upgrade", onClick: () => window.location.href = "/pricing" }
+            action: {
+              label: "Upgrade",
+              onClick: () => window.location.href = "/pricing"
+            }
           });
           return;
         }
         throw error;
       }
-
       if (data?.tradeData) {
         onTradeDataParsed(data.tradeData);
         toast.success("Trade data extracted from voice!", {
@@ -157,10 +152,8 @@ export const VoiceTradeLogger = ({ onTradeDataParsed }: VoiceTradeLoggerProps) =
       setIsProcessing(false);
     }
   };
-
   if (!isSupported) {
-    return (
-      <Card className="border-destructive/20 bg-destructive/5">
+    return <Card className="border-destructive/20 bg-destructive/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-destructive">
             <MicOff className="h-5 w-5" />
@@ -170,12 +163,9 @@ export const VoiceTradeLogger = ({ onTradeDataParsed }: VoiceTradeLoggerProps) =
             Your browser doesn't support speech recognition. Please use Chrome, Edge, or Safari.
           </CardDescription>
         </CardHeader>
-      </Card>
-    );
+      </Card>;
   }
-
-  return (
-    <Card className="border-primary/20">
+  return <Card className="border-primary/20">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -195,28 +185,17 @@ export const VoiceTradeLogger = ({ onTradeDataParsed }: VoiceTradeLoggerProps) =
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex gap-2">
-          <Button
-            onClick={isRecording ? stopRecording : startRecording}
-            disabled={isProcessing}
-            variant={isRecording ? "destructive" : "default"}
-            className="flex-1"
-          >
-            {isProcessing ? (
-              <>
+          <Button onClick={isRecording ? stopRecording : startRecording} disabled={isProcessing} variant={isRecording ? "destructive" : "default"} className="flex-1">
+            {isProcessing ? <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Parsing trade...
-              </>
-            ) : isRecording ? (
-              <>
+              </> : isRecording ? <>
                 <MicOff className="mr-2 h-4 w-4" />
                 Stop & Parse
-              </>
-            ) : (
-              <>
+              </> : <>
                 <Mic className="mr-2 h-4 w-4" />
                 Speak Trade
-              </>
-            )}
+              </>}
           </Button>
         </div>
 
@@ -233,40 +212,20 @@ export const VoiceTradeLogger = ({ onTradeDataParsed }: VoiceTradeLoggerProps) =
           </p>
         </div>
 
-        {transcript && !isProcessing && (
-          <>
+        {transcript && !isProcessing && <>
             <div className="p-3 bg-muted rounded-lg">
               <p className="text-sm font-medium mb-1">Heard:</p>
               <p className="text-sm text-muted-foreground">{transcript}</p>
             </div>
-            <Button
-              onClick={() => processTranscript(transcript)}
-              variant="outline"
-              size="sm"
-              disabled={isProcessing}
-              className="w-full"
-            >
-              {isProcessing ? (
-                <>
+            <Button onClick={() => processTranscript(transcript)} variant="outline" size="sm" disabled={isProcessing} className="w-full">
+              {isProcessing ? <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Parsing...
-                </>
-              ) : (
-                "Parse Again"
-              )}
+                </> : "Parse Again"}
             </Button>
-          </>
-        )}
+          </>}
 
-        <div className="text-xs text-muted-foreground space-y-1">
-          <p className="font-medium">Example phrases:</p>
-          <ul className="list-disc list-inside space-y-0.5 ml-2">
-            <li>"Long EUR/USD at 1.0950, stop 1.0920, target 1.1000"</li>
-            <li>"Short gold at 2050, stop loss 2060, take profit 2030"</li>
-            <li>"Buy GBP/USD 1.2650, SL 1.2620, TP 1.2700"</li>
-          </ul>
-        </div>
+        
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
