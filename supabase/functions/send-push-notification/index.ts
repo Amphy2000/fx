@@ -1,17 +1,20 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import * as webpush from 'https://esm.sh/web-push@3.6.6';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Web Push helper functions
+// Web Push helper function with proper VAPID signing
 async function sendWebPushNotification(
   subscription: { endpoint: string; p256dh_key: string; auth_key: string },
-  payload: { title: string; body: string; icon?: string; badge?: string },
+  payload: any,
   vapidDetails: { subject: string; publicKey: string; privateKey: string }
 ): Promise<boolean> {
   try {
+    console.log('Sending to endpoint:', subscription.endpoint.substring(0, 50) + '...');
+    
     const pushSubscription = {
       endpoint: subscription.endpoint,
       keys: {
@@ -20,17 +23,21 @@ async function sendWebPushNotification(
       }
     };
 
-    // Create the web push request
-    const response = await fetch(subscription.endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'TTL': '86400'
-      },
-      body: JSON.stringify(payload)
-    });
+    // Set VAPID details for web-push
+    webpush.setVapidDetails(
+      vapidDetails.subject,
+      vapidDetails.publicKey,
+      vapidDetails.privateKey
+    );
 
-    return response.ok;
+    // Send notification with proper VAPID signing
+    await webpush.sendNotification(
+      pushSubscription,
+      JSON.stringify(payload)
+    );
+
+    console.log('Push sent successfully');
+    return true;
   } catch (error) {
     console.error('Failed to send push notification:', error);
     return false;
@@ -38,6 +45,9 @@ async function sendWebPushNotification(
 }
 
 Deno.serve(async (req) => {
+  console.log('=== Push notification request received ===');
+  console.log('Method:', req.method);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -45,11 +55,14 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error('No authorization header provided');
       return new Response(
         JSON.stringify({ error: 'No authorization header' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
       );
     }
+
+    console.log('Auth header present, creating client...');
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -58,34 +71,49 @@ Deno.serve(async (req) => {
     );
 
     // Verify admin role
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !user) {
+      console.error('Failed to get user:', userError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
       );
     }
 
-    const { data: isAdmin } = await supabaseClient.rpc('has_role', {
+    console.log('User authenticated:', user.id);
+
+    const { data: isAdmin, error: roleError } = await supabaseClient.rpc('has_role', {
       _user_id: user.id,
       _role: 'admin'
     });
 
+    if (roleError) {
+      console.error('Role check error:', roleError);
+    }
+
     if (!isAdmin) {
+      console.error('User is not admin');
       return new Response(
         JSON.stringify({ error: 'Admin access required' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
       );
     }
 
-    const { title, body, targetUsers, userSegment, icon, badge, actionButtons, templateId } = await req.json();
+    console.log('Admin verified, parsing body...');
+    const requestBody = await req.json();
+    console.log('Request body:', JSON.stringify(requestBody, null, 2));
+    
+    const { title, body, targetUsers, userSegment, icon, badge, actionButtons, templateId } = requestBody;
 
     if (!title || !body) {
+      console.error('Missing title or body');
       return new Response(
         JSON.stringify({ error: 'Title and body are required' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
+
+    console.log('Creating notification log...');
 
     // Create notification log entry
     const { data: notificationLog, error: logError } = await supabaseClient
@@ -103,7 +131,12 @@ Deno.serve(async (req) => {
       .select()
       .single();
 
-    if (logError) throw logError;
+    if (logError) {
+      console.error('Failed to create notification log:', logError);
+      throw logError;
+    }
+
+    console.log('Notification log created:', notificationLog.id);
 
     // Fetch active subscriptions based on segment
     let userIds: string[] = [];
@@ -150,9 +183,14 @@ Deno.serve(async (req) => {
     }
 
     const { data: subscriptions, error: subError } = await query;
-    if (subError) throw subError;
+    if (subError) {
+      console.error('Failed to fetch subscriptions:', subError);
+      throw subError;
+    }
 
-    console.log(`Sending push notifications to ${subscriptions?.length || 0} subscriptions`);
+    console.log(`Found ${subscriptions?.length || 0} active subscriptions`);
+    console.log('User segment:', userSegment);
+    console.log('Target users:', targetUsers);
 
     const vapidDetails = {
       subject: Deno.env.get('VAPID_SUBJECT') ?? '',
@@ -160,11 +198,18 @@ Deno.serve(async (req) => {
       privateKey: Deno.env.get('VAPID_PRIVATE_KEY') ?? ''
     };
 
+    console.log('VAPID configured:', {
+      hasSubject: !!vapidDetails.subject,
+      hasPublicKey: !!vapidDetails.publicKey,
+      hasPrivateKey: !!vapidDetails.privateKey
+    });
+
     let sentCount = 0;
     let failedCount = 0;
 
     // Send notifications
     if (subscriptions && subscriptions.length > 0) {
+      console.log('Preparing payload...');
       const payload = {
         title,
         body,
@@ -176,18 +221,22 @@ Deno.serve(async (req) => {
         }
       };
 
+      console.log('Sending notifications to', subscriptions.length, 'devices...');
       const results = await Promise.allSettled(
-        subscriptions.map(sub => 
-          sendWebPushNotification(sub, payload, vapidDetails)
-        )
+        subscriptions.map((sub, index) => {
+          console.log(`Sending to device ${index + 1}/${subscriptions.length}`);
+          return sendWebPushNotification(sub, payload, vapidDetails);
+        })
       );
 
+      console.log('Processing results...');
       for (let i = 0; i < results.length; i++) {
         const result = results[i];
         if (result.status === 'fulfilled' && result.value) {
           sentCount++;
         } else {
           failedCount++;
+          console.log(`Failed to send to device ${i + 1}:`, result.status === 'rejected' ? result.reason : 'Unknown');
           // Mark subscription as inactive if it failed
           await supabaseClient
             .from('push_subscriptions')
@@ -195,6 +244,8 @@ Deno.serve(async (req) => {
             .eq('id', subscriptions[i].id);
         }
       }
+    } else {
+      console.log('No active subscriptions found');
     }
 
     // Update notification log
@@ -207,7 +258,7 @@ Deno.serve(async (req) => {
       })
       .eq('id', notificationLog.id);
 
-    console.log(`Notification sent: ${sentCount} succeeded, ${failedCount} failed`);
+    console.log(`=== COMPLETE: ${sentCount} succeeded, ${failedCount} failed ===`);
 
     return new Response(
       JSON.stringify({
@@ -219,10 +270,12 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
   } catch (error) {
-    console.error('Error in send-push-notification:', error);
+    console.error('=== ERROR in send-push-notification ===');
+    console.error('Error details:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: errorMessage, details: String(error) }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
