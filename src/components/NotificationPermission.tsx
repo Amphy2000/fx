@@ -69,22 +69,13 @@ export const NotificationPermission = () => {
         applicationServerKey: urlBase64ToUint8Array(publicKey)
       });
 
-      // Send subscription to backend
+      // Send subscription to backend (auth token is automatically included by Supabase client)
       const deviceInfo = `${navigator.userAgent}`;
-      
-      // Get the current session to pass the auth token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Not authenticated');
-      }
 
       const { error: subError } = await supabase.functions.invoke('subscribe-push', {
         body: {
           subscription: subscription.toJSON(),
           deviceInfo
-        },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
         }
       });
 

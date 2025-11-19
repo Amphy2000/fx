@@ -22,29 +22,31 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Extract JWT token and decode it to get user ID
-    // Since verify_jwt=true in config, Supabase already verified the token
-    const token = authHeader.replace('Bearer ', '');
-    let userId: string;
-    
-    try {
-      // Decode JWT to get user ID (token is already verified by Supabase)
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      userId = payload.sub;
-      console.log('User ID from JWT:', userId);
-      
-      if (!userId) {
-        throw new Error('No user ID in token');
+    // Create a Supabase client with the user's token to get authenticated user
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: authHeader }
+        }
       }
-    } catch (error) {
-      console.error('Error decoding JWT:', error);
+    );
+
+    // Get the authenticated user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      console.error('Error getting user:', userError);
       return new Response(
-        JSON.stringify({ error: 'Invalid token' }),
+        JSON.stringify({ error: 'Unauthorized' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
       );
     }
 
-    // Use service role client to bypass RLS
+    console.log('Authenticated user:', user.id);
+
+    // Use service role client to bypass RLS for insert
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -66,7 +68,7 @@ Deno.serve(async (req) => {
     const { error: upsertError } = await supabaseAdmin
       .from('push_subscriptions')
       .upsert({
-        user_id: userId,
+        user_id: user.id,
         endpoint: subscription.endpoint,
         p256dh_key: subscription.keys.p256dh,
         auth_key: subscription.keys.auth,
@@ -85,7 +87,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Subscription saved successfully for user:', userId);
+    console.log('Subscription saved successfully for user:', user.id);
 
     return new Response(
       JSON.stringify({ success: true, message: 'Subscription saved' }),
