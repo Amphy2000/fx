@@ -116,11 +116,11 @@ const Settings = () => {
       "⚠️ WARNING: This will permanently delete ALL your data including:\n\n" +
       "• All trades\n" +
       "• Journal entries\n" +
-      "• Achievements\n" +
       "• Check-ins\n" +
       "• Streaks\n" +
       "• Analytics data\n" +
       "• MT5 connections\n\n" +
+      "Your achievements will be PRESERVED as earned milestones.\n\n" +
       "This action CANNOT be undone. Are you absolutely sure?"
     );
     
@@ -183,7 +183,7 @@ const Settings = () => {
       // Delete other main records
       toast.info("Deleting journal and analytics...");
       await deleteBatch('journal_entries');
-      await deleteBatch('achievements');
+      // Achievements are preserved as earned milestones
       await deleteBatch('daily_checkins');
       await deleteBatch('streaks');
       await deleteBatch('routine_entries');
