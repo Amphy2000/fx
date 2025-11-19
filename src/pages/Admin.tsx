@@ -18,6 +18,8 @@ import { EmailCampaignManager } from "@/components/EmailCampaignManager";
 import { EmailAnalyticsDashboard } from "@/components/EmailAnalyticsDashboard";
 import { EmailWorkflowManager } from "@/components/EmailWorkflowManager";
 import { EmailABTestManager } from "@/components/EmailABTestManager";
+import { EmailListManager } from "@/components/EmailListManager";
+import { EmailPersonalizationManager } from "@/components/EmailPersonalizationManager";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -212,13 +214,17 @@ const Admin = () => {
               <Bell className="mr-2 h-4 w-4" />
               Push Notifications
             </TabsTrigger>
+            <TabsTrigger value="email-lists">
+              <Mail className="mr-2 h-4 w-4" />
+              Email Lists
+            </TabsTrigger>
             <TabsTrigger value="email-templates">
               <Mail className="mr-2 h-4 w-4" />
-              Email Templates
+              Templates
             </TabsTrigger>
             <TabsTrigger value="email-campaigns">
               <Mail className="mr-2 h-4 w-4" />
-              Email Campaigns
+              Campaigns
             </TabsTrigger>
             <TabsTrigger value="email-workflows">
               <Mail className="mr-2 h-4 w-4" />
@@ -228,9 +234,13 @@ const Admin = () => {
               <BarChart3 className="mr-2 h-4 w-4" />
               A/B Tests
             </TabsTrigger>
+            <TabsTrigger value="personalization">
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Personalization
+            </TabsTrigger>
             <TabsTrigger value="email-analytics">
               <BarChart3 className="mr-2 h-4 w-4" />
-              Email Analytics
+              Analytics
             </TabsTrigger>
           </TabsList>
 
@@ -341,6 +351,10 @@ const Admin = () => {
             <AdminNotificationSender />
           </TabsContent>
 
+          <TabsContent value="email-lists">
+            <EmailListManager />
+          </TabsContent>
+
           <TabsContent value="email-templates">
             <EmailTemplateManager />
           </TabsContent>
@@ -355,6 +369,10 @@ const Admin = () => {
 
           <TabsContent value="ab-tests">
             <EmailABTestManager />
+          </TabsContent>
+
+          <TabsContent value="personalization">
+            <EmailPersonalizationManager />
           </TabsContent>
 
           <TabsContent value="email-analytics">

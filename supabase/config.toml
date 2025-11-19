@@ -114,5 +114,9 @@ verify_jwt = true
 [functions.track-email-event]
 verify_jwt = false
 
-[functions.process-email-workflow]
+[functions.handle-unsubscribe]
 verify_jwt = false
+
+[functions.import-email-contacts]
+
+[functions.export-email-contacts]

@@ -372,6 +372,41 @@ export type Database = {
           },
         ]
       }
+      email_bounces: {
+        Row: {
+          bounce_type: string
+          bounced_at: string | null
+          campaign_id: string | null
+          email: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          bounce_type: string
+          bounced_at?: string | null
+          campaign_id?: string | null
+          email: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          bounce_type?: string
+          bounced_at?: string | null
+          campaign_id?: string | null
+          email?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_bounces_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "email_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_campaigns: {
         Row: {
           ab_test_id: string | null
@@ -453,6 +488,118 @@ export type Database = {
           },
         ]
       }
+      email_contact_tags: {
+        Row: {
+          contact_id: string
+          created_at: string | null
+          id: string
+          tag: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string | null
+          id?: string
+          tag: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string | null
+          id?: string
+          tag?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_contact_tags_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "email_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_contacts: {
+        Row: {
+          created_at: string | null
+          custom_fields: Json | null
+          email: string
+          first_name: string | null
+          id: string
+          last_activity_at: string | null
+          last_name: string | null
+          list_id: string
+          source: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          custom_fields?: Json | null
+          email: string
+          first_name?: string | null
+          id?: string
+          last_activity_at?: string | null
+          last_name?: string | null
+          list_id: string
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          custom_fields?: Json | null
+          email?: string
+          first_name?: string | null
+          id?: string
+          last_activity_at?: string | null
+          last_name?: string | null
+          list_id?: string
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_contacts_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "email_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_content_blocks: {
+        Row: {
+          block_type: string
+          content: Json
+          created_at: string | null
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          block_type: string
+          content: Json
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          block_type?: string
+          content?: Json
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       email_events: {
         Row: {
           campaign_id: string
@@ -494,6 +641,89 @@ export type Database = {
             columns: ["email_send_id"]
             isOneToOne: false
             referencedRelation: "email_sends"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_lists: {
+        Row: {
+          active_contacts: number | null
+          created_at: string | null
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          total_contacts: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          active_contacts?: number | null
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          total_contacts?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          active_contacts?: number | null
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          total_contacts?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      email_personalization_rules: {
+        Row: {
+          conditions: Json
+          content_block_id: string | null
+          created_at: string | null
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          priority: number | null
+          rule_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          conditions: Json
+          content_block_id?: string | null
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          priority?: number | null
+          rule_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          conditions?: Json
+          content_block_id?: string | null
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          priority?: number | null
+          rule_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_personalization_rules_content_block_id_fkey"
+            columns: ["content_block_id"]
+            isOneToOne: false
+            referencedRelation: "email_content_blocks"
             referencedColumns: ["id"]
           },
         ]
@@ -590,6 +820,38 @@ export type Database = {
           variables?: Json | null
         }
         Relationships: []
+      }
+      email_unsubscribes: {
+        Row: {
+          campaign_id: string | null
+          email: string
+          id: string
+          reason: string | null
+          unsubscribed_at: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          email: string
+          id?: string
+          reason?: string | null
+          unsubscribed_at?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          email?: string
+          id?: string
+          reason?: string | null
+          unsubscribed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_unsubscribes_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "email_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_workflow_executions: {
         Row: {
@@ -2058,6 +2320,7 @@ export type Database = {
         Args: { stat_name: string; variant_id: string }
         Returns: undefined
       }
+      is_email_suppressed: { Args: { check_email: string }; Returns: boolean }
       reset_monthly_credits: { Args: never; Returns: undefined }
     }
     Enums: {

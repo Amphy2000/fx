@@ -97,6 +97,29 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       try {
+        // Check if email is suppressed (unsubscribed or hard bounced)
+        const { data: isSuppressed, error: suppressError } = await supabaseClient
+          .rpc("is_email_suppressed", { check_email: recipient.email });
+
+        if (suppressError) {
+          console.error("Error checking suppression:", suppressError);
+        }
+
+        if (isSuppressed) {
+          console.log(`Skipping suppressed email: ${recipient.email}`);
+          failedCount++;
+          
+          await supabaseClient.from("email_sends").insert({
+            campaign_id: campaignId,
+            user_id: recipient.id,
+            email_address: recipient.email,
+            status: "suppressed",
+            error_message: "Email is unsubscribed or bounced",
+          });
+          
+          continue;
+        }
+
         let htmlContent = campaign.email_templates.html_content;
         let subject = campaign.email_templates.subject;
         let variantId = null;
@@ -159,6 +182,15 @@ const handler = async (req: Request): Promise<Response> => {
         htmlContent = htmlContent.replace(/{{name}}/g, recipient.full_name || "User");
         htmlContent = htmlContent.replace(/{{email}}/g, recipient.email);
         subject = subject.replace(/{{name}}/g, recipient.full_name || "User");
+
+        // Add unsubscribe link
+        const unsubscribeUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/handle-unsubscribe?email=${encodeURIComponent(recipient.email)}&campaign_id=${campaignId}`;
+        htmlContent = htmlContent.replace(
+          "</body>",
+          `<div style="text-align: center; padding: 20px; font-size: 12px; color: #999;">
+            <a href="${unsubscribeUrl}" style="color: #999; text-decoration: underline;">Unsubscribe</a>
+          </div></body>`
+        );
 
         // Add tracking pixel for opens
         const trackingPixel = `<img src="${Deno.env.get("SUPABASE_URL")}/functions/v1/track-email-event?campaign_id=${campaignId}&user_id=${recipient.id}&event=open" width="1" height="1" style="display:none;" />`;
