@@ -209,7 +209,7 @@ export const GlobalVoiceAssistant = ({
         </CardContent>
       </Card>;
   }
-  return <Card className="fixed bottom-24 right-4 w-[calc(100vw-2rem)] sm:w-[90vw] md:w-96 max-w-96 max-h-[85vh] md:max-h-[600px] shadow-2xl z-50 flex flex-col">
+  return <Card className="fixed bottom-24 right-4 w-[calc(100vw-2rem)] sm:w-96 max-w-96 max-h-[85vh] md:max-h-[600px] shadow-2xl z-50 flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 px-4 py-3">
         <div>
           <CardTitle className="flex items-center gap-2 text-base">

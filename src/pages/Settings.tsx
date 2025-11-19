@@ -239,7 +239,7 @@ const Settings = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto p-6 max-w-4xl">
+      <div className="container mx-auto p-3 sm:p-4 md:p-6 max-w-4xl">
         <h1 className="text-4xl font-bold mb-8 text-foreground">Settings</h1>
 
         <div className="space-y-6">
