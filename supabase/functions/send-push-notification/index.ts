@@ -1,11 +1,138 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { encodeBase64Url } from 'https://deno.land/std@0.224.0/encoding/base64url.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// VAPID helper functions using native Web Crypto API
+// Web Push payload encryption according to RFC 8291
+async function encryptPayload(
+  payload: string,
+  p256dh: string,
+  auth: string
+): Promise<{ ciphertext: Uint8Array; salt: Uint8Array; publicKey: Uint8Array }> {
+  // Decode subscription keys
+  const userPublicKey = urlBase64ToUint8Array(p256dh);
+  const userAuth = urlBase64ToUint8Array(auth);
+  
+  // Generate local key pair
+  const localKeyPair = await crypto.subtle.generateKey(
+    { name: 'ECDH', namedCurve: 'P-256' },
+    true,
+    ['deriveBits']
+  );
+  
+  // Export local public key
+  const localPublicKeyRaw = await crypto.subtle.exportKey('raw', localKeyPair.publicKey);
+  const localPublicKey = new Uint8Array(localPublicKeyRaw);
+  
+  // Import user public key - create new ArrayBuffer
+  const userPublicKeyBuffer = new Uint8Array(userPublicKey).buffer;
+  const userPublicKeyCrypto = await crypto.subtle.importKey(
+    'raw',
+    userPublicKeyBuffer,
+    { name: 'ECDH', namedCurve: 'P-256' },
+    false,
+    []
+  );
+  
+  // Derive shared secret
+  const sharedSecret = await crypto.subtle.deriveBits(
+    { name: 'ECDH', public: userPublicKeyCrypto },
+    localKeyPair.privateKey,
+    256
+  );
+  
+  // Generate salt
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  
+  // Derive encryption key and nonce using HKDF
+  const authInfo = new TextEncoder().encode('Content-Encoding: auth\0');
+  const authBuffer = new Uint8Array(userAuth).buffer;
+  const prk = await crypto.subtle.importKey(
+    'raw',
+    authBuffer,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  
+  const authSecret = new Uint8Array(await crypto.subtle.sign('HMAC', prk, new Uint8Array(sharedSecret)));
+  
+  // Create IKM
+  const keyInfo = new TextEncoder().encode('Content-Encoding: aes128gcm\0');
+  const ikm = new Uint8Array([...authSecret, ...salt]);
+  
+  // Derive content encryption key
+  const contentEncryptionKey = await deriveKey(ikm, salt, keyInfo, 16);
+  const nonce = await deriveKey(ikm, salt, new TextEncoder().encode('Content-Encoding: nonce\0'), 12);
+  
+  // Pad payload
+  const paddedPayload = new Uint8Array(2 + payload.length);
+  paddedPayload[0] = 0;
+  paddedPayload[1] = 0;
+  new TextEncoder().encodeInto(payload, paddedPayload.subarray(2));
+  
+  // Encrypt
+  const keyBuffer = new Uint8Array(contentEncryptionKey).buffer;
+  const key = await crypto.subtle.importKey(
+    'raw',
+    keyBuffer,
+    { name: 'AES-GCM' },
+    false,
+    ['encrypt']
+  );
+  
+  const nonceBuffer = new Uint8Array(nonce).buffer;
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv: nonceBuffer, tagLength: 128 },
+    key,
+    paddedPayload
+  );
+  
+  return {
+    ciphertext: new Uint8Array(ciphertext),
+    salt,
+    publicKey: localPublicKey
+  };
+}
+
+async function deriveKey(
+  ikm: Uint8Array,
+  salt: Uint8Array,
+  info: Uint8Array,
+  length: number
+): Promise<Uint8Array> {
+  const saltBuffer = new Uint8Array(salt).buffer;
+  const key = await crypto.subtle.importKey(
+    'raw',
+    saltBuffer,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  
+  const ikmBuffer = new Uint8Array(ikm).buffer;
+  const prk = new Uint8Array(await crypto.subtle.sign('HMAC', key, ikmBuffer));
+  
+  const prkBuffer = new Uint8Array(prk).buffer;
+  const infoKey = await crypto.subtle.importKey(
+    'raw',
+    prkBuffer,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  
+  const infoArray = new Uint8Array([...info, 1]);
+  const infoArrayBuffer = new Uint8Array(infoArray).buffer;
+  const okm = new Uint8Array(await crypto.subtle.sign('HMAC', infoKey, infoArrayBuffer));
+  
+  return okm.slice(0, length);
+}
+
+
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
   const base64 = (base64String + padding)
@@ -73,7 +200,7 @@ async function generateVAPIDHeaders(
   };
 }
 
-// Web Push notification sender with proper VAPID
+// Web Push notification sender with proper encryption
 async function sendWebPushNotification(
   subscription: { endpoint: string; p256dh_key: string; auth_key: string },
   payload: any,
@@ -84,18 +211,36 @@ async function sendWebPushNotification(
     
     const vapidHeaders = await generateVAPIDHeaders(subscription.endpoint, vapidDetails);
     
+    // Encrypt payload
+    const payloadString = JSON.stringify(payload);
+    const encrypted = await encryptPayload(
+      payloadString,
+      subscription.p256dh_key,
+      subscription.auth_key
+    );
+    
+    console.log('Payload encrypted, making request...');
+    
+    // Create proper ArrayBuffer for body
+    const bodyBuffer = new Uint8Array(encrypted.ciphertext).buffer as ArrayBuffer;
+    
     const response = await fetch(subscription.endpoint, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Encoding': 'aes128gcm',
+        'Content-Type': 'application/octet-stream',
         'TTL': '86400',
+        'Crypto-Key': `dh=${encodeBase64Url(encrypted.publicKey)};p256ecdsa=${vapidDetails.publicKey}`,
         ...vapidHeaders
       },
-      body: JSON.stringify(payload)
+      body: bodyBuffer
     });
 
+    const responseText = await response.text();
+    
     if (!response.ok) {
-      console.error('Push failed:', response.status, await response.text());
+      console.error('Push failed with status:', response.status);
+      console.error('Response body:', responseText);
       return false;
     }
 
@@ -103,6 +248,7 @@ async function sendWebPushNotification(
     return true;
   } catch (error) {
     console.error('Failed to send push notification:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
     return false;
   }
 }
@@ -302,14 +448,37 @@ Deno.serve(async (req) => {
         const result = results[i];
         if (result.status === 'fulfilled' && result.value) {
           sentCount++;
-        } else {
-          failedCount++;
-          console.log(`Failed to send to device ${i + 1}:`, result.status === 'rejected' ? result.reason : 'Unknown');
-          // Mark subscription as inactive if it failed
+          // Reset failed attempts on success
           await supabaseClient
             .from('push_subscriptions')
-            .update({ is_active: false })
+            .update({ failed_attempts: 0 })
             .eq('id', subscriptions[i].id);
+        } else {
+          failedCount++;
+          const errorMsg = result.status === 'rejected' ? result.reason : 'Unknown';
+          console.log(`Failed to send to device ${i + 1}:`, errorMsg);
+          
+          // Increment failed attempts
+          const currentSub = subscriptions[i];
+          const newFailedAttempts = (currentSub.failed_attempts || 0) + 1;
+          
+          // Only mark inactive after 3 failures
+          if (newFailedAttempts >= 3) {
+            await supabaseClient
+              .from('push_subscriptions')
+              .update({ 
+                is_active: false,
+                failed_attempts: newFailedAttempts 
+              })
+              .eq('id', currentSub.id);
+            console.log(`Marked subscription ${currentSub.id} as inactive after ${newFailedAttempts} failures`);
+          } else {
+            await supabaseClient
+              .from('push_subscriptions')
+              .update({ failed_attempts: newFailedAttempts })
+              .eq('id', currentSub.id);
+            console.log(`Incremented failed attempts for ${currentSub.id} to ${newFailedAttempts}`);
+          }
         }
       }
     } else {

@@ -893,6 +893,7 @@ export type Database = {
           created_at: string | null
           device_info: string | null
           endpoint: string
+          failed_attempts: number | null
           id: string
           is_active: boolean | null
           p256dh_key: string
@@ -904,6 +905,7 @@ export type Database = {
           created_at?: string | null
           device_info?: string | null
           endpoint: string
+          failed_attempts?: number | null
           id?: string
           is_active?: boolean | null
           p256dh_key: string
@@ -915,6 +917,7 @@ export type Database = {
           created_at?: string | null
           device_info?: string | null
           endpoint?: string
+          failed_attempts?: number | null
           id?: string
           is_active?: boolean | null
           p256dh_key?: string
