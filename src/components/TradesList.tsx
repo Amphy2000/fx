@@ -366,17 +366,17 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
             {paginatedTrades.map((trade) => (
           <div
             key={trade.id}
-            className="p-4 rounded-lg border border-border/50 bg-card/50 transition-smooth hover:bg-card"
+            className="p-3 sm:p-4 rounded-lg border border-border/50 bg-card/50 transition-smooth hover:bg-card"
           >
-            <div className="flex items-start gap-3 mb-3">
+            <div className="flex items-start gap-2 sm:gap-3 mb-3">
               <Checkbox 
                 checked={selectedTrades.has(trade.id)}
                 onCheckedChange={() => toggleTradeSelection(trade.id)}
-                className="mt-1"
+                className="mt-1 flex-shrink-0"
               />
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-semibold text-lg">{trade.pair}</h3>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <h3 className="font-semibold text-base sm:text-lg">{trade.pair}</h3>
                   <Badge
                     variant="outline"
                     className={
@@ -402,7 +402,7 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
                   })}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-1 sm:gap-2 flex-shrink-0">
                 <Button
                   variant="outline"
                   size="sm"
@@ -411,6 +411,7 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
                     setEmotionModalOpen(true);
                   }}
                   title="Track emotions"
+                  className="h-8 w-8 p-0"
                 >
                   <Brain className="h-4 w-4" />
                 </Button>
@@ -418,34 +419,34 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
                   variant="ghost"
                   size="icon"
                   onClick={() => handleDelete(trade.id)}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-              <div>
-                <span className="text-muted-foreground">Entry:</span>
-                <p className="font-medium">{trade.entry_price}</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3 text-sm">
+              <div className="min-w-0">
+                <span className="text-muted-foreground text-xs sm:text-sm">Entry:</span>
+                <p className="font-medium truncate">{trade.entry_price}</p>
               </div>
               {trade.exit_price && (
-                <div>
-                  <span className="text-muted-foreground">Exit:</span>
-                  <p className="font-medium">{trade.exit_price}</p>
+                <div className="min-w-0">
+                  <span className="text-muted-foreground text-xs sm:text-sm">Exit:</span>
+                  <p className="font-medium truncate">{trade.exit_price}</p>
                 </div>
               )}
               {trade.stop_loss && (
-                <div>
-                  <span className="text-muted-foreground">SL:</span>
-                  <p className="font-medium">{trade.stop_loss}</p>
+                <div className="min-w-0">
+                  <span className="text-muted-foreground text-xs sm:text-sm">SL:</span>
+                  <p className="font-medium truncate">{trade.stop_loss}</p>
                 </div>
               )}
               {trade.take_profit && (
-                <div>
-                  <span className="text-muted-foreground">TP:</span>
-                  <p className="font-medium">{trade.take_profit}</p>
+                <div className="min-w-0">
+                  <span className="text-muted-foreground text-xs sm:text-sm">TP:</span>
+                  <p className="font-medium truncate">{trade.take_profit}</p>
                 </div>
               )}
             </div>
