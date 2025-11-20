@@ -34,6 +34,7 @@ import Streaks from "./pages/Streaks";
 import Onboarding from "./pages/Onboarding";
 import Achievements from "./pages/Achievements";
 import Install from "./pages/Install";
+import AbusePreventionAdmin from "./pages/AbusePreventionAdmin";
 import { FloatingActionMenu } from "./components/FloatingActionMenu";
 
 const queryClient = new QueryClient();
@@ -60,6 +61,7 @@ const AppContent = () => {
         <Route path="/integrations" element={<Integrations />} />
         <Route path="/integrations/mt5-setup" element={<MT5Setup />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/admin/abuse-prevention" element={<AbusePreventionAdmin />} />
         <Route path="/targets" element={<Targets />} />
         <Route path="/trade-calendar" element={<TradeCalendar />} />
         <Route path="/pricing" element={<Pricing />} />

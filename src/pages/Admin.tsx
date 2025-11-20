@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Loader2, Download, Search, Eye, Crown, Mail, BarChart3 } from "lucide-react";
+import { Loader2, Download, Search, Eye, Crown, Mail, BarChart3, Shield } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -211,6 +211,10 @@ const Admin = () => {
           <ScrollArea className="w-full">
             <TabsList className="inline-flex mb-6">
               <TabsTrigger value="users">Users</TabsTrigger>
+              <TabsTrigger value="abuse-prevention">
+                <Shield className="h-4 w-4 mr-2" />
+                Abuse Prevention
+              </TabsTrigger>
               <TabsTrigger value="email-lists">Lists</TabsTrigger>
               <TabsTrigger value="email-templates">Templates</TabsTrigger>
               <TabsTrigger value="email-campaigns">Campaigns</TabsTrigger>
@@ -323,6 +327,48 @@ const Admin = () => {
                     </Table>
                   </div>
                 </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="abuse-prevention">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Shield className="h-5 w-5" />
+                      Abuse Prevention Management
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Manage flagged signups, IP/device blocks, and create overrides for legitimate users
+                    </p>
+                  </div>
+                  <Button onClick={() => navigate('/admin/abuse-prevention')}>
+                    Open Full Panel
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    The Abuse Prevention system protects your platform from free tier abuse by:
+                  </p>
+                  <ul className="space-y-2 text-sm list-disc pl-6">
+                    <li>Tracking IP addresses and device fingerprints during signup</li>
+                    <li>Preventing multiple free accounts from the same location/device</li>
+                    <li>Flagging suspicious signup attempts for admin review</li>
+                    <li>Allowing manual overrides for legitimate cases</li>
+                  </ul>
+                  <Button 
+                    onClick={() => navigate('/admin/abuse-prevention')} 
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Shield className="h-4 w-4 mr-2" />
+                    Manage Abuse Prevention
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
