@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Shield, Check, X, Plus, Trash2 } from "lucide-react";
+import { Shield, Check, X, Plus, Trash2, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 
@@ -39,6 +41,8 @@ interface Override {
 }
 
 export default function AbusePreventionAdmin() {
+  const navigate = useNavigate();
+  const [isAdmin, setIsAdmin] = useState(false);
   const [flaggedSignups, setFlaggedSignups] = useState<FlaggedSignup[]>([]);
   const [overrides, setOverrides] = useState<Override[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,11 +58,40 @@ export default function AbusePreventionAdmin() {
   const [overrideExpiry, setOverrideExpiry] = useState("");
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    checkAdminAccess();
+  }, [navigate]);
+
+  const checkAdminAccess = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/auth");
+        return;
+      }
+
+      const { data: roleData, error: roleError } = await supabase
+        .rpc('has_role', { _user_id: session.user.id, _role: 'admin' });
+
+      if (roleError) throw roleError;
+
+      if (!roleData) {
+        toast.error("Access denied. Admin privileges required.");
+        navigate("/dashboard");
+        return;
+      }
+
+      setIsAdmin(true);
+      await fetchData();
+    } catch (error) {
+      console.error("Error checking admin access:", error);
+      toast.error("Failed to verify admin access");
+      navigate("/dashboard");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchData = async () => {
-    setLoading(true);
     try {
       const [flaggedRes, overridesRes] = await Promise.all([
         supabase
@@ -78,8 +111,6 @@ export default function AbusePreventionAdmin() {
       setOverrides(overridesRes.data as Override[] || []);
     } catch (error: any) {
       toast.error("Failed to load data: " + error.message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -185,16 +216,23 @@ export default function AbusePreventionAdmin() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <p className="text-muted-foreground">Loading...</p>
+      <Layout>
+        <div className="container mx-auto p-6">
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
+  if (!isAdmin) {
+    return null;
+  }
+
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <Layout>
+      <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center gap-3">
         <Shield className="h-8 w-8 text-primary" />
         <div>
@@ -465,5 +503,6 @@ export default function AbusePreventionAdmin() {
         </TabsContent>
       </Tabs>
     </div>
+    </Layout>
   );
 }
