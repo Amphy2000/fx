@@ -5,12 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Upload, Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { CreditCostBadge } from "@/components/CreditCostBadge";
+import { useNavigate } from "react-router-dom";
+
+const ANALYSIS_COST = 5;
 
 export default function AISetupAnalyzer() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -37,10 +42,22 @@ export default function AISetupAnalyzer() {
         body: { image: selectedImage }
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes('Insufficient credits')) {
+          toast.error("Insufficient credits. Please upgrade your plan.", {
+            action: {
+              label: "Upgrade",
+              onClick: () => navigate("/pricing")
+            }
+          });
+        } else {
+          throw error;
+        }
+        return;
+      }
 
       setAnalysis(data.analysis);
-      toast.success("Analysis complete!");
+      toast.success(`Analysis complete! ${data.creditsRemaining} credits remaining`);
     } catch (error: any) {
       console.error('Analysis error:', error);
       toast.error(error.message || "Failed to analyze setup");
@@ -57,6 +74,9 @@ export default function AISetupAnalyzer() {
           <p className="text-muted-foreground">
             Upload your trading chart or setup for honest AI feedback
           </p>
+          <div className="mt-2">
+            <CreditCostBadge cost={ANALYSIS_COST} />
+          </div>
         </div>
 
         <div className="grid gap-6">

@@ -6,6 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const ANALYSIS_COST = 5;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -30,6 +32,32 @@ serve(async (req) => {
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Check user credits
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('ai_credits')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError) {
+      console.error('Error fetching profile:', profileError);
+      return new Response(JSON.stringify({ error: 'Failed to check credits' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (!profile || profile.ai_credits < ANALYSIS_COST) {
+      return new Response(JSON.stringify({ 
+        error: 'Insufficient credits',
+        required: ANALYSIS_COST,
+        available: profile?.ai_credits || 0
+      }), {
+        status: 402,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
@@ -150,8 +178,22 @@ serve(async (req) => {
 
     console.log('Analysis complete');
 
+    // Deduct credits
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ ai_credits: profile.ai_credits - ANALYSIS_COST })
+      .eq('id', user.id);
+
+    if (updateError) {
+      console.error('Error updating credits:', updateError);
+    }
+
     return new Response(
-      JSON.stringify({ analysis }),
+      JSON.stringify({ 
+        analysis,
+        creditsUsed: ANALYSIS_COST,
+        creditsRemaining: profile.ai_credits - ANALYSIS_COST
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
