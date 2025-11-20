@@ -29,6 +29,7 @@ import CheckIn from "./pages/CheckIn";
 import Routine from "./pages/Routine";
 import Setups from "./pages/Setups";
 import AdvancedAnalytics from "./pages/AdvancedAnalytics";
+import AISetupAnalyzer from "./pages/AISetupAnalyzer";
 import Streaks from "./pages/Streaks";
 import Onboarding from "./pages/Onboarding";
 import Achievements from "./pages/Achievements";
@@ -51,6 +52,7 @@ const AppContent = () => {
           <Route path="/weekly-summary" element={<WeeklySummary />} />
           <Route path="/ai-journal" element={<AIJournal />} />
         <Route path="/pattern-recognition" element={<PatternRecognition />} />
+        <Route path="/ai-setup-analyzer" element={<AISetupAnalyzer />} />
         <Route path="/journal" element={<Journal />} />
         
         <Route path="/leaderboard" element={<Leaderboard />} />
