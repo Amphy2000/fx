@@ -123,3 +123,9 @@ verify_jwt = false
 [functions.import-email-contacts]
 
 [functions.export-email-contacts]
+verify_jwt = true
+
+[functions.analyze-setup-performance]
+verify_jwt = true
+[functions.process-email-workflow]
+verify_jwt = false
