@@ -1,9 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "./ui/badge";
-import { ArrowUpCircle, ArrowDownCircle, TrendingUp } from "lucide-react";
+import { Button } from "./ui/button";
+import { ArrowUpCircle, ArrowDownCircle, TrendingUp, Sparkles } from "lucide-react";
 import { ModernDonutChart } from "./ModernDonutChart";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { AISetupInsights } from "./AISetupInsights";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 
 interface SetupPerformanceAnalyzerProps {
   trades: any[];
@@ -11,6 +16,10 @@ interface SetupPerformanceAnalyzerProps {
 }
 
 export const SetupPerformanceAnalyzer = ({ trades, userId }: SetupPerformanceAnalyzerProps) => {
+  const { toast } = useToast();
+  const [analyzingSetup, setAnalyzingSetup] = useState<string | null>(null);
+  const [insights, setInsights] = useState<any>(null);
+  const [insightsDialogOpen, setInsightsDialogOpen] = useState(false);
   const data = useMemo(() => {
     const setupStats: Record<string, any> = {};
     
@@ -81,6 +90,47 @@ export const SetupPerformanceAnalyzer = ({ trades, userId }: SetupPerformanceAna
     return '';
   };
 
+  const handleAnalyzeSetup = async (setupId: string, setupName: string) => {
+    setAnalyzingSetup(setupId);
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-setup-performance', {
+        body: { setupId }
+      });
+
+      if (error) {
+        if (error.message?.includes('402') || error.message?.includes('credits')) {
+          toast({
+            title: "Insufficient Credits",
+            description: "You need 5 AI credits to analyze a setup. Please upgrade your plan.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Analysis Failed",
+            description: error.message || "Unable to analyze setup",
+            variant: "destructive"
+          });
+        }
+      } else {
+        setInsights({ ...data, setupName });
+        setInsightsDialogOpen(true);
+        toast({
+          title: "Analysis Complete!",
+          description: `Setup analysis finished. ${data.creditsRemaining} credits remaining.`
+        });
+      }
+    } catch (error) {
+      console.error('Error analyzing setup:', error);
+      toast({
+        title: "Error",
+        description: "Failed to analyze setup",
+        variant: "destructive"
+      });
+    } finally {
+      setAnalyzingSetup(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
@@ -130,7 +180,13 @@ export const SetupPerformanceAnalyzer = ({ trades, userId }: SetupPerformanceAna
 
       <Card>
         <CardHeader>
-          <CardTitle>Complete Setup Analysis</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Setup Performance Breakdown</CardTitle>
+            <Badge variant="outline" className="gap-1">
+              <Sparkles className="h-3 w-3" />
+              AI Analysis Available
+            </Badge>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -143,6 +199,7 @@ export const SetupPerformanceAnalyzer = ({ trades, userId }: SetupPerformanceAna
                 <TableHead className="text-right">Avg R</TableHead>
                 <TableHead className="text-right">Expectancy</TableHead>
                 <TableHead className="text-right">Total P/L</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -150,18 +207,34 @@ export const SetupPerformanceAnalyzer = ({ trades, userId }: SetupPerformanceAna
                 <TableRow key={setup.setupName}>
                   <TableCell className="font-medium">{setup.setupName}</TableCell>
                   <TableCell className="text-right">{setup.totalTrades}</TableCell>
-                  <TableCell className={`text-right ${getPerformanceColor(setup.winRate, 'winRate')}`}>
+                  <TableCell className={`text-right font-medium ${getPerformanceColor(setup.winRate, 'winRate')}`}>
                     {setup.winRate.toFixed(1)}%
                   </TableCell>
-                  <TableCell className={`text-right ${getPerformanceColor(setup.profitFactor, 'profitFactor')}`}>
+                  <TableCell className={`text-right font-medium ${getPerformanceColor(setup.profitFactor, 'profitFactor')}`}>
                     {setup.profitFactor.toFixed(2)}
                   </TableCell>
-                  <TableCell className="text-right">{setup.avgR.toFixed(2)}R</TableCell>
-                  <TableCell className={`text-right ${getPerformanceColor(setup.expectancy, 'expectancy')}`}>
-                    {setup.expectancy.toFixed(2)}R
+                  <TableCell className="text-right">
+                    {setup.avgR.toFixed(2)}R
                   </TableCell>
-                  <TableCell className={`text-right font-semibold ${setup.totalPnL >= 0 ? 'text-success' : 'text-destructive'}`}>
-                    ${setup.totalPnL.toFixed(2)}
+                  <TableCell className={`text-right font-medium ${getPerformanceColor(setup.expectancy, 'expectancy')}`}>
+                    ${setup.expectancy.toFixed(2)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Badge variant={setup.totalPnL >= 0 ? "default" : "destructive"}>
+                      ${setup.totalPnL.toFixed(2)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleAnalyzeSetup(setup.setupName, setup.setupName)}
+                      disabled={analyzingSetup === setup.setupName || setup.totalTrades < 5}
+                      className="gap-1"
+                    >
+                      <Sparkles className="h-3 w-3" />
+                      {analyzingSetup === setup.setupName ? 'Analyzing...' : 'AI Analysis'}
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -169,6 +242,18 @@ export const SetupPerformanceAnalyzer = ({ trades, userId }: SetupPerformanceAna
           </Table>
         </CardContent>
       </Card>
+
+      {/* AI Insights Dialog */}
+      <Dialog open={insightsDialogOpen} onOpenChange={setInsightsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>AI Setup Analysis</DialogTitle>
+          </DialogHeader>
+          {insights && (
+            <AISetupInsights insights={insights} setupName={insights.setupName} />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1847,6 +1847,68 @@ export type Database = {
           },
         ]
       }
+      setup_ai_insights: {
+        Row: {
+          analysis_date: string | null
+          confidence_score: number
+          created_at: string | null
+          focus_priority: string
+          health_score: number
+          id: string
+          losing_patterns: Json | null
+          performance_grade: string
+          raw_analysis: string | null
+          recommendations: Json | null
+          setup_id: string | null
+          strengths: Json | null
+          user_id: string
+          weaknesses: Json | null
+          winning_patterns: Json | null
+        }
+        Insert: {
+          analysis_date?: string | null
+          confidence_score: number
+          created_at?: string | null
+          focus_priority: string
+          health_score: number
+          id?: string
+          losing_patterns?: Json | null
+          performance_grade: string
+          raw_analysis?: string | null
+          recommendations?: Json | null
+          setup_id?: string | null
+          strengths?: Json | null
+          user_id: string
+          weaknesses?: Json | null
+          winning_patterns?: Json | null
+        }
+        Update: {
+          analysis_date?: string | null
+          confidence_score?: number
+          created_at?: string | null
+          focus_priority?: string
+          health_score?: number
+          id?: string
+          losing_patterns?: Json | null
+          performance_grade?: string
+          raw_analysis?: string | null
+          recommendations?: Json | null
+          setup_id?: string | null
+          strengths?: Json | null
+          user_id?: string
+          weaknesses?: Json | null
+          winning_patterns?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "setup_ai_insights_setup_id_fkey"
+            columns: ["setup_id"]
+            isOneToOne: false
+            referencedRelation: "setups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       setup_performance: {
         Row: {
           average_loss: number | null
