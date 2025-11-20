@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      abuse_prevention_overrides: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          override_type: string
+          override_value: string
+          reason: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          override_type: string
+          override_value: string
+          reason: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          override_type?: string
+          override_value?: string
+          reason?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       achievements: {
         Row: {
           achievement_name: string
@@ -1095,6 +1131,48 @@ export type Database = {
           message?: string | null
           rating?: number
           user_id?: string
+        }
+        Relationships: []
+      }
+      flagged_signups: {
+        Row: {
+          admin_notes: string | null
+          created_at: string | null
+          email: string
+          flagged_at: string | null
+          flagged_reason: string
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          signup_fingerprint: string | null
+          signup_ip_address: string | null
+          status: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string | null
+          email: string
+          flagged_at?: string | null
+          flagged_reason: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          signup_fingerprint?: string | null
+          signup_ip_address?: string | null
+          status?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string | null
+          email?: string
+          flagged_at?: string | null
+          flagged_reason?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          signup_fingerprint?: string | null
+          signup_ip_address?: string | null
+          status?: string | null
         }
         Relationships: []
       }
