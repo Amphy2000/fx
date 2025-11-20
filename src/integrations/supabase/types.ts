@@ -1593,11 +1593,14 @@ export type Database = {
           full_name: string | null
           id: string
           last_credit_check: string | null
+          last_login_ip: string | null
           last_trade_date: string | null
           longest_streak: number | null
           monthly_trade_limit: number | null
           onboarding_completed: boolean | null
           onboarding_step: number | null
+          signup_fingerprint: string | null
+          signup_ip_address: string | null
           subscription_expires_at: string | null
           subscription_status: string | null
           subscription_tier: string | null
@@ -1618,11 +1621,14 @@ export type Database = {
           full_name?: string | null
           id: string
           last_credit_check?: string | null
+          last_login_ip?: string | null
           last_trade_date?: string | null
           longest_streak?: number | null
           monthly_trade_limit?: number | null
           onboarding_completed?: boolean | null
           onboarding_step?: number | null
+          signup_fingerprint?: string | null
+          signup_ip_address?: string | null
           subscription_expires_at?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
@@ -1643,11 +1649,14 @@ export type Database = {
           full_name?: string | null
           id?: string
           last_credit_check?: string | null
+          last_login_ip?: string | null
           last_trade_date?: string | null
           longest_streak?: number | null
           monthly_trade_limit?: number | null
           onboarding_completed?: boolean | null
           onboarding_step?: number | null
+          signup_fingerprint?: string | null
+          signup_ip_address?: string | null
           subscription_expires_at?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null

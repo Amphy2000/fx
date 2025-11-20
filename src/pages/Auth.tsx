@@ -40,17 +40,59 @@ const Auth = () => {
     checkPasswordReset();
   }, [navigate]);
 
+  const getDeviceFingerprint = () => {
+    // Create a unique fingerprint based on browser characteristics
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    ctx!.textBaseline = 'top';
+    ctx!.font = '14px Arial';
+    ctx!.fillText('fingerprint', 2, 2);
+    const canvasData = canvas.toDataURL();
+    
+    const fingerprint = {
+      userAgent: navigator.userAgent,
+      language: navigator.language,
+      platform: navigator.platform,
+      screenResolution: `${screen.width}x${screen.height}`,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      canvas: canvasData.substring(0, 50),
+      plugins: Array.from(navigator.plugins || []).map(p => p.name).join(','),
+    };
+    
+    // Create a hash of the fingerprint
+    return btoa(JSON.stringify(fingerprint)).substring(0, 100);
+  };
+
+  const getUserIP = async (): Promise<string> => {
+    try {
+      const response = await fetch('https://api.ipify.org?format=json');
+      const data = await response.json();
+      return data.ip;
+    } catch (error) {
+      console.error('Failed to get IP:', error);
+      return 'unknown';
+    }
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
+      // Get IP address and device fingerprint
+      const [signupIp, fingerprint] = await Promise.all([
+        getUserIP(),
+        Promise.resolve(getDeviceFingerprint())
+      ]);
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             full_name: fullName,
+            signup_ip: signupIp,
+            signup_fingerprint: fingerprint,
           },
           emailRedirectTo: `${window.location.origin}/onboarding`
         },
