@@ -7,7 +7,8 @@ import {
   X,
   TrendingUp,
   BookOpen,
-  Download
+  Download,
+  Sparkles
 } from "lucide-react";
 import { GlobalVoiceAssistant } from "./GlobalVoiceAssistant";
 import { FeedbackModal } from "./FeedbackModal";
@@ -48,6 +49,15 @@ export const FloatingActionMenu = () => {
         setIsOpen(false);
       },
       color: "bg-blue-600 hover:bg-blue-700"
+    },
+    {
+      icon: Sparkles,
+      label: "AI Setup Analyzer",
+      action: () => {
+        navigate("/ai-setup-analyzer");
+        setIsOpen(false);
+      },
+      color: "bg-orange-600 hover:bg-orange-700"
     },
     {
       icon: MessageSquare,
