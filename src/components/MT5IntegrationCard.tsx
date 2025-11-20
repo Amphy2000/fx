@@ -16,6 +16,7 @@ export const MT5IntegrationCard = () => {
   const [accountNumber, setAccountNumber] = useState("");
   const [brokerName, setBrokerName] = useState("");
   const [serverName, setServerName] = useState("");
+  const [investorPassword, setInvestorPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [syncing, setSyncing] = useState<string | null>(null);
@@ -90,7 +91,7 @@ export const MT5IntegrationCard = () => {
   };
 
   const handleConnect = async () => {
-    if (!accountNumber || !brokerName || !serverName) {
+    if (!accountNumber || !brokerName || !serverName || !investorPassword) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -103,10 +104,7 @@ export const MT5IntegrationCard = () => {
         return;
       }
 
-      // Generate unique API key for MT5 EA
-      const apiKey = `mt5_${crypto.randomUUID().replace(/-/g, '')}`;
-
-      // Insert MT5 account
+      // Insert MT5 account with investor password
       const { data, error } = await supabase
         .from('mt5_accounts')
         .insert({
@@ -116,8 +114,9 @@ export const MT5IntegrationCard = () => {
           server_name: serverName,
           account_type: 'live',
           is_active: true,
+          auto_sync_enabled: true,
           last_sync_status: 'pending',
-          api_key_encrypted: apiKey
+          api_secret_encrypted: investorPassword // Store investor password
         })
         .select()
         .single();
@@ -131,10 +130,11 @@ export const MT5IntegrationCard = () => {
         return;
       }
 
-      toast.success("MT5 account connected! Copy your API key to use in MT5 EA.");
+      toast.success("MT5 account connected! Syncing will start automatically every 15 minutes.");
       setAccountNumber("");
       setBrokerName("");
       setServerName("");
+      setInvestorPassword("");
       await fetchAccounts();
 
     } catch (error: any) {
@@ -281,6 +281,20 @@ export const MT5IntegrationCard = () => {
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="password">Investor Password (Read-Only)</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Your MT5 investor password"
+              value={investorPassword}
+              onChange={(e) => setInvestorPassword(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              We only need read-only access to sync your trades. Your investor password is encrypted and secure.
+            </p>
+          </div>
+
           <Button 
             onClick={handleConnect} 
             disabled={loading}
@@ -295,87 +309,77 @@ export const MT5IntegrationCard = () => {
 
         {accounts.length > 0 && (
           <div className="space-y-4">
-            <h3 className="font-semibold">Import Methods</h3>
+            <h3 className="font-semibold">Connected Accounts</h3>
             
-            {/* Auto-Sync EA - Best Option */}
-            <div className="space-y-3 p-4 border-2 border-primary rounded-lg bg-primary/5">
-              <div className="flex items-start gap-3">
-                <RefreshCw className="h-5 w-5 text-primary mt-0.5" />
-                <div className="flex-1 space-y-3">
-                  <div>
-                    <h4 className="font-semibold text-sm flex items-center gap-2">
-                      Auto-Sync (Recommended)
-                      <span className="text-xs font-normal px-2 py-0.5 bg-primary text-primary-foreground rounded">Best</span>
-                    </h4>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Trades sync automatically after each trade - one-time 5-minute setup
-                    </p>
+            <div className="space-y-3">
+              <Alert className="bg-primary/5 border-primary/20">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                <AlertDescription>
+                  <p className="text-sm font-medium">Automatic Cloud Sync Active</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Your trades sync automatically every 15 minutes via MetaAPI cloud service. 
+                    No software installation needed on your computer.
+                  </p>
+                </AlertDescription>
+              </Alert>
+                  
+              {accounts.map((account) => (
+                <Card key={account.id} className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex-1">
+                      <p className="font-medium">{account.account_number}</p>
+                      <p className="text-sm text-muted-foreground">{account.broker_name} - {account.server_name}</p>
+                      {account.last_sync_at && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Last sync: {new Date(account.last_sync_at).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 text-sm">
+                        {getSyncStatusIcon(account.last_sync_status, account.last_sync_at)}
+                        <span>{getSyncStatusText(account.last_sync_status, account.last_sync_at)}</span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDelete(account.id)}
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   
-                  {accounts.map((account) => (
-                      <div key={account.id} className="space-y-3 p-3 bg-background rounded border">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <p className="font-medium text-sm">{account.account_number}</p>
-                            <p className="text-xs text-muted-foreground">{account.broker_name}</p>
-                            {account.last_sync_at && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Last sync: {new Date(account.last_sync_at).toLocaleString()}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2 text-sm">
-                              {getSyncStatusIcon(account.last_sync_status, account.last_sync_at)}
-                              <span>{getSyncStatusText(account.last_sync_status, account.last_sync_at)}</span>
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleManualSync(account.id)}
-                              disabled={syncing === account.id}
-                              className="h-8 px-3"
-                            >
-                              {syncing === account.id ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <RefreshCw className="h-3 w-3" />
-                              )}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleDelete(account.id)}
-                              className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                        
-                        {/* Connection Status Alert */}
-                        {!account.last_sync_at && (
-                          <Alert className="bg-yellow-500/10 border-yellow-500/20">
-                            <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                            <AlertDescription className="text-xs text-yellow-700 dark:text-yellow-400">
-                              <strong>EA Not Connected Yet</strong>
-                              <div className="mt-2 space-y-1">
-                                <p>✅ Make sure you enabled "Allow WebRequest" in MT5 (see step 3 below)</p>
-                                <p>✅ Paste both Webhook URL and API Key in EA settings</p>
-                                <p>✅ Check MT5 Experts tab for "Successfully sent" or error messages</p>
-                              </div>
-                            </AlertDescription>
-                          </Alert>
-                        )}
-                        
-                        {account.last_sync_at && account.last_sync_status === 'success' && (
-                          <Alert className="bg-green-500/10 border-green-500/20">
-                            <CheckCircle2 className="h-4 w-4 text-green-500" />
-                            <AlertDescription className="text-xs text-green-700 dark:text-green-400">
-                              <strong>EA Connected Successfully!</strong> Your trades are syncing automatically.
-                            </AlertDescription>
-                          </Alert>
-                        )}
+                  {!account.last_sync_at && (
+                    <Alert className="bg-yellow-500/10 border-yellow-500/20">
+                      <RefreshCw className="h-4 w-4 text-yellow-500" />
+                      <AlertDescription className="text-xs text-yellow-700 dark:text-yellow-400">
+                        <strong>First sync in progress...</strong>
+                        <p className="mt-1">Your account is being connected to MetaAPI. First sync may take up to 15 minutes.</p>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {account.last_sync_at && account.last_sync_status === 'success' && (
+                    <Alert className="bg-green-500/10 border-green-500/20">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <AlertDescription className="text-xs text-green-700 dark:text-green-400">
+                        <strong>Syncing Successfully!</strong> Your trades are automatically imported every 15 minutes.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {account.sync_error && (
+                    <Alert className="bg-red-500/10 border-red-500/20 mt-2">
+                      <XCircle className="h-4 w-4 text-red-500" />
+                      <AlertDescription className="text-xs text-red-700 dark:text-red-400">
+                        <strong>Sync Error:</strong> {account.sync_error}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </Card>
+              ))}
                       
                         <div className="space-y-3">
                           <div className="bg-yellow-500/10 border border-yellow-500/20 rounded p-3">
