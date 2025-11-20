@@ -59,17 +59,69 @@ serve(async (req) => {
           content: [
             {
               type: 'text',
-              text: `You are an expert trading analyst. Analyze this trading chart/setup image and provide honest, actionable feedback. Include:
+              text: `You are a professional trading analyst with 15+ years of experience. Analyze this trading chart with extreme precision.
 
-1. **Setup Quality** - Rate the overall quality (A+ to F)
-2. **Key Strengths** - What's good about this setup
-3. **Critical Issues** - What could go wrong or needs improvement
-4. **Risk Assessment** - Risk/reward analysis
-5. **Entry/Exit** - Feedback on entry, stop loss, and take profit levels if visible
-6. **Market Context** - Is this setup aligned with market conditions
-7. **Recommendations** - Specific actions to improve
+**CRITICAL INSTRUCTIONS:**
+- Study the chart CAREFULLY before responding
+- Identify ALL visible price levels (entry, stop loss, take profit) with EXACT precision
+- Calculate risk-reward ratios ACCURATELY by measuring actual pip distances
+- Show your calculation work: "Entry: X, SL: Y, TP: Z → Risk: |X-Y| pips, Reward: |X-Z| pips → R:R = Reward/Risk"
+- If levels aren't perfectly clear, acknowledge uncertainty rather than guessing
 
-Be direct and honest. If it's a poor setup, say so clearly. If it's excellent, explain why.`
+**ANALYSIS STRUCTURE:**
+
+1. **Setup Quality Grade** (A+ to F)
+   - Overall rating with brief justification
+
+2. **Visible Trade Parameters**
+   - Entry price: [exact level if visible]
+   - Stop Loss: [exact level if visible]  
+   - Take Profit: [exact level if visible]
+   - Direction: Long/Short
+
+3. **Risk-Reward Analysis** 
+   - Risk in pips: [calculate precisely]
+   - Reward in pips: [calculate precisely]
+   - R:R Ratio: [show calculation: Reward ÷ Risk = X:1]
+   - VERIFY your math before stating R:R
+
+4. **Key Strengths**
+   - List 2-4 specific positives
+   - Reference actual chart elements
+
+5. **Critical Weaknesses**
+   - List 2-4 specific concerns
+   - Explain potential failure scenarios
+
+6. **Market Structure & Context**
+   - Current trend direction
+   - Key support/resistance zones
+   - Price action quality
+   - Alignment with higher timeframe
+
+7. **Entry & Exit Assessment**
+   - Entry timing: premature/good/late?
+   - Stop loss placement: tight/appropriate/wide?
+   - Take profit: realistic/aggressive/conservative?
+
+8. **Actionable Recommendations**
+   - 3-5 specific improvements
+   - Prioritize by importance
+   - Include entry timing advice
+
+**TONE:**
+- Professional but direct
+- Honest about flaws
+- Specific, not generic
+- Educational, not condescending
+- If setup is poor, say so clearly
+- If setup is excellent, explain exactly why
+
+**ACCURACY REMINDERS:**
+- Double-check all numerical calculations
+- Verify price levels match chart markings
+- Don't estimate - measure precisely
+- Acknowledge if anything is unclear from the image`
             },
             {
               type: 'image_url',
