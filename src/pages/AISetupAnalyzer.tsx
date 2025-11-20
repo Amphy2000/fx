@@ -56,7 +56,14 @@ export default function AISetupAnalyzer() {
         return;
       }
 
-      setAnalysis(data.analysis);
+      // Clean up the analysis text: remove asterisks and excessive formatting
+      const cleanedAnalysis = data.analysis
+        .replace(/\*\*/g, '') // Remove bold markdown
+        .replace(/\*/g, '') // Remove remaining asterisks
+        .replace(/#{1,6}\s/g, '') // Remove markdown headers
+        .trim();
+      
+      setAnalysis(cleanedAnalysis);
       toast.success(`Analysis complete! ${data.creditsRemaining} credits remaining`);
     } catch (error: any) {
       console.error('Analysis error:', error);
@@ -68,7 +75,7 @@ export default function AISetupAnalyzer() {
 
   return (
     <Layout>
-      <div className="container mx-auto p-6 max-w-4xl">
+      <div className="container mx-auto px-8 py-10 max-w-5xl">
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">AI Setup Analyzer</h1>
           <p className="text-muted-foreground">
@@ -165,8 +172,8 @@ export default function AISetupAnalyzer() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="prose prose-sm max-w-none dark:prose-invert">
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                <div className="prose prose-sm max-w-none dark:prose-invert overflow-hidden">
+                  <div className="whitespace-pre-wrap text-sm leading-relaxed break-words">
                     {analysis}
                   </div>
                 </div>
