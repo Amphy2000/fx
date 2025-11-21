@@ -25,14 +25,18 @@ import { MilestoneNotification } from "@/components/MilestoneNotification";
 import { GamificationOverlay } from "@/components/GamificationOverlay";
 import { VoiceCommands } from "@/components/VoiceCommands";
 import { ExportDialog } from "@/components/ExportDialog";
+import { AccountSelector } from "@/components/AccountSelector";
+import { AccountBreakdown } from "@/components/AccountBreakdown";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [trades, setTrades] = useState<any[]>([]);
+  const [allTrades, setAllTrades] = useState<any[]>([]);
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [mt5Accounts, setMt5Accounts] = useState<any[]>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -140,7 +144,13 @@ const Dashboard = () => {
       ascending: false
     });
     if (data) {
+      setAllTrades(data);
       setTrades(data);
+      calculateStats(data);
+    }
+  };
+
+  const calculateStats = (data: any[]) => {
       const wins = data.filter(t => t.result === "win").length;
       const losses = data.filter(t => t.result === "loss").length;
       const totalPnL = data.reduce((sum, t) => sum + (t.profit_loss || 0), 0);
@@ -157,8 +167,19 @@ const Dashboard = () => {
         bestTrade: Number(Math.max(...data.map(t => t.profit_loss || 0), 0).toFixed(2)),
         worstTrade: Number(Math.min(...data.map(t => t.profit_loss || 0), 0).toFixed(2))
       });
-    }
   };
+
+  // Filter trades when account selection changes
+  useEffect(() => {
+    if (selectedAccountId) {
+      const filtered = allTrades.filter(t => t.mt5_account_id === selectedAccountId);
+      setTrades(filtered);
+      calculateStats(filtered);
+    } else {
+      setTrades(allTrades);
+      calculateStats(allTrades);
+    }
+  }, [selectedAccountId, allTrades]);
   const handleTradeAdded = () => {
     if (user) {
       fetchTrades(user.id);
@@ -209,18 +230,38 @@ const Dashboard = () => {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   return <Layout>
       <div className="space-y-4 p-3 md:p-4 lg:p-0 md:py-0 md:px-0 md:mx-[10px] w-full max-w-full">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 md:gap-4">
-          <div>
-            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold">Trading Dashboard</h1>
-            <p className="text-xs md:text-sm lg:text-base text-muted-foreground">AI-Powered Analytics {mt5Accounts.length > 0 ? '• MT5 Synced' : ''}</p>
+        <div className="flex flex-col gap-3 md:gap-4">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+            <div>
+              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold">Trading Dashboard</h1>
+              <p className="text-xs md:text-sm lg:text-base text-muted-foreground">
+                AI-Powered Analytics {mt5Accounts.length > 0 ? '• MT5 Synced' : ''}
+                {selectedAccountId && mt5Accounts.length > 1 && ' • Filtered View'}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setExportDialogOpen(true)} className="text-xs md:text-sm">
+                <FileDown className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                Export
+              </Button>
+              <CreditsDisplay />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setExportDialogOpen(true)} className="text-xs md:text-sm">
-              <FileDown className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-              Export
-            </Button>
-            <CreditsDisplay />
-          </div>
+          
+          {mt5Accounts.length > 1 && (
+            <div className="flex items-center gap-2">
+              <AccountSelector 
+                accounts={mt5Accounts} 
+                selectedAccountId={selectedAccountId}
+                onAccountChange={setSelectedAccountId}
+              />
+              {selectedAccountId && (
+                <Button variant="ghost" size="sm" onClick={() => setSelectedAccountId(null)}>
+                  Clear Filter
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3 w-full">
@@ -330,12 +371,15 @@ const Dashboard = () => {
             className="touch-pan-y w-full"
           >
             <TabsContent value="overview" className="space-y-4 md:space-y-6 mt-4 md:mt-6 animate-fade-in w-full">
+              {mt5Accounts.length > 1 && !selectedAccountId && (
+                <AccountBreakdown trades={allTrades} accounts={mt5Accounts} />
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
                 <DailyChallengeCard trades={trades} />
                 <TradingScoreCard trades={trades} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
-                {user && <EquityCurve userId={user.id} />}
+                {user && <EquityCurve userId={user.id} accountId={selectedAccountId} />}
                 <ModernBarChart data={getMonthlyData()} />
               </div>
               <DrawdownHeatmap trades={trades} />
