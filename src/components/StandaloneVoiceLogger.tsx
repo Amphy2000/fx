@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { Mic, MicOff, Loader2, Sparkles, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -98,9 +99,6 @@ export const StandaloneVoiceLogger = () => {
     if (recognitionRef.current && isRecording) {
       try {
         recognitionRef.current.stop();
-        if (transcript.trim()) {
-          setTimeout(() => processTranscript(transcript), 100);
-        }
       } catch (e) {
         console.error("Error stopping recognition:", e);
       }
@@ -299,10 +297,40 @@ export const StandaloneVoiceLogger = () => {
               </div>
             </div>
 
-            {transcript && !isProcessing && (
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm font-medium mb-1">Transcript:</p>
-                <p className="text-sm text-muted-foreground">{transcript}</p>
+            {transcript && !isRecording && (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">
+                    Review & Edit Transcript:
+                  </label>
+                  <Textarea
+                    value={transcript}
+                    onChange={(e) => setTranscript(e.target.value)}
+                    disabled={isProcessing}
+                    placeholder="Your transcript will appear here..."
+                    className="min-h-[120px] resize-none"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Review and edit if needed, or process immediately
+                  </p>
+                </div>
+                <Button
+                  onClick={() => processTranscript(transcript)}
+                  disabled={isProcessing || !transcript.trim()}
+                  className="w-full"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing & Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Process & Save Trade
+                    </>
+                  )}
+                </Button>
               </div>
             )}
           </>
