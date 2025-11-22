@@ -257,16 +257,46 @@ export const StandaloneVoiceLogger = () => {
               </Button>
             </div>
 
-            <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
-              <p className="text-xs font-semibold mb-2 text-foreground">Example phrases:</p>
-              <ul className="text-xs space-y-1 text-muted-foreground">
-                <li>• "Long EUR/USD at 1.0850, stop 1.0800, target 1.0950, feeling confident"</li>
-                <li>• "Sold gold at 2050, stop 2060, closed at 2031, made 380 dollars, anxious before, relieved after winning"</li>
-                <li>• "Bought GBP/USD 1.2650, stop 1.2620, exited at 1.2615, lost 70 bucks, felt impulsive before"</li>
-              </ul>
-              <p className="text-xs mt-2 text-muted-foreground italic">
-                Tip: Mention pair, direction, prices, result (win/loss), emotions, and notes
-              </p>
+            <div className="p-4 bg-muted/50 rounded-lg border border-border/50 space-y-3">
+              <div>
+                <p className="text-sm font-semibold mb-2 text-foreground">How to log trades with voice:</p>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Just speak naturally! Include the pair, direction (buy/sell/long/short), and any prices or results you remember.
+                </p>
+              </div>
+              
+              <div>
+                <p className="text-xs font-semibold mb-2 text-foreground">Example phrases:</p>
+                <ul className="text-xs space-y-2 text-muted-foreground">
+                  <li className="flex gap-2">
+                    <span className="text-primary">•</span>
+                    <span>"I went long EUR/USD at 1.0850, stop loss 1.0800, take profit 1.0950, feeling confident"</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-primary">•</span>
+                    <span>"Sold gold at 2050, stop at 2060, closed at 2031, made 380 dollars profit, was anxious before but relieved after the win"</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-primary">•</span>
+                    <span>"Bought GBP/USD at 1.2650 with stop at 1.2620, got stopped out at 1.2615, lost 70 dollars, felt impulsive when entering"</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-primary">•</span>
+                    <span>"Short on Bitcoin, entry 45000, still holding the position, feeling neutral"</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <div className="pt-2 border-t border-border/30">
+                <p className="text-xs font-medium text-primary mb-1">💡 Pro Tips:</p>
+                <ul className="text-xs space-y-1 text-muted-foreground">
+                  <li>• Always mention the <strong>pair</strong> (e.g., EUR/USD, gold) and <strong>direction</strong> (buy/sell/long/short)</li>
+                  <li>• Include prices when you remember them (entry, stop, target, exit)</li>
+                  <li>• Mention profit/loss amounts if the trade is closed</li>
+                  <li>• Share your emotions before and after for better insights</li>
+                  <li>• Add any notes about market conditions or your reasoning</li>
+                </ul>
+              </div>
             </div>
 
             {transcript && !isProcessing && (
