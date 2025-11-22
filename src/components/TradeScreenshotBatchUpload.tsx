@@ -186,13 +186,15 @@ export const TradeScreenshotBatchUpload = () => {
 
       const { data, error } = await supabase.functions.invoke('validate-trade', {
         body: {
-          pair: trade.extractedData.pair,
-          direction: trade.extractedData.direction,
-          entry_price: trade.extractedData.entry_price,
-          stop_loss: trade.extractedData.stop_loss,
-          take_profit: trade.extractedData.take_profit,
-          session: trade.extractedData.session,
-          emotion_before: trade.extractedData.emotion_before,
+          proposedTrade: {
+            pair: trade.extractedData.pair,
+            direction: trade.extractedData.direction,
+            entry_price: trade.extractedData.entry_price,
+            stop_loss: trade.extractedData.stop_loss,
+            take_profit: trade.extractedData.take_profit,
+            session: trade.extractedData.session,
+            emotion_before: trade.extractedData.emotion_before,
+          }
         }
       });
 
