@@ -26,6 +26,7 @@ import { VoiceCommands } from "@/components/VoiceCommands";
 import { ExportDialog } from "@/components/ExportDialog";
 import { AccountSelector } from "@/components/AccountSelector";
 import { AccountBreakdown } from "@/components/AccountBreakdown";
+import { JournalInsightsPanel } from "@/components/JournalInsightsPanel";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -360,6 +361,7 @@ const Dashboard = () => {
                 <DailyChallengeCard trades={trades} />
                 <TradingScoreCard trades={trades} />
               </div>
+              <JournalInsightsPanel />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
                 {user && <EquityCurve userId={user.id} accountId={selectedAccountId} />}
                 <ModernBarChart data={getMonthlyData()} />

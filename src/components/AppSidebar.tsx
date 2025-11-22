@@ -38,10 +38,6 @@ const aiNavItems = [{
 
 // Manual Tracking & Journaling
 const journalNavItems = [{
-  title: "Trading Journal",
-  url: "/journal",
-  icon: Notebook
-}, {
   title: "Daily Check-In",
   url: "/check-in",
   icon: Heart
