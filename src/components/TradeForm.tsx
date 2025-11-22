@@ -175,7 +175,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
       // Get AI feedback
       try {
         const { data: aiData, error: aiError } = await supabase.functions.invoke('analyze-trade', {
-          body: { trade: tradeData }
+          body: { tradeId: newTrade.id }
         });
 
         if (aiError) throw aiError;
@@ -185,6 +185,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
         }
       } catch (aiError) {
         console.error("AI analysis error:", aiError);
+        // Don't show error to user - analysis is optional
       }
 
       // Send Telegram notification in background (don't wait for it)

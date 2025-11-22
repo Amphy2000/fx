@@ -176,10 +176,13 @@ export const StandaloneVoiceLogger = () => {
         description: `${tradeData.direction} ${tradeData.pair} saved`
       });
 
-      // Trigger AI analysis in background
+      // Trigger AI analysis in background (don't await to avoid blocking)
       supabase.functions.invoke('analyze-trade', {
         body: { tradeId: trade.id }
-      }).catch(console.error);
+      }).catch((error) => {
+        console.error("AI analysis error:", error);
+        // Don't show error to user - analysis is optional and runs in background
+      });
 
     } catch (error: any) {
       console.error("Error processing voice trade:", error);
