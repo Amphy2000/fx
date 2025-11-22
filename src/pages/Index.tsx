@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
-import { Mic, Brain, BarChart3, Target, Shield, Zap, Check, ArrowRight, LineChart, Activity, MessageSquare } from "lucide-react";
+import { Mic, Brain, BarChart3, Target, Shield, Zap, Check, ArrowRight, LineChart, Activity, MessageSquare, AlertTriangle, TrendingUp, Heart } from "lucide-react";
 import heroImage from "@/assets/hero-bg.jpg";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -23,48 +23,48 @@ const Index = () => {
 
   const features = [
     {
-      icon: <Mic className="h-6 w-6" />,
-      title: "Voice Command Control",
-      description: "Navigate your app, log trades, and get insights using only your voice - hands-free trading journal"
-    },
-    {
-      icon: <Mic className="h-6 w-6" />,
-      title: "Voice Trade Logger",
-      description: "Speak your trades naturally and watch AI instantly log all details - entry, exit, stops, and notes"
-    },
-    {
       icon: <Brain className="h-6 w-6" />,
-      title: "AI-Powered Analysis",
-      description: "Get instant personalized feedback, pattern recognition, and trading psychology insights from advanced AI"
+      title: "AI Trading Psychologist",
+      description: "Your personal AI coach analyzes every trade through the lens of psychology - identifying emotional patterns and behavioral triggers"
     },
     {
-      icon: <MessageSquare className="h-6 w-6" />,
-      title: "AI Trading Coach",
-      description: "Chat with your personal AI coach for real-time advice, strategy refinement, and performance tips"
+      icon: <AlertTriangle className="h-6 w-6" />,
+      title: "Trade Interception",
+      description: "AI warns you before emotionally-driven trades based on your historical patterns - stop revenge trading before it starts"
     },
     {
-      icon: <BarChart3 className="h-6 w-6" />,
-      title: "Smart Analytics",
-      description: "Visualize win rates, profit/loss, and AI-detected patterns in stunning real-time dashboards"
+      icon: <Heart className="h-6 w-6" />,
+      title: "Emotional Intelligence",
+      description: "Track sleep, stress, mood, and focus - discover how your mental state impacts your trading performance"
     },
     {
       icon: <Target className="h-6 w-6" />,
-      title: "Psychology Tracking",
-      description: "Monitor emotions with AI-powered insights to discover psychological patterns affecting your trades"
+      title: "Behavioral Alerts",
+      description: "Get real-time warnings when you're about to repeat past mistakes - AI learns your psychological patterns"
+    },
+    {
+      icon: <TrendingUp className="h-6 w-6" />,
+      title: "Pattern Recognition",
+      description: "AI identifies hidden behavioral patterns you can't see - connect emotions, sessions, and setups to outcomes"
+    },
+    {
+      icon: <Mic className="h-6 w-6" />,
+      title: "Effortless Logging",
+      description: "Voice commands, screenshot OCR, and MT5 auto-sync make journaling so easy you'll actually do it consistently"
     }
   ];
 
   const stats = [
-    { value: "10K+", label: "Active Traders" },
-    { value: "1M+", label: "Trades Analyzed" },
-    { value: "98%", label: "Satisfaction Rate" }
+    { value: "85%", label: "Reduced Emotional Trading" },
+    { value: "10K+", label: "Traders Transformed" },
+    { value: "3.2x", label: "Avg Win Rate Improvement" }
   ];
 
   const benefits = [
-    "Log trades in seconds using natural voice commands",
-    "Get instant AI feedback and insights after every trade",
-    "Control your entire trading journal hands-free with voice",
-    "Discover hidden patterns with AI-powered analytics"
+    "AI analyzes your psychology and warns you before emotional mistakes",
+    "Track sleep, stress, and mood - see how they affect your trading",
+    "Stop revenge trading with behavioral pattern recognition",
+    "Effortless logging (voice, screenshots, auto-sync) so you stay consistent"
   ];
 
   return (
@@ -85,20 +85,20 @@ const Index = () => {
             <div className="text-center mb-12 sm:mb-16">
               {/* Badge */}
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-chart-1/10 border border-chart-1/30 mb-6 sm:mb-8 animate-fade-in backdrop-blur-sm">
-                <Mic className="h-4 w-4 text-chart-1 animate-pulse" />
-                <span className="text-xs sm:text-sm font-semibold text-foreground">Voice-Powered AI Trading Journal</span>
+                <Brain className="h-4 w-4 text-chart-1 animate-pulse" />
+                <span className="text-xs sm:text-sm font-semibold text-foreground">AI Trading Psychologist</span>
               </div>
               
               {/* Main headline */}
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 sm:mb-8 text-foreground tracking-tight leading-[1.1] px-2">
-                Trade Smarter with
+                Your Biggest Enemy Isn't The Market
                 <span className="block mt-2 sm:mt-3 bg-gradient-to-r from-chart-1 via-chart-2 to-chart-3 bg-clip-text text-transparent text-2xl sm:text-3xl md:text-4xl lg:text-5xl">
-                  Voice & AI Power
+                  It's Your Psychology
                 </span>
               </h1>
               
               <p className="text-sm sm:text-base md:text-xl lg:text-2xl text-muted-foreground mb-8 sm:mb-12 max-w-3xl mx-auto leading-relaxed font-light px-4">
-                The world's first AI-powered trading journal with voice commands. Log trades by speaking, get instant AI insights, and control everything hands-free. Trusted by 10,000+ traders.
+                The first AI-powered trading journal that acts as your personal trading psychologist. Master your emotions, identify behavioral patterns, and get AI warnings before you make emotionally-driven mistakes. Because 95% of trading failure is mental, not technical.
               </p>
               
               {/* CTA Buttons */}
@@ -145,14 +145,14 @@ const Index = () => {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12 sm:mb-16">
               <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-chart-2/10 border border-chart-2/30 text-chart-2 text-xs sm:text-sm font-bold mb-6 backdrop-blur-sm">
-                <Brain className="h-4 w-4" />
-                Revolutionary AI + Voice Features
+                <AlertTriangle className="h-4 w-4" />
+                Psychology-First Trading Journal
               </div>
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 px-2">
-                Why Top Traders Choose Amphy AI
+                Master Your Mind, Master The Markets
               </h2>
               <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
-                Join thousands who've transformed their trading with voice commands and AI insights
+                Most trading journals track numbers. We track what really matters - your psychology, emotions, and behavioral patterns.
               </p>
             </div>
             <div className="grid sm:grid-cols-2 gap-4 sm:gap-5">
@@ -177,10 +177,10 @@ const Index = () => {
         <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 px-2">
-              Powerful AI-Driven Features
+              Your AI Trading Psychologist, 24/7
             </h2>
             <p className="text-base sm:text-lg text-muted-foreground max-w-3xl mx-auto px-4">
-              Experience the future of trading journals with voice control, AI analysis, and intelligent insights
+              Advanced AI that understands trading psychology and helps you overcome your biggest enemy: emotional decision-making
             </p>
           </div>
           
@@ -214,10 +214,10 @@ const Index = () => {
         <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 px-2">
-              Ready to Transform Your Trading?
+              Stop Trading On Emotion. Start Trading With Intelligence.
             </h2>
             <p className="text-base sm:text-xl text-muted-foreground mb-8 sm:mb-12 px-4">
-              Join thousands of traders who have elevated their game with AI-powered insights
+              Join 10,000+ traders who've mastered their psychology and transformed their trading results
             </p>
             <Button 
               size="lg" 
