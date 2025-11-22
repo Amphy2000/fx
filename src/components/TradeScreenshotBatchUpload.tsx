@@ -255,7 +255,7 @@ export const TradeScreenshotBatchUpload = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Upload className="w-5 h-5" />
-              <h3 className="font-semibold">Batch Upload Trade Screenshots</h3>
+              <h3 className="font-semibold">Trade Screenshots</h3>
             </div>
             {trades.length > 0 && (
               <Button onClick={handleReset} variant="outline" size="sm">
@@ -265,7 +265,7 @@ export const TradeScreenshotBatchUpload = () => {
           </div>
           
           <p className="text-sm text-muted-foreground">
-            Upload multiple screenshots at once. AI will extract trade data from each image.
+            Upload multiple screenshots at once. AI extracts visible data automatically - review and fill in any missing fields.
           </p>
 
           {trades.length === 0 ? (
