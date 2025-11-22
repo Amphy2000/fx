@@ -13,6 +13,7 @@ import { TradeInsightBadge } from "@/components/TradeInsightBadge";
 import { EmotionTrackingModal } from "./EmotionTrackingModal";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TradeUpdateModal } from "./TradeUpdateModal";
+import { TradeEditModal } from "./TradeEditModal";
 
 interface TradesListProps {
   trades: any[];
@@ -35,6 +36,8 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
   const [selectedTradeForUpdate, setSelectedTradeForUpdate] = useState<any>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedTradeForEdit, setSelectedTradeForEdit] = useState<any>(null);
   
   const itemsPerPage = 10;
   const handleDelete = async (tradeId: string) => {
@@ -411,7 +414,7 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
                 </p>
               </div>
               <div className="flex gap-1 sm:gap-2 flex-shrink-0">
-                {trade.result === "open" && (
+                {trade.result === "open" ? (
                   <Button
                     variant="default"
                     size="sm"
@@ -424,6 +427,20 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
                   >
                     <Edit className="h-4 w-4 mr-1" />
                     Update
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedTradeForEdit(trade);
+                      setEditModalOpen(true);
+                    }}
+                    title="Edit trade"
+                    className="h-8 px-3"
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Edit
                   </Button>
                 )}
                 <Button
@@ -648,6 +665,13 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
         trade={selectedTradeForUpdate}
         isOpen={updateModalOpen}
         onClose={() => setUpdateModalOpen(false)}
+        onUpdated={onTradeDeleted}
+      />
+
+      <TradeEditModal
+        trade={selectedTradeForEdit}
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
         onUpdated={onTradeDeleted}
       />
 
