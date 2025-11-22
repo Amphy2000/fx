@@ -2,10 +2,11 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Mic, MicOff, Loader2, Sparkles, CheckCircle2 } from "lucide-react";
+import { Mic, MicOff, Loader2, Sparkles, CheckCircle2, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { TradeInterceptorModal } from './TradeInterceptorModal';
 
 // Extend Window interface for Speech Recognition
 declare global {
@@ -18,9 +19,13 @@ declare global {
 export const StandaloneVoiceLogger = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [isSupported, setIsSupported] = useState(true);
   const [savedTrade, setSavedTrade] = useState<any>(null);
+  const [parsedData, setParsedData] = useState<any>(null);
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [validationResult, setValidationResult] = useState<any>(null);
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
@@ -106,6 +111,44 @@ export const StandaloneVoiceLogger = () => {
     }
   };
 
+  const handleValidateTrade = async () => {
+    if (!parsedData) return;
+
+    try {
+      setIsValidating(true);
+
+      const { data, error } = await supabase.functions.invoke('validate-trade', {
+        body: {
+          pair: parsedData.pair,
+          direction: parsedData.direction,
+          entry_price: parsedData.entry_price,
+          stop_loss: parsedData.stop_loss,
+          take_profit: parsedData.take_profit,
+          session: parsedData.session,
+          emotion_before: parsedData.emotion_before,
+        }
+      });
+
+      if (error) {
+        if (error.message.includes('Insufficient credits')) {
+          toast.error('Insufficient AI credits for validation');
+        } else {
+          throw error;
+        }
+        return;
+      }
+
+      setValidationResult(data);
+      setShowValidationModal(true);
+
+    } catch (error: any) {
+      console.error('Validation error:', error);
+      toast.error(error.message || 'Failed to validate trade');
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
   const processTranscript = async (text: string) => {
     if (!text.trim()) {
       toast.error("No speech detected", { description: "Please try again and speak clearly" });
@@ -143,6 +186,7 @@ export const StandaloneVoiceLogger = () => {
       if (!user) throw new Error("Not authenticated");
 
       const tradeData = parseData.tradeData;
+      setParsedData(tradeData);
 
       // Validate required fields
       if (!tradeData.pair || !tradeData.direction) {
@@ -314,26 +358,46 @@ export const StandaloneVoiceLogger = () => {
                     className="min-h-[120px] resize-none"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Review and edit if needed, or process immediately
+                    Review and edit if needed, validate, or process immediately
                   </p>
                 </div>
-                <Button
-                  onClick={() => processTranscript(transcript)}
-                  disabled={isProcessing || !transcript.trim()}
-                  className="w-full"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing & Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Process & Save Trade
-                    </>
-                  )}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleValidateTrade}
+                    disabled={isValidating || !parsedData}
+                    variant="secondary"
+                    className="flex-1"
+                  >
+                    {isValidating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Validating...
+                      </>
+                    ) : (
+                      <>
+                        <Shield className="mr-2 h-4 w-4" />
+                        Validate Trade
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={() => processTranscript(transcript)}
+                    disabled={isProcessing || !transcript.trim()}
+                    className="flex-1"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Save Trade
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             )}
           </>
@@ -357,6 +421,20 @@ export const StandaloneVoiceLogger = () => {
           </div>
         )}
       </CardContent>
+
+      <TradeInterceptorModal
+        open={showValidationModal}
+        onOpenChange={setShowValidationModal}
+        validationResult={validationResult}
+        onProceed={async () => {
+          setShowValidationModal(false);
+          await processTranscript(transcript);
+        }}
+        onCancel={() => {
+          setShowValidationModal(false);
+          toast.info('Trade validation cancelled');
+        }}
+      />
     </Card>
   );
 };

@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, Loader2, Check, ArrowUpDown } from 'lucide-react';
+import { Upload, Loader2, Check, ArrowUpDown, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { TradeInterceptorModal } from './TradeInterceptorModal';
 
 interface ExtractedData {
   pair: string;
@@ -37,10 +38,13 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
   const [uploading, setUploading] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [validating, setValidating] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState<string | null>(null);
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [validationResult, setValidationResult] = useState<any>(null);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -120,6 +124,44 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
       ...extractedData,
       [field]: value
     });
+  };
+
+  const handleValidateTrade = async () => {
+    if (!extractedData) return;
+
+    try {
+      setValidating(true);
+
+      const { data, error } = await supabase.functions.invoke('validate-trade', {
+        body: {
+          pair: extractedData.pair,
+          direction: extractedData.direction,
+          entry_price: extractedData.entry_price,
+          stop_loss: extractedData.stop_loss,
+          take_profit: extractedData.take_profit,
+          session: extractedData.session,
+          emotion_before: extractedData.emotion_before,
+        }
+      });
+
+      if (error) {
+        if (error.message.includes('Insufficient credits')) {
+          toast.error('Insufficient AI credits for validation');
+        } else {
+          throw error;
+        }
+        return;
+      }
+
+      setValidationResult(data);
+      setShowValidationModal(true);
+
+    } catch (error: any) {
+      console.error('Validation error:', error);
+      toast.error(error.message || 'Failed to validate trade');
+    } finally {
+      setValidating(false);
+    }
   };
 
   const handleSaveTrade = async () => {
@@ -252,6 +294,16 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
                   >
                     <ArrowUpDown className="w-4 h-4" />
                     Flip Direction
+                  </Button>
+                  <Button
+                    onClick={handleValidateTrade}
+                    disabled={validating}
+                    variant="secondary"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    {validating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
+                    {validating ? 'Validating...' : 'Validate'}
                   </Button>
                   <Button
                     onClick={handleSaveTrade}
@@ -512,6 +564,20 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
           <p>💎 Cost: 10 AI credits per extraction</p>
         </div>
       </div>
+
+      <TradeInterceptorModal
+        open={showValidationModal}
+        onOpenChange={setShowValidationModal}
+        validationResult={validationResult}
+        onProceed={async () => {
+          setShowValidationModal(false);
+          await handleSaveTrade();
+        }}
+        onCancel={() => {
+          setShowValidationModal(false);
+          toast.info('Trade validation cancelled');
+        }}
+      />
     </Card>
   );
 };
