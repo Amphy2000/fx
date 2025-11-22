@@ -21,6 +21,7 @@ import { EmailABTestManager } from "@/components/EmailABTestManager";
 import { EmailListManager } from "@/components/EmailListManager";
 import { EmailPersonalizationManager } from "@/components/EmailPersonalizationManager";
 import { EmailWarmUpManager } from "@/components/EmailWarmUpManager";
+import { AdminCreditManager } from "@/components/AdminCreditManager";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -246,6 +247,9 @@ const Admin = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Credit Manager */}
+            <AdminCreditManager />
 
             {/* Search Bar */}
             <div>
