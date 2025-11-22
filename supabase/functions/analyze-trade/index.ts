@@ -55,7 +55,30 @@ serve(async (req) => {
       });
     }
 
-    const { trade } = await req.json();
+    const { tradeId } = await req.json();
+    
+    if (!tradeId) {
+      return new Response(JSON.stringify({ error: 'Trade ID is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Fetch the trade data
+    const { data: trade, error: tradeError } = await supabaseClient
+      .from('trades')
+      .select('*')
+      .eq('id', tradeId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (tradeError || !trade) {
+      return new Response(JSON.stringify({ error: 'Trade not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
