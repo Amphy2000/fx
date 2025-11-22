@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Brain, LogOut, LayoutDashboard, MessageSquare, Calendar, Settings, Shield, Sun, Moon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTheme } from "@/components/ThemeProvider";
+import { CreditDisplay } from "@/components/CreditDisplay";
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -122,6 +123,7 @@ const Navbar = () => {
                   <Shield className="h-4 w-4" />
                   Admin
                 </Button>}
+              <CreditDisplay />
               <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="flex-shrink-0">
                 {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </Button>
