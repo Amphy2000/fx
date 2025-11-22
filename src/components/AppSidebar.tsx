@@ -1,4 +1,4 @@
-import { LayoutDashboard, MessageSquare, Calendar, Settings, Brain, LogOut, Target, Calculator, CreditCard, Trophy, GraduationCap, Plug, Heart, ClipboardCheck, Lightbulb, BarChart3, Flame, Award, BookOpen, Zap, Notebook, Sparkles } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Calendar, Settings, Brain, LogOut, Target, Calculator, CreditCard, Trophy, GraduationCap, Plug, Heart, ClipboardCheck, Lightbulb, BarChart3, Flame, Award, BookOpen, Zap, Notebook, Sparkles, TrendingUp, FileText, Activity } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,14 +6,11 @@ import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGrou
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-const generalNavItems = [{
+// Core Trading Features
+const tradingNavItems = [{
   title: "Dashboard",
   url: "/dashboard",
   icon: LayoutDashboard
-}, {
-  title: "Leaderboard",
-  url: "/leaderboard",
-  icon: Trophy
 }, {
   title: "Trade Calendar",
   url: "/trade-calendar",
@@ -22,51 +19,40 @@ const generalNavItems = [{
   title: "Weekly Summary",
   url: "/weekly-summary",
   icon: BarChart3
-}, {
-  title: "Integrations",
-  url: "/integrations",
-  icon: Plug
-}, {
-  title: "Settings",
-  url: "/settings",
-  icon: Settings
 }];
 
+// AI-Powered Analysis
 const aiNavItems = [{
-  title: "AI Features",
+  title: "AI Features Hub",
   url: "/ai-features",
   icon: Brain
 }, {
-  title: "AI Chat",
-  url: "/ai-chat",
-  icon: MessageSquare
-}, {
-  title: "AI Journal",
+  title: "AI Daily Journal",
   url: "/ai-journal",
-  icon: BookOpen
-}, {
-  title: "Pattern Recognition",
-  url: "/pattern-recognition",
-  icon: Zap
+  icon: Sparkles
 }, {
   title: "AI Setup Analyzer",
   url: "/ai-setup-analyzer",
-  icon: Sparkles
-}, {
+  icon: Zap
+}];
+
+// Manual Tracking & Journaling
+const journalNavItems = [{
   title: "Trading Journal",
   url: "/journal",
   icon: Notebook
-}];
-
-const performanceNavItems = [{
-  title: "Check-In",
+}, {
+  title: "Daily Check-In",
   url: "/check-in",
   icon: Heart
 }, {
-  title: "Routine",
+  title: "Trading Routine",
   url: "/routine",
   icon: ClipboardCheck
-}, {
+}];
+
+// Performance & Progress
+const performanceNavItems = [{
   title: "Setups",
   url: "/setups",
   icon: Lightbulb
@@ -79,11 +65,16 @@ const performanceNavItems = [{
   url: "/achievements",
   icon: Award
 }, {
+  title: "Leaderboard",
+  url: "/leaderboard",
+  icon: Trophy
+}, {
   title: "Advanced Analytics",
   url: "/analytics/advanced",
-  icon: BarChart3
+  icon: TrendingUp
 }];
 
+// Utilities
 const toolsNavItems = [{
   title: "Calculators",
   url: "/calculators",
@@ -92,6 +83,17 @@ const toolsNavItems = [{
   title: "Targets",
   url: "/targets",
   icon: Target
+}];
+
+// System
+const systemNavItems = [{
+  title: "Integrations",
+  url: "/integrations",
+  icon: Plug
+}, {
+  title: "Settings",
+  url: "/settings",
+  icon: Settings
 }, {
   title: "Pricing",
   url: "/pricing",
@@ -153,10 +155,10 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>Trading</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {generalNavItems.map(item => <SidebarMenuItem key={item.title}>
+              {tradingNavItems.map(item => <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)} onClick={handleNavClick}>
                     <NavLink to={item.url}>
                       <item.icon className="h-4 w-4" />
@@ -169,10 +171,26 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>AI Features</SidebarGroupLabel>
+          <SidebarGroupLabel>AI Analysis</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {aiNavItems.map(item => <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} onClick={handleNavClick}>
+                    <NavLink to={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Journal & Tracking</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {journalNavItems.map(item => <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)} onClick={handleNavClick}>
                     <NavLink to={item.url}>
                       <item.icon className="h-4 w-4" />
@@ -205,6 +223,22 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {toolsNavItems.map(item => <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} onClick={handleNavClick}>
+                    <NavLink to={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>System</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {systemNavItems.map(item => <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)} onClick={handleNavClick}>
                     <NavLink to={item.url}>
                       <item.icon className="h-4 w-4" />

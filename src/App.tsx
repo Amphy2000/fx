@@ -9,10 +9,8 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Calculators from "./pages/Calculators";
-import AIChat from "./pages/AIChat";
 import WeeklySummary from "./pages/WeeklySummary";
 import AIJournal from "./pages/AIJournal";
-import PatternRecognition from "./pages/PatternRecognition";
 import Journal from "./pages/Journal";
 import Leaderboard from "./pages/Leaderboard";
 import Settings from "./pages/Settings";
@@ -50,10 +48,8 @@ const AppContent = () => {
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/calculators" element={<Calculators />} />
-          <Route path="/ai-chat" element={<AIChat />} />
           <Route path="/weekly-summary" element={<WeeklySummary />} />
-          <Route path="/ai-journal" element={<AIJournal />} />
-        <Route path="/pattern-recognition" element={<PatternRecognition />} />
+        <Route path="/ai-journal" element={<AIJournal />} />
         <Route path="/ai-setup-analyzer" element={<AISetupAnalyzer />} />
         <Route path="/ai-features" element={<AIFeatures />} />
         <Route path="/journal" element={<Journal />} />
