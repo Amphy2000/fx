@@ -133,8 +133,8 @@ export const TradingAssistantChat = () => {
           const { done, value } = await reader.read();
           if (done) break;
 
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n').filter(line => line.trim() !== '');
 
           for (const line of lines) {
             if (line.startsWith('data: ')) {
@@ -148,12 +148,15 @@ export const TradingAssistantChat = () => {
                   assistantMessage += content;
                   setMessages(prev => {
                     const newMessages = [...prev];
-                    newMessages[newMessages.length - 1].content = assistantMessage;
+                    newMessages[newMessages.length - 1] = {
+                      role: 'assistant',
+                      content: assistantMessage
+                    };
                     return newMessages;
                   });
                 }
               } catch (e) {
-                // Ignore parse errors
+                // Ignore parse errors for incomplete chunks
               }
             }
           }
