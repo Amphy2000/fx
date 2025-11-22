@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { TrendingUp, Heart, Plug, CheckCircle2, ArrowRight, X, Brain, Camera, Mic } from "lucide-react";
+import { TrendingUp, Heart, Plug, CheckCircle2, ArrowRight, X, Brain, Camera, Mic, MessageSquare, Target, Trophy, LineChart, Zap, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -101,7 +101,7 @@ export default function Onboarding() {
       .from('profiles')
       .update({ 
         onboarding_completed: true,
-        onboarding_step: 4
+        onboarding_step: 7
       })
       .eq('id', userId);
     
@@ -121,7 +121,7 @@ export default function Onboarding() {
         .from('profiles')
         .update({ 
           onboarding_completed: true,
-          onboarding_step: 4 
+          onboarding_step: 7 
         })
         .eq('id', userId);
       
@@ -196,56 +196,90 @@ export default function Onboarding() {
     toast.info("Step skipped");
   };
 
-  const progress = ((currentStep + 1) / 4) * 100;
+  const progress = ((currentStep + 1) / 7) * 100;
 
   const steps = [
-    // Step 0: Welcome
+    // Step 0: Welcome + Feature Overview
     <OnboardingStep
       key="welcome"
       icon={TrendingUp}
       title="Welcome to Amphy AI"
-      description="Your intelligent trading companion for better decision-making and consistent growth"
+      description="Your complete trading journal with AI-powered insights and automation"
     >
       <Card className="border-border/50 bg-card/50 backdrop-blur">
         <CardContent className="p-8 space-y-6">
-          <div className="space-y-4">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Brain className="h-5 w-5 text-primary" />
-              </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="flex items-start gap-3 p-4 border rounded-lg bg-background/50">
+              <Brain className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
               <div>
-                <h3 className="font-semibold text-foreground mb-1">AI-Powered Trade Logging</h3>
-                <p className="text-sm text-muted-foreground">Voice or Screenshot - AI extracts all details automatically</p>
+                <h4 className="font-semibold text-sm mb-1">AI Trade Logging</h4>
+                <p className="text-xs text-muted-foreground">Voice or screenshot - AI extracts everything</p>
               </div>
             </div>
             
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Heart className="h-5 w-5 text-primary" />
-              </div>
+            <div className="flex items-start gap-3 p-4 border rounded-lg bg-background/50">
+              <MessageSquare className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
               <div>
-                <h3 className="font-semibold text-foreground mb-1">Monitor Your Mental State</h3>
-                <p className="text-sm text-muted-foreground">Daily check-ins help you understand how emotions affect your trading</p>
+                <h4 className="font-semibold text-sm mb-1">AI Coach & Assistant</h4>
+                <p className="text-xs text-muted-foreground">24/7 trading mentor and strategy advisor</p>
               </div>
             </div>
             
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Plug className="h-5 w-5 text-primary" />
-              </div>
+            <div className="flex items-start gap-3 p-4 border rounded-lg bg-background/50">
+              <LineChart className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
               <div>
-                <h3 className="font-semibold text-foreground mb-1">Connect MT5</h3>
-                <p className="text-sm text-muted-foreground">Automatically sync your MetaTrader 5 trades for seamless journaling</p>
+                <h4 className="font-semibold text-sm mb-1">Pattern Recognition</h4>
+                <p className="text-xs text-muted-foreground">AI identifies your winning & losing patterns</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-3 p-4 border rounded-lg bg-background/50">
+              <Target className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
+              <div>
+                <h4 className="font-semibold text-sm mb-1">Setup Analyzer</h4>
+                <p className="text-xs text-muted-foreground">Track performance of your trade setups</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-3 p-4 border rounded-lg bg-background/50">
+              <Trophy className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
+              <div>
+                <h4 className="font-semibold text-sm mb-1">Achievements & Streaks</h4>
+                <p className="text-xs text-muted-foreground">Gamified progress tracking and motivation</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-3 p-4 border rounded-lg bg-background/50">
+              <Heart className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
+              <div>
+                <h4 className="font-semibold text-sm mb-1">Mental State Tracking</h4>
+                <p className="text-xs text-muted-foreground">Understand how emotions affect performance</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-3 p-4 border rounded-lg bg-background/50">
+              <BookOpen className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
+              <div>
+                <h4 className="font-semibold text-sm mb-1">Trading Journal</h4>
+                <p className="text-xs text-muted-foreground">Advanced analytics and insights from your journal</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-3 p-4 border rounded-lg bg-background/50">
+              <Plug className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
+              <div>
+                <h4 className="font-semibold text-sm mb-1">MT5 Auto-Sync</h4>
+                <p className="text-xs text-muted-foreground">Automatically import MetaTrader trades</p>
               </div>
             </div>
           </div>
 
           <div className="pt-4 flex gap-3">
-            <Button onClick={skipStep} variant="outline" size="lg" className="flex-1">
-              Skip
+            <Button onClick={skipOnboarding} variant="outline" size="lg" className="flex-1">
+              Skip Tour
             </Button>
             <Button onClick={nextStep} size="lg" className="flex-1">
-              Get Started
+              Show Me Around
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
@@ -309,7 +343,199 @@ export default function Onboarding() {
       </Card>
     </OnboardingStep>,
 
-    // Step 2: Daily Check-In
+    // Step 2: AI Coach & Assistant
+    <OnboardingStep
+      key="ai-coach"
+      icon={MessageSquare}
+      title="AI Coach & Trading Assistant"
+      description="Get personalized coaching and real-time trading guidance from AI"
+    >
+      <Card className="border-border/50">
+        <CardContent className="p-6 space-y-6">
+          <div className="mb-4 p-4 bg-primary/10 border border-primary/20 rounded-lg">
+            <p className="text-sm text-foreground">
+              <strong>24/7 AI Support:</strong> Chat with your AI coach for strategy advice, trade reviews, and mental game coaching
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="p-4 border rounded-lg bg-background/50">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Brain className="h-5 w-5 text-primary" />
+                </div>
+                <h4 className="font-semibold">AI Coach Dashboard</h4>
+              </div>
+              <p className="text-sm text-muted-foreground mb-2">
+                Get weekly performance reviews, personalized recommendations, and behavioral insights
+              </p>
+              <ul className="text-xs text-muted-foreground space-y-1 ml-4">
+                <li>• Analyzes your trading patterns and psychology</li>
+                <li>• Identifies areas for improvement</li>
+                <li>• Tracks your progress over time</li>
+              </ul>
+            </div>
+
+            <div className="p-4 border rounded-lg bg-background/50">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <MessageSquare className="h-5 w-5 text-primary" />
+                </div>
+                <h4 className="font-semibold">Trading Assistant Chat</h4>
+              </div>
+              <p className="text-sm text-muted-foreground mb-2">
+                Ask anything - strategy questions, trade analysis, risk management advice
+              </p>
+              <ul className="text-xs text-muted-foreground space-y-1 ml-4">
+                <li>• "Should I take this trade setup?"</li>
+                <li>• "Why did my last 3 trades fail?"</li>
+                <li>• "How can I improve my win rate?"</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button onClick={skipStep} variant="outline" size="lg" className="flex-1">
+              Skip
+            </Button>
+            <Button onClick={nextStep} size="lg" className="flex-1">
+              Continue
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </OnboardingStep>,
+
+    // Step 3: Pattern Recognition & Setup Analyzer
+    <OnboardingStep
+      key="patterns"
+      icon={LineChart}
+      title="Pattern Recognition & Setup Analyzer"
+      description="AI identifies your winning patterns and tracks setup performance"
+    >
+      <Card className="border-border/50">
+        <CardContent className="p-6 space-y-6">
+          <div className="mb-4 p-4 bg-primary/10 border border-primary/20 rounded-lg">
+            <p className="text-sm text-foreground">
+              <strong>Smart Analytics:</strong> Discover what works and what doesn't in your trading
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="p-4 border rounded-lg bg-background/50">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <LineChart className="h-5 w-5 text-primary" />
+                </div>
+                <h4 className="font-semibold">Pattern Recognition</h4>
+              </div>
+              <p className="text-sm text-muted-foreground mb-2">
+                AI analyzes your trades to find patterns in your behavior and performance
+              </p>
+              <ul className="text-xs text-muted-foreground space-y-1 ml-4">
+                <li>• Identify winning vs losing patterns</li>
+                <li>• Discover your best trading times</li>
+                <li>• Find emotional triggers affecting performance</li>
+              </ul>
+            </div>
+
+            <div className="p-4 border rounded-lg bg-background/50">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Target className="h-5 w-5 text-primary" />
+                </div>
+                <h4 className="font-semibold">Setup Performance Tracker</h4>
+              </div>
+              <p className="text-sm text-muted-foreground mb-2">
+                Track the performance of your different trade setups
+              </p>
+              <ul className="text-xs text-muted-foreground space-y-1 ml-4">
+                <li>• Win rate per setup type</li>
+                <li>• Risk/reward analysis</li>
+                <li>• Setup-specific recommendations</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button onClick={skipStep} variant="outline" size="lg" className="flex-1">
+              Skip
+            </Button>
+            <Button onClick={nextStep} size="lg" className="flex-1">
+              Continue
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </OnboardingStep>,
+
+    // Step 4: Achievements & Gamification
+    <OnboardingStep
+      key="gamification"
+      icon={Trophy}
+      title="Achievements & Streaks"
+      description="Stay motivated with gamified progress tracking and rewards"
+    >
+      <Card className="border-border/50">
+        <CardContent className="p-6 space-y-6">
+          <div className="mb-4 p-4 bg-primary/10 border border-primary/20 rounded-lg">
+            <p className="text-sm text-foreground">
+              <strong>Stay Motivated:</strong> Track your progress and compete with other traders
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="p-4 border rounded-lg bg-background/50">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Trophy className="h-5 w-5 text-primary" />
+                </div>
+                <h4 className="font-semibold">Achievements & Badges</h4>
+              </div>
+              <p className="text-sm text-muted-foreground mb-2">
+                Unlock achievements as you progress in your trading journey
+              </p>
+              <ul className="text-xs text-muted-foreground space-y-1 ml-4">
+                <li>• First profitable week</li>
+                <li>• 10-trade winning streak</li>
+                <li>• Risk management master</li>
+              </ul>
+            </div>
+
+            <div className="p-4 border rounded-lg bg-background/50">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Zap className="h-5 w-5 text-primary" />
+                </div>
+                <h4 className="font-semibold">Streaks & Challenges</h4>
+              </div>
+              <p className="text-sm text-muted-foreground mb-2">
+                Build consistency with daily streaks and weekly challenges
+              </p>
+              <ul className="text-xs text-muted-foreground space-y-1 ml-4">
+                <li>• Daily check-in streaks</li>
+                <li>• Weekly trading challenges</li>
+                <li>• Leaderboard rankings</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button onClick={skipStep} variant="outline" size="lg" className="flex-1">
+              Skip
+            </Button>
+            <Button onClick={nextStep} size="lg" className="flex-1">
+              Continue
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </OnboardingStep>,
+
+    // Step 5: Daily Check-In
     <OnboardingStep
       key="checkin"
       icon={Heart}
@@ -416,7 +642,7 @@ export default function Onboarding() {
       </Card>
     </OnboardingStep>,
 
-    // Step 3: MT5 Integration
+    // Step 6: MT5 Integration
     <OnboardingStep
       key="mt5"
       icon={Plug}
@@ -498,7 +724,7 @@ export default function Onboarding() {
       </Card>
     </OnboardingStep>,
 
-    // Step 4: Completion
+    // Step 7: Completion
     <OnboardingStep
       key="complete"
       icon={CheckCircle2}
@@ -520,18 +746,23 @@ export default function Onboarding() {
 
           <div className="space-y-3">
             <div className="p-4 bg-card border border-border/50 rounded-lg">
-              <h4 className="font-semibold text-foreground mb-1">📊 View Your Dashboard</h4>
-              <p className="text-sm text-muted-foreground">See your stats, recent trades, and performance metrics</p>
+              <h4 className="font-semibold text-foreground mb-1">🎤 Log Your First Trade</h4>
+              <p className="text-sm text-muted-foreground">Use Voice or Screenshot in AI Features to log trades instantly</p>
             </div>
             
             <div className="p-4 bg-card border border-border/50 rounded-lg">
-              <h4 className="font-semibold text-foreground mb-1">🤖 Try AI Coach</h4>
-              <p className="text-sm text-muted-foreground">Get personalized insights and recommendations</p>
+              <h4 className="font-semibold text-foreground mb-1">🤖 Chat with AI Coach</h4>
+              <p className="text-sm text-muted-foreground">Get personalized insights and strategy recommendations</p>
             </div>
             
             <div className="p-4 bg-card border border-border/50 rounded-lg">
-              <h4 className="font-semibold text-foreground mb-1">🏆 Join Leaderboard</h4>
-              <p className="text-sm text-muted-foreground">Compete with other traders and track your ranking</p>
+              <h4 className="font-semibold text-foreground mb-1">📊 Track Patterns</h4>
+              <p className="text-sm text-muted-foreground">Discover what setups work best for you</p>
+            </div>
+            
+            <div className="p-4 bg-card border border-border/50 rounded-lg">
+              <h4 className="font-semibold text-foreground mb-1">🏆 Earn Achievements</h4>
+              <p className="text-sm text-muted-foreground">Build streaks and unlock badges as you progress</p>
             </div>
           </div>
 
@@ -563,7 +794,7 @@ export default function Onboarding() {
         {/* Progress bar */}
         <div className="max-w-2xl mx-auto mb-8">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-muted-foreground">Step {currentStep + 1} of 5</span>
+            <span className="text-sm text-muted-foreground">Step {currentStep + 1} of 7</span>
             <span className="text-sm text-muted-foreground">{Math.round(progress)}%</span>
           </div>
           <Progress value={progress} className="h-2" />
