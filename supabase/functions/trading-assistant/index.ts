@@ -156,6 +156,9 @@ Be direct, concise, and actionable. If a trade looks good, say so. If not, expla
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('AI gateway error:', response.status, errorText);
+      
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limits exceeded" }), {
           status: 429,
@@ -168,7 +171,14 @@ Be direct, concise, and actionable. If a trade looks good, say so. If not, expla
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error("AI gateway error");
+      return new Response(JSON.stringify({ 
+        error: "AI gateway error", 
+        details: errorText,
+        status: response.status 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Deduct credits (do it before streaming starts)
