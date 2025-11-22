@@ -30,16 +30,21 @@ export const StandaloneVoiceLogger = () => {
     }
 
     const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.continuous = true;
+    recognition.interimResults = true;
     recognition.lang = 'en-US';
     recognition.maxAlternatives = 1;
 
     recognition.onresult = (event: any) => {
-      const result = event.results[0][0].transcript;
-      setTranscript(result);
-      setIsRecording(false);
-      setTimeout(() => processTranscript(result), 100);
+      let finalTranscript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript + ' ';
+        }
+      }
+      if (finalTranscript) {
+        setTranscript(prev => prev + finalTranscript);
+      }
     };
 
     recognition.onerror = (event: any) => {
@@ -93,6 +98,9 @@ export const StandaloneVoiceLogger = () => {
     if (recognitionRef.current && isRecording) {
       try {
         recognitionRef.current.stop();
+        if (transcript.trim()) {
+          setTimeout(() => processTranscript(transcript), 100);
+        }
       } catch (e) {
         console.error("Error stopping recognition:", e);
       }
@@ -138,6 +146,11 @@ export const StandaloneVoiceLogger = () => {
 
       const tradeData = parseData.tradeData;
 
+      // Validate required fields
+      if (!tradeData.pair || !tradeData.direction) {
+        throw new Error("Could not extract trade pair or direction. Please speak more clearly.");
+      }
+
       // Save trade directly to database
       const { data: trade, error: insertError } = await supabase
         .from('trades')
@@ -145,17 +158,15 @@ export const StandaloneVoiceLogger = () => {
           user_id: user.id,
           pair: tradeData.pair,
           direction: tradeData.direction,
-          entry_price: tradeData.entry_price,
-          stop_loss: tradeData.stop_loss,
-          take_profit: tradeData.take_profit,
-          exit_price: tradeData.exit_price,
-          profit_loss: tradeData.profit_loss,
-          result: tradeData.result,
-          emotion_before: tradeData.emotion_before,
-          emotion_after: tradeData.emotion_after,
-          notes: tradeData.notes,
-          lot_size: tradeData.lot_size,
-          risk_reward: tradeData.risk_reward,
+          entry_price: tradeData.entry_price || null,
+          stop_loss: tradeData.stop_loss || null,
+          take_profit: tradeData.take_profit || null,
+          exit_price: tradeData.exit_price || null,
+          profit_loss: tradeData.profit_loss || null,
+          result: tradeData.result || 'open',
+          emotion_before: tradeData.emotion_before || null,
+          emotion_after: tradeData.emotion_after || null,
+          notes: tradeData.notes || null,
         })
         .select()
         .single();
