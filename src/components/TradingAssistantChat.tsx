@@ -95,10 +95,12 @@ export const TradingAssistantChat = () => {
             'Authorization': `Bearer ${session.access_token}`
           },
           body: JSON.stringify({
-            messages: messages.concat(userMessage).map(m => ({
-              role: m.role,
-              content: m.content
-            })),
+            messages: messages.concat(userMessage)
+              .filter(m => m.role === 'user' || (m.role === 'assistant' && m.content)) // Skip initial greeting
+              .map(m => ({
+                role: m.role,
+                content: m.content || (m.imageUrl ? 'Please analyze this chart' : '')
+              })),
             imageUrl: imagePreview
           })
         }
