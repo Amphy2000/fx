@@ -21,15 +21,12 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    
-    // Create authenticated client with the user's token
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
     if (authError || !user) {
       console.error('Auth error:', authError);
       return new Response(JSON.stringify({ error: 'Unauthorized', details: authError?.message }), {
@@ -38,8 +35,13 @@ serve(async (req) => {
       });
     }
 
-    // Check credits (cost: 10 credits for vision)
-    const { data: profile, error: profileError } = await supabaseClient
+    // Check credits using service role to bypass RLS
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+    
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('ai_credits')
       .eq('id', user.id)
@@ -151,12 +153,7 @@ serve(async (req) => {
     const toolCall = data.choices[0].message.tool_calls?.[0];
     const extractedData = toolCall ? JSON.parse(toolCall.function.arguments) : null;
     
-    // Deduct credits using service role
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-    
+    // Deduct credits
     await supabaseAdmin
       .from('profiles')
       .update({ ai_credits: profile.ai_credits - EXTRACTION_COST })
