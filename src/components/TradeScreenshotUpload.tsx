@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload, Loader2, Check, ArrowUpDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -20,6 +21,9 @@ interface ExtractedData {
   timeframe?: string;
   session?: string;
   risk_reward?: string;
+  result?: 'open' | 'win' | 'loss' | 'breakeven';
+  emotion_before?: string;
+  emotion_after?: string;
   trade_timestamp?: string;
   notes?: string;
 }
@@ -130,6 +134,8 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
         extractedData.setup_name ? `Setup: ${extractedData.setup_name}` : '',
         extractedData.timeframe ? `Timeframe: ${extractedData.timeframe}` : '',
         extractedData.risk_reward ? `R:R: ${extractedData.risk_reward}` : '',
+        extractedData.emotion_before ? `Before: ${extractedData.emotion_before}` : '',
+        extractedData.emotion_after ? `After: ${extractedData.emotion_after}` : '',
         extractedData.notes || ''
       ].filter(Boolean).join(' | ');
 
@@ -142,8 +148,11 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
         stop_loss: extractedData.stop_loss ?? undefined,
         take_profit: extractedData.take_profit ?? undefined,
         volume: extractedData.lot_size ?? undefined,
+        result: extractedData.result ?? 'open',
         profit_loss: extractedData.profit_loss ?? undefined,
         session: extractedData.session ?? undefined,
+        emotion_before: extractedData.emotion_before ?? undefined,
+        emotion_after: extractedData.emotion_after ?? undefined,
         notes: contextNotes || undefined,
         screenshot_url: screenshotUrl ?? undefined,
         open_time: extractedData.trade_timestamp ?? undefined,
@@ -385,6 +394,83 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
                     className="h-8 text-sm"
                     placeholder="e.g., 1:3"
                   />
+                </div>
+              </div>
+
+              {/* Result */}
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Result</label>
+                <Select
+                  value={extractedData.result || 'open'}
+                  onValueChange={(value) => handleFieldEdit('result', value)}
+                >
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="open">Open</SelectItem>
+                    <SelectItem value="win">Win</SelectItem>
+                    <SelectItem value="loss">Loss</SelectItem>
+                    <SelectItem value="breakeven">Breakeven</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Emotional Tracking */}
+              <div className="space-y-3 pt-3 border-t border-border/20">
+                <h4 className="text-xs font-medium text-muted-foreground">🧘 Emotional Tracking</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Emotion Before</label>
+                    <Select
+                      value={extractedData.emotion_before || ''}
+                      onValueChange={(value) => handleFieldEdit('emotion_before', value)}
+                    >
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="calm">😌 Calm</SelectItem>
+                        <SelectItem value="confident">😎 Confident</SelectItem>
+                        <SelectItem value="disciplined">🎯 Disciplined</SelectItem>
+                        <SelectItem value="focused">🧠 Focused</SelectItem>
+                        <SelectItem value="patient">⏳ Patient</SelectItem>
+                        <SelectItem value="optimistic">✨ Optimistic</SelectItem>
+                        <SelectItem value="neutral">😐 Neutral</SelectItem>
+                        <SelectItem value="anxious">😟 Anxious</SelectItem>
+                        <SelectItem value="greedy">🤑 Greedy</SelectItem>
+                        <SelectItem value="fearful">😨 Fearful</SelectItem>
+                        <SelectItem value="impatient">😤 Impatient</SelectItem>
+                        <SelectItem value="impulsive">⚡ Impulsive</SelectItem>
+                        <SelectItem value="stressed">😰 Stressed</SelectItem>
+                        <SelectItem value="uncertain">🤔 Uncertain</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Emotion After</label>
+                    <Select
+                      value={extractedData.emotion_after || ''}
+                      onValueChange={(value) => handleFieldEdit('emotion_after', value)}
+                    >
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="satisfied">😁 Satisfied</SelectItem>
+                        <SelectItem value="excited">🎉 Excited</SelectItem>
+                        <SelectItem value="content">😌 Content</SelectItem>
+                        <SelectItem value="relieved">😮‍💨 Relieved</SelectItem>
+                        <SelectItem value="proud">🏆 Proud</SelectItem>
+                        <SelectItem value="neutral">😐 Neutral</SelectItem>
+                        <SelectItem value="frustrated">😤 Frustrated</SelectItem>
+                        <SelectItem value="regretful">😔 Regretful</SelectItem>
+                        <SelectItem value="disappointed">😞 Disappointed</SelectItem>
+                        <SelectItem value="angry">😠 Angry</SelectItem>
+                        <SelectItem value="stressed">😰 Stressed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
 

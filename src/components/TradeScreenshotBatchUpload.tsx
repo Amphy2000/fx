@@ -24,9 +24,11 @@ interface ExtractedData {
   timeframe?: string;
   session?: string;
   risk_reward?: string;
+  result?: 'open' | 'win' | 'loss' | 'breakeven';
+  emotion_before?: string;
+  emotion_after?: string;
   trade_timestamp?: string;
   notes?: string;
-  emotion?: string;
 }
 
 interface ProcessedTrade {
@@ -189,7 +191,8 @@ export const TradeScreenshotBatchUpload = () => {
         trade.extractedData.setup_name ? `Setup: ${trade.extractedData.setup_name}` : '',
         trade.extractedData.timeframe ? `Timeframe: ${trade.extractedData.timeframe}` : '',
         trade.extractedData.risk_reward ? `R:R: ${trade.extractedData.risk_reward}` : '',
-        trade.extractedData.emotion ? `Emotion: ${trade.extractedData.emotion}` : '',
+        trade.extractedData.emotion_before ? `Before: ${trade.extractedData.emotion_before}` : '',
+        trade.extractedData.emotion_after ? `After: ${trade.extractedData.emotion_after}` : '',
         trade.extractedData.notes || ''
       ].filter(Boolean).join(' | ');
 
@@ -202,8 +205,11 @@ export const TradeScreenshotBatchUpload = () => {
         stop_loss: trade.extractedData.stop_loss ?? undefined,
         take_profit: trade.extractedData.take_profit ?? undefined,
         volume: trade.extractedData.lot_size ?? undefined,
+        result: trade.extractedData.result ?? 'open',
         profit_loss: trade.extractedData.profit_loss ?? undefined,
         session: trade.extractedData.session ?? undefined,
+        emotion_before: trade.extractedData.emotion_before ?? undefined,
+        emotion_after: trade.extractedData.emotion_after ?? undefined,
         notes: contextNotes || undefined,
         screenshot_url: trade.screenshotUrl ?? undefined,
         open_time: trade.extractedData.trade_timestamp ?? undefined,
@@ -554,26 +560,83 @@ export const TradeScreenshotBatchUpload = () => {
                             </div>
                           </div>
 
-                          {/* Emotion & Notes */}
+                          {/* Result */}
                           <div className="space-y-1">
-                            <Label className="text-xs">Emotion</Label>
+                            <Label className="text-xs">Result</Label>
                             <Select
-                              value={trade.extractedData.emotion || ''}
-                              onValueChange={(value) => handleFieldEdit(trade.id, 'emotion', value)}
+                              value={trade.extractedData.result || 'open'}
+                              onValueChange={(value) => handleFieldEdit(trade.id, 'result', value)}
                             >
                               <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder="How did you feel?" />
+                                <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="confident">😊 Confident</SelectItem>
-                                <SelectItem value="anxious">😰 Anxious</SelectItem>
-                                <SelectItem value="excited">🤩 Excited</SelectItem>
-                                <SelectItem value="frustrated">😤 Frustrated</SelectItem>
-                                <SelectItem value="calm">😌 Calm</SelectItem>
-                                <SelectItem value="fearful">😨 Fearful</SelectItem>
-                                <SelectItem value="greedy">🤑 Greedy</SelectItem>
+                                <SelectItem value="open">Open</SelectItem>
+                                <SelectItem value="win">Win</SelectItem>
+                                <SelectItem value="loss">Loss</SelectItem>
+                                <SelectItem value="breakeven">Breakeven</SelectItem>
                               </SelectContent>
                             </Select>
+                          </div>
+
+                          {/* Emotional Tracking */}
+                          <div className="space-y-3 pt-3 border-t border-border/20">
+                            <h4 className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                              🧘 Emotional Tracking
+                            </h4>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="space-y-1">
+                                <Label className="text-xs">Emotion Before</Label>
+                                <Select
+                                  value={trade.extractedData.emotion_before || ''}
+                                  onValueChange={(value) => handleFieldEdit(trade.id, 'emotion_before', value)}
+                                >
+                                  <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue placeholder="Select..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="calm">😌 Calm</SelectItem>
+                                    <SelectItem value="confident">😎 Confident</SelectItem>
+                                    <SelectItem value="disciplined">🎯 Disciplined</SelectItem>
+                                    <SelectItem value="focused">🧠 Focused</SelectItem>
+                                    <SelectItem value="patient">⏳ Patient</SelectItem>
+                                    <SelectItem value="optimistic">✨ Optimistic</SelectItem>
+                                    <SelectItem value="neutral">😐 Neutral</SelectItem>
+                                    <SelectItem value="anxious">😟 Anxious</SelectItem>
+                                    <SelectItem value="greedy">🤑 Greedy</SelectItem>
+                                    <SelectItem value="fearful">😨 Fearful</SelectItem>
+                                    <SelectItem value="impatient">😤 Impatient</SelectItem>
+                                    <SelectItem value="impulsive">⚡ Impulsive</SelectItem>
+                                    <SelectItem value="stressed">😰 Stressed</SelectItem>
+                                    <SelectItem value="uncertain">🤔 Uncertain</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Emotion After</Label>
+                                <Select
+                                  value={trade.extractedData.emotion_after || ''}
+                                  onValueChange={(value) => handleFieldEdit(trade.id, 'emotion_after', value)}
+                                >
+                                  <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue placeholder="Select..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="satisfied">😁 Satisfied</SelectItem>
+                                    <SelectItem value="excited">🎉 Excited</SelectItem>
+                                    <SelectItem value="content">😌 Content</SelectItem>
+                                    <SelectItem value="relieved">😮‍💨 Relieved</SelectItem>
+                                    <SelectItem value="proud">🏆 Proud</SelectItem>
+                                    <SelectItem value="neutral">😐 Neutral</SelectItem>
+                                    <SelectItem value="frustrated">😤 Frustrated</SelectItem>
+                                    <SelectItem value="regretful">😔 Regretful</SelectItem>
+                                    <SelectItem value="disappointed">😞 Disappointed</SelectItem>
+                                    <SelectItem value="angry">😠 Angry</SelectItem>
+                                    <SelectItem value="stressed">😰 Stressed</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
                           </div>
 
                           {/* Notes */}
