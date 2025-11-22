@@ -144,13 +144,19 @@ Use null for missing values. NO extra text or explanations.`
     
     console.log('AI response:', aiResponse);
 
-    // Extract JSON from response (in case AI adds extra text)
-    const jsonMatch = aiResponse.match(/\{[^}]+\}/);
+    // Extract JSON from response (handle nested braces properly)
+    const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error('Could not extract trade data from transcript');
     }
 
     const tradeData = JSON.parse(jsonMatch[0]);
+    
+    // Validate required fields
+    if (!tradeData.pair || !tradeData.direction) {
+      console.error('Missing required fields in parsed data:', tradeData);
+      throw new Error('Could not identify trade pair or direction. Please include the currency pair and whether you bought or sold.');
+    }
 
     // Deduct credits
     await supabase
