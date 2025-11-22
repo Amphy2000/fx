@@ -4,8 +4,9 @@ import { PatternsDashboard } from "@/components/PatternsDashboard";
 import { BehavioralAlerts } from "@/components/BehavioralAlerts";
 import { TradingAssistantChat } from "@/components/TradingAssistantChat";
 import { StandaloneVoiceLogger } from "@/components/StandaloneVoiceLogger";
+import { JournalInsightsPanel } from "@/components/JournalInsightsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, Camera, TrendingUp, MessageSquare, Mic } from "lucide-react";
+import { Brain, Camera, TrendingUp, MessageSquare, Mic, Lightbulb } from "lucide-react";
 
 const AIFeatures = () => {
 
@@ -25,7 +26,7 @@ const AIFeatures = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2">
             <Tabs defaultValue="screenshots" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="screenshots" className="flex items-center gap-2">
                   <Camera className="w-4 h-4" />
                   Screenshots
@@ -41,6 +42,10 @@ const AIFeatures = () => {
                 <TabsTrigger value="behavior" className="flex items-center gap-2">
                   <Brain className="w-4 h-4" />
                   Behavior
+                </TabsTrigger>
+                <TabsTrigger value="insights" className="flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4" />
+                  Insights
                 </TabsTrigger>
                 <TabsTrigger value="assistant" className="flex items-center gap-2">
                   <MessageSquare className="w-4 h-4" />
@@ -76,6 +81,10 @@ const AIFeatures = () => {
                   </div>
                   <BehavioralAlerts />
                 </div>
+              </TabsContent>
+
+              <TabsContent value="insights">
+                <JournalInsightsPanel />
               </TabsContent>
 
               <TabsContent value="assistant">
@@ -137,6 +146,16 @@ const AIFeatures = () => {
                     Ask for second opinions on setups, get risk management advice
                   </p>
                 </div>
+
+                <div>
+                  <div className="flex items-center gap-2 font-medium mb-1">
+                    <Lightbulb className="w-4 h-4 text-primary" />
+                    Emotional Insights
+                  </div>
+                  <p className="text-muted-foreground">
+                    Analyzes how your emotions correlate with trading performance
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -162,6 +181,10 @@ const AIFeatures = () => {
                 <div className="flex justify-between">
                   <span>Behavior detection:</span>
                   <span className="font-medium">Free</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Emotional insights:</span>
+                  <span className="font-medium">5 credits</span>
                 </div>
               </div>
             </div>
