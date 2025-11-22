@@ -36,13 +36,26 @@ serve(async (req) => {
     }
 
     // Check credits (cost: 10 credits for vision)
-    const { data: profile } = await supabaseClient
+    const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('ai_credits')
       .eq('id', user.id)
       .single();
+    
+    if (profileError) {
+      console.error('Profile query error:', profileError);
+      return new Response(JSON.stringify({ 
+        error: 'Failed to fetch profile',
+        details: profileError.message
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
       
     const EXTRACTION_COST = 10;
+    console.log('User credits check:', { userId: user.id, credits: profile?.ai_credits, required: EXTRACTION_COST });
+    
     if (!profile || profile.ai_credits < EXTRACTION_COST) {
       return new Response(JSON.stringify({ 
         error: 'Insufficient credits',
