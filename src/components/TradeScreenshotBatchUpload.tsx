@@ -322,7 +322,8 @@ export const TradeScreenshotBatchUpload = () => {
           )}
 
           <div className="text-xs text-muted-foreground">
-            <p>💡 Clear screenshots with visible prices work best</p>
+            <p>💡 AI extracts visible data from each screenshot</p>
+            <p>✏️ Review and fill in any missing fields before saving</p>
             <p>💎 Cost: 10 AI credits per screenshot</p>
           </div>
         </div>
@@ -527,7 +528,7 @@ export const TradeScreenshotBatchUpload = () => {
                                 step="0.01"
                                 value={trade.extractedData.lot_size || ''}
                                 onChange={(e) => handleFieldEdit(trade.id, 'lot_size', e.target.value ? parseFloat(e.target.value) : undefined)}
-                                placeholder="Broker only"
+                                placeholder="Optional"
                                 className="h-8 text-xs"
                               />
                             </div>
@@ -538,7 +539,7 @@ export const TradeScreenshotBatchUpload = () => {
                                 step="0.01"
                                 value={trade.extractedData.profit_loss || ''}
                                 onChange={(e) => handleFieldEdit(trade.id, 'profit_loss', e.target.value ? parseFloat(e.target.value) : undefined)}
-                                placeholder="Broker only"
+                                placeholder="Optional"
                                 className="h-8 text-xs"
                               />
                             </div>
@@ -575,12 +576,13 @@ export const TradeScreenshotBatchUpload = () => {
                             </Select>
                           </div>
 
+                          {/* Notes */}
                           <div className="space-y-1">
-                            <Label className="text-xs">AI Notes</Label>
+                            <Label className="text-xs">Notes</Label>
                             <Textarea
                               value={trade.extractedData.notes || ''}
                               onChange={(e) => handleFieldEdit(trade.id, 'notes', e.target.value)}
-                              placeholder="Additional context, confluences, lessons..."
+                              placeholder="Add your trade context, emotions, lessons learned..."
                               className="text-xs min-h-16"
                             />
                           </div>

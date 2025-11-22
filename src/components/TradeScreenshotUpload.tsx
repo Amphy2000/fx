@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Upload, Loader2, Check, ArrowUpDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -349,9 +350,9 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
                   />
                 </div>
 
-                {/* Lot Size - Only for broker screenshots */}
+                {/* Lot Size */}
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Lot Size (Broker only)</label>
+                  <label className="text-xs text-muted-foreground">Lot Size</label>
                   <Input
                     type="number"
                     step="0.01"
@@ -362,9 +363,9 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
                   />
                 </div>
 
-                {/* P/L - Only for broker screenshots */}
+                {/* P/L */}
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">P/L (Broker only)</label>
+                  <label className="text-xs text-muted-foreground">P/L</label>
                   <Input
                     type="number"
                     step="0.01"
@@ -387,24 +388,27 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
                 </div>
               </div>
 
-              {/* Notes - Full width */}
-              {extractedData.notes && (
-                <div className="pt-2 border-t space-y-1">
-                  <label className="text-xs text-muted-foreground">AI Notes</label>
-                  <p className="text-xs p-2 bg-muted rounded">{extractedData.notes}</p>
-                </div>
-              )}
+              {/* Notes - Full width, editable */}
+              <div className="pt-2 border-t space-y-1">
+                <label className="text-xs text-muted-foreground">Notes</label>
+                <textarea
+                  value={extractedData.notes || ''}
+                  onChange={(e) => handleFieldEdit('notes', e.target.value || undefined)}
+                  className="w-full min-h-[60px] px-3 py-2 text-xs rounded-md border border-input bg-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  placeholder="Add your trade context, emotions, lessons learned..."
+                />
+              </div>
 
               <p className="text-xs text-muted-foreground">
-                * Required fields. All other fields are optional.
+                * Required fields. Review AI extracts and fill in any missing data.
               </p>
             </div>
           </Card>
         )}
 
         <div className="text-xs text-muted-foreground space-y-1">
-          <p>💡 TradingView charts: AI extracts setup, prices & levels</p>
-          <p>💡 Broker screenshots: Also extracts lot size & P/L</p>
+          <p>💡 AI extracts visible data from your screenshot</p>
+          <p>✏️ Review and fill in any missing fields before saving</p>
           <p>💎 Cost: 10 AI credits per extraction</p>
         </div>
       </div>
