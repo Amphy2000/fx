@@ -37,6 +37,8 @@ const Pricing = () => {
       });
       if (error) throw error;
       if (data?.authorization_url) {
+        // Redirect to Paystack with success callback
+        const successUrl = `${window.location.origin}/dashboard?payment=success`;
         window.location.href = data.authorization_url;
       }
     } catch (error) {

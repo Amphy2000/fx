@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Crown, Zap } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -323,6 +324,86 @@ const Settings = () => {
         <h1 className="text-4xl font-bold mb-8 text-foreground">Settings</h1>
 
         <div className="space-y-6">
+          {/* Subscription Status */}
+          <Card className="border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground flex items-center gap-2">
+                Subscription Status
+                {profile?.subscription_tier === 'lifetime' && <Crown className="h-5 w-5 text-amber-500" />}
+                {profile?.subscription_tier === 'pro' && <Zap className="h-5 w-5 text-primary" />}
+              </CardTitle>
+              <CardDescription>Your current plan and benefits</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-start justify-between">
+                <div className="space-y-3 flex-1">
+                  <div>
+                    <Label className="text-muted-foreground">Plan Type</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge className={
+                        profile?.subscription_tier === 'lifetime' 
+                          ? 'bg-amber-500/20 text-amber-700 dark:text-amber-400'
+                          : profile?.subscription_tier === 'pro'
+                          ? 'bg-primary/20 text-primary'
+                          : 'bg-gray-500/20 text-gray-700 dark:text-gray-400'
+                      }>
+                        {profile?.subscription_tier === 'lifetime' ? 'Lifetime Access' : 
+                         profile?.subscription_tier === 'pro' ? 'Pro Plan' : 
+                         'Free Plan'}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-muted-foreground">AI Credits</Label>
+                    <p className="text-foreground font-medium">
+                      {profile?.subscription_tier === 'lifetime' ? 'Unlimited' : 
+                       `${profile?.ai_credits || 0} credits`}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-muted-foreground">Monthly Trade Limit</Label>
+                    <p className="text-foreground font-medium">
+                      {profile?.subscription_tier === 'free' 
+                        ? `${profile?.monthly_trade_limit || 10} trades/month`
+                        : 'Unlimited'}
+                    </p>
+                  </div>
+
+                  {profile?.subscription_expires_at && (
+                    <div>
+                      <Label className="text-muted-foreground">Next Renewal</Label>
+                      <p className="text-foreground font-medium">
+                        {new Date(profile.subscription_expires_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                
+                {profile?.subscription_tier === 'free' && (
+                  <Button 
+                    onClick={() => navigate('/pricing')}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    <Crown className="h-4 w-4 mr-2" />
+                    Upgrade
+                  </Button>
+                )}
+                
+                {profile?.subscription_tier === 'pro' && (
+                  <Button 
+                    onClick={() => navigate('/pricing')}
+                    variant="outline"
+                  >
+                    <Crown className="h-4 w-4 mr-2" />
+                    Get Lifetime
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Telegram Integration */}
           <Card className="border-border">
             <CardHeader>
