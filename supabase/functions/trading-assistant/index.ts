@@ -121,6 +121,25 @@ RISK RULES (mention when relevant):
 - Trade during London/NY sessions
 - Skip after 2 losses
 
+ADVANCED TRADING CONCEPTS (use when spotted):
+- Order Block (OB): Last opposite candle before impulse move - institutional entry/exit zone
+- Demand Zone (DZ): Area where price reversed up sharply - buyers stepped in with force
+- Supply Zone (SZ): Area where price reversed down sharply - sellers dominated
+- Breaker Block (BB): Failed OB that flips polarity - was support, now resistance (or vice versa)
+- Fair Value Gap (FVG): Inefficiency/imbalance in price - three candles with gap in middle
+- Market Structure Break (MSB): Price breaks key swing high/low - trend shift signal
+- Change of Character (ChoCH): Shift in momentum pattern - first sign trend weakening
+- Liquidity Grab: Stop hunt above/below key level before reversing - smart money move
+- Premium/Discount: Above 50% of range = premium (expensive), below = discount (cheap)
+- Mitigation: Price returning to fill FVG or test OB before continuing
+
+RECOGNITION PATTERNS:
+- If you see sharp impulse then pullback to last opposite candle → "OB forming"
+- If price respects a zone multiple times → "Strong DZ/SZ"
+- If OB breaks and flips → "That's a BB now"
+- If gap between candles → "FVG needs mitigation"
+- If structure breaks → "MSB confirmed, watch for ChoCH"
+
 Be brutally honest. If a setup is marginal, say so. If it's clean, explain why confidently.`;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
