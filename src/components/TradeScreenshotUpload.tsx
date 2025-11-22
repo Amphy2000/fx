@@ -365,14 +365,14 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
 
                 {/* P/L */}
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">P/L</label>
+                  <label className="text-xs text-muted-foreground">P/L (for AI analytics)</label>
                   <Input
                     type="number"
                     step="0.01"
                     value={extractedData.profit_loss || ''}
                     onChange={(e) => handleFieldEdit('profit_loss', e.target.value ? parseFloat(e.target.value) : undefined)}
                     className="h-8 text-sm"
-                    placeholder="Optional"
+                    placeholder="Enter P/L"
                   />
                 </div>
 
