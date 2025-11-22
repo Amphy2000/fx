@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, Loader2, Check } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Upload, Loader2, Check, ArrowUpDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -29,6 +30,7 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
   const [preview, setPreview] = useState<string | null>(null);
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState<string | null>(null);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -81,7 +83,7 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
 
       const extracted = data.extracted_data;
       setExtractedData(extracted);
-      toast.success('Trade data extracted successfully!');
+      toast.success('Trade data extracted! Review and edit before saving.');
       onDataExtracted(extracted);
 
     } catch (error: any) {
@@ -91,6 +93,23 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
       setUploading(false);
       setExtracting(false);
     }
+  };
+
+  const handleFlipDirection = () => {
+    if (!extractedData) return;
+    setExtractedData({
+      ...extractedData,
+      direction: extractedData.direction === 'buy' ? 'sell' : 'buy'
+    });
+    toast.success(`Direction changed to ${extractedData.direction === 'buy' ? 'SELL' : 'BUY'}`);
+  };
+
+  const handleFieldEdit = (field: keyof ExtractedData, value: any) => {
+    if (!extractedData) return;
+    setExtractedData({
+      ...extractedData,
+      [field]: value
+    });
   };
 
   const handleSaveTrade = async () => {
@@ -157,8 +176,13 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
         </div>
         
         <p className="text-sm text-muted-foreground">
-          Upload a screenshot from your trading platform. AI will automatically extract pair, entry, exit, P&L, and more.
+          Upload a screenshot from TradingView or your broker. AI extracts core data automatically.
         </p>
+
+        <div className="text-xs space-y-1 p-3 bg-muted/50 rounded-lg">
+          <p className="font-medium">✓ From TradingView: Pair, Direction, Entry, SL, TP, Setup</p>
+          <p className="font-medium">✓ From Broker (MT5/etc): Also extracts Lot Size & P/L</p>
+        </div>
 
         {preview && (
           <div className="relative rounded-lg overflow-hidden border">
@@ -192,93 +216,195 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
 
         {extractedData && (
           <Card className="p-4 bg-muted/50 border-primary/20">
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-sm">Extracted Data</h4>
-                <Button
-                  onClick={handleSaveTrade}
-                  disabled={saving}
-                  size="sm"
-                  className="gap-2"
-                >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                  {saving ? 'Saving...' : 'Save Trade'}
-                </Button>
+                <h4 className="font-semibold text-sm">Review & Edit Trade Data</h4>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleFlipDirection}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <ArrowUpDown className="w-4 h-4" />
+                    Flip Direction
+                  </Button>
+                  <Button
+                    onClick={handleSaveTrade}
+                    disabled={saving}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    {saving ? 'Saving...' : 'Save Trade'}
+                  </Button>
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Pair:</span>
-                  <span className="ml-2 font-medium">{extractedData.pair}</span>
+              <div className="grid grid-cols-2 gap-3">
+                {/* Pair - Editable */}
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Pair *</label>
+                  <Input
+                    value={extractedData.pair}
+                    onChange={(e) => handleFieldEdit('pair', e.target.value)}
+                    className="h-8 text-sm"
+                    placeholder="e.g., EURUSD"
+                  />
                 </div>
-                <div>
-                  <span className="text-muted-foreground">Direction:</span>
-                  <span className={`ml-2 font-medium ${extractedData.direction === 'buy' ? 'text-green-500' : 'text-red-500'}`}>
-                    {extractedData.direction.toUpperCase()}
-                  </span>
+
+                {/* Direction - Shows current with clear indicator */}
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Direction *</label>
+                  <div className={`h-8 px-3 rounded-md border flex items-center font-semibold text-sm ${
+                    extractedData.direction === 'buy' 
+                      ? 'bg-green-500/10 text-green-600 border-green-500/20' 
+                      : 'bg-red-500/10 text-red-600 border-red-500/20'
+                  }`}>
+                    {extractedData.direction.toUpperCase()} {extractedData.direction === 'buy' ? '↑' : '↓'}
+                  </div>
                 </div>
-                <div>
-                  <span className="text-muted-foreground">Entry:</span>
-                  <span className="ml-2 font-medium">{extractedData.entry_price}</span>
+
+                {/* Entry Price */}
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Entry Price *</label>
+                  <Input
+                    type="number"
+                    step="0.00001"
+                    value={extractedData.entry_price}
+                    onChange={(e) => handleFieldEdit('entry_price', parseFloat(e.target.value))}
+                    className="h-8 text-sm"
+                  />
                 </div>
-                {extractedData.stop_loss && (
-                  <div>
-                    <span className="text-muted-foreground">SL:</span>
-                    <span className="ml-2 font-medium">{extractedData.stop_loss}</span>
-                  </div>
-                )}
-                {extractedData.take_profit && (
-                  <div>
-                    <span className="text-muted-foreground">TP:</span>
-                    <span className="ml-2 font-medium">{extractedData.take_profit}</span>
-                  </div>
-                )}
-                {extractedData.setup_name && (
-                  <div>
-                    <span className="text-muted-foreground">Setup:</span>
-                    <span className="ml-2 font-medium">{extractedData.setup_name}</span>
-                  </div>
-                )}
-                {extractedData.timeframe && (
-                  <div>
-                    <span className="text-muted-foreground">Timeframe:</span>
-                    <span className="ml-2 font-medium">{extractedData.timeframe}</span>
-                  </div>
-                )}
-                {extractedData.session && (
-                  <div>
-                    <span className="text-muted-foreground">Session:</span>
-                    <span className="ml-2 font-medium">{extractedData.session}</span>
-                  </div>
-                )}
-                {extractedData.risk_reward && (
-                  <div>
-                    <span className="text-muted-foreground">R:R:</span>
-                    <span className="ml-2 font-medium">{extractedData.risk_reward}</span>
-                  </div>
-                )}
-                {extractedData.profit_loss && (
-                  <div>
-                    <span className="text-muted-foreground">P/L:</span>
-                    <span className={`ml-2 font-medium ${extractedData.profit_loss >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      {extractedData.profit_loss >= 0 ? '+' : ''}{extractedData.profit_loss}
-                    </span>
-                  </div>
-                )}
+
+                {/* Stop Loss */}
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Stop Loss</label>
+                  <Input
+                    type="number"
+                    step="0.00001"
+                    value={extractedData.stop_loss || ''}
+                    onChange={(e) => handleFieldEdit('stop_loss', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    className="h-8 text-sm"
+                    placeholder="Optional"
+                  />
+                </div>
+
+                {/* Take Profit */}
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Take Profit</label>
+                  <Input
+                    type="number"
+                    step="0.00001"
+                    value={extractedData.take_profit || ''}
+                    onChange={(e) => handleFieldEdit('take_profit', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    className="h-8 text-sm"
+                    placeholder="Optional"
+                  />
+                </div>
+
+                {/* Exit Price */}
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Exit Price</label>
+                  <Input
+                    type="number"
+                    step="0.00001"
+                    value={extractedData.exit_price || ''}
+                    onChange={(e) => handleFieldEdit('exit_price', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    className="h-8 text-sm"
+                    placeholder="If closed"
+                  />
+                </div>
+
+                {/* Setup Name */}
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Setup</label>
+                  <Input
+                    value={extractedData.setup_name || ''}
+                    onChange={(e) => handleFieldEdit('setup_name', e.target.value || undefined)}
+                    className="h-8 text-sm"
+                    placeholder="e.g., Breakout"
+                  />
+                </div>
+
+                {/* Timeframe */}
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Timeframe</label>
+                  <Input
+                    value={extractedData.timeframe || ''}
+                    onChange={(e) => handleFieldEdit('timeframe', e.target.value || undefined)}
+                    className="h-8 text-sm"
+                    placeholder="e.g., 1H"
+                  />
+                </div>
+
+                {/* Session */}
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Session</label>
+                  <Input
+                    value={extractedData.session || ''}
+                    onChange={(e) => handleFieldEdit('session', e.target.value || undefined)}
+                    className="h-8 text-sm"
+                    placeholder="e.g., London"
+                  />
+                </div>
+
+                {/* Lot Size - Only for broker screenshots */}
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Lot Size (Broker only)</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={extractedData.lot_size || ''}
+                    onChange={(e) => handleFieldEdit('lot_size', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    className="h-8 text-sm"
+                    placeholder="Optional"
+                  />
+                </div>
+
+                {/* P/L - Only for broker screenshots */}
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">P/L (Broker only)</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={extractedData.profit_loss || ''}
+                    onChange={(e) => handleFieldEdit('profit_loss', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    className="h-8 text-sm"
+                    placeholder="Optional"
+                  />
+                </div>
+
+                {/* R:R */}
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Risk:Reward</label>
+                  <Input
+                    value={extractedData.risk_reward || ''}
+                    onChange={(e) => handleFieldEdit('risk_reward', e.target.value || undefined)}
+                    className="h-8 text-sm"
+                    placeholder="e.g., 1:3"
+                  />
+                </div>
               </div>
 
+              {/* Notes - Full width */}
               {extractedData.notes && (
-                <div className="pt-2 border-t">
-                  <span className="text-xs text-muted-foreground">Notes:</span>
-                  <p className="text-xs mt-1">{extractedData.notes}</p>
+                <div className="pt-2 border-t space-y-1">
+                  <label className="text-xs text-muted-foreground">AI Notes</label>
+                  <p className="text-xs p-2 bg-muted rounded">{extractedData.notes}</p>
                 </div>
               )}
+
+              <p className="text-xs text-muted-foreground">
+                * Required fields. All other fields are optional.
+              </p>
             </div>
           </Card>
         )}
 
-        <div className="text-xs text-muted-foreground">
-          <p>💡 Tip: Clear screenshots with visible prices work best</p>
+        <div className="text-xs text-muted-foreground space-y-1">
+          <p>💡 TradingView charts: AI extracts setup, prices & levels</p>
+          <p>💡 Broker screenshots: Also extracts lot size & P/L</p>
           <p>💎 Cost: 10 AI credits per extraction</p>
         </div>
       </div>

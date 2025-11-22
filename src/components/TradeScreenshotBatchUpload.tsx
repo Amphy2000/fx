@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, Loader2, Check, X, AlertCircle, CheckCircle } from 'lucide-react';
+import { Upload, Loader2, Check, X, AlertCircle, CheckCircle, ArrowUpDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -131,6 +131,23 @@ export const TradeScreenshotBatchUpload = () => {
     if (successCount > 0) {
       toast.success(`${successCount} trade${successCount > 1 ? 's' : ''} extracted successfully!`);
     }
+  };
+
+  const handleFlipDirection = (tradeId: string) => {
+    setTrades(prev => prev.map(t => {
+      if (t.id === tradeId && t.extractedData) {
+        const flipped = t.extractedData.direction === 'buy' ? 'sell' : 'buy';
+        toast.success(`Direction flipped to ${flipped.toUpperCase()}`);
+        return {
+          ...t,
+          extractedData: {
+            ...t.extractedData,
+            direction: flipped as 'buy' | 'sell'
+          }
+        };
+      }
+      return t;
+    }));
   };
 
   const handleSaveTrade = async (tradeId: string) => {
@@ -331,14 +348,25 @@ export const TradeScreenshotBatchUpload = () => {
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium truncate">{trade.fileName}</span>
                         {trade.status === 'ready' && (
-                          <Button
-                            onClick={() => handleSaveTrade(trade.id)}
-                            size="sm"
-                            className="gap-2"
-                          >
-                            <Check className="w-4 h-4" />
-                            Save
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => handleFlipDirection(trade.id)}
+                              variant="outline"
+                              size="sm"
+                              className="gap-1"
+                            >
+                              <ArrowUpDown className="w-3 h-3" />
+                              Flip
+                            </Button>
+                            <Button
+                              onClick={() => handleSaveTrade(trade.id)}
+                              size="sm"
+                              className="gap-2"
+                            >
+                              <Check className="w-4 h-4" />
+                              Save
+                            </Button>
+                          </div>
                         )}
                         {trade.status === 'saved' && (
                           <Badge className="bg-green-500">Saved</Badge>
