@@ -93,68 +93,122 @@ serve(async (req) => {
           content: [
             {
               type: 'text',
-              text: `You are a professional trading chart analyst. Extract visible trading data from this screenshot with EXTREME care on direction.
+              text: `You are an ELITE trading chart analyst with 20+ years of experience across all platforms (TradingView, MT4/MT5, cTrader, NinjaTrader, Think or Swim, etc.). Extract ALL visible trading data with ABSOLUTE precision.
 
-🎯 CRITICAL DIRECTION RULES - READ CAREFULLY:
+🎯 ULTRA-CRITICAL DIRECTION DETECTION (99.9% ACCURACY REQUIRED):
 
-For LONG/BUY trades, you will see:
-- Green/bullish candles at entry area
-- Price is ABOVE previous lows (uptrend context)
-- Entry line is at SUPPORT or pullback level
-- Stop Loss is BELOW entry
-- Take Profit is ABOVE entry
-- Arrows pointing UP or text saying "BUY" or "LONG"
-- Chart shows bullish momentum
+LONG/BUY Identification (Check ALL markers):
+✓ Stop Loss is BELOW entry price
+✓ Take Profit is ABOVE entry price
+✓ Green/bullish candles or upward movement
+✓ Text labels: "BUY", "LONG", "B", "L", upward arrows (↑, ▲)
+✓ Support level entry or pullback in uptrend
+✓ Position opened near swing lows
 
-For SHORT/SELL trades, you will see:
-- Red/bearish candles at entry area  
-- Price is BELOW previous highs (downtrend context)
-- Entry line is at RESISTANCE or rejection level
-- Stop Loss is ABOVE entry
-- Take Profit is BELOW entry
-- Arrows pointing DOWN or text saying "SELL" or "SHORT"
-- Chart shows bearish momentum
+SHORT/SELL Identification (Check ALL markers):
+✓ Stop Loss is ABOVE entry price
+✓ Take Profit is BELOW entry price
+✓ Red/bearish candles or downward movement
+✓ Text labels: "SELL", "SHORT", "S", downward arrows (↓, ▼)
+✓ Resistance level entry or rejection in downtrend
+✓ Position opened near swing highs
 
-⚠️ DIRECTION DETECTION PRIORITY:
-1. Look at SL/TP placement relative to entry (SL below entry = BUY, SL above entry = SELL)
-2. Check for arrows or text labels (BUY/SELL/LONG/SHORT)
-3. Analyze candle colors and price action context
-4. If you see "Long" → return "buy" | If you see "Short" → return "sell"
+⚡ DIRECTION DETECTION ALGORITHM (APPLY IN ORDER):
+1. FIRST: Analyze SL/TP placement relative to entry (MOST RELIABLE)
+   - If SL < Entry AND TP > Entry → BUY
+   - If SL > Entry AND TP < Entry → SELL
+2. SECOND: Scan for explicit text labels or arrows
+3. THIRD: Analyze price action context (trend, candles, levels)
+4. FOURTH: Cross-validate all three methods
+5. FINAL: If any conflict → Re-analyze from step 1
 
-📊 DATA EXTRACTION RULES:
+🔬 ENHANCED DATA EXTRACTION (Extract EVERYTHING visible):
 
-CORE DATA (Always try to extract):
-- pair: Currency pair (e.g., "EURUSD", "GBPJPY")
-- direction: MUST be "buy" or "sell" (NOT "long" or "short")
-- entry_price: Entry price level
-- stop_loss: Stop loss level (if visible)
-- take_profit: Take profit level (if visible)
-- setup_name: Setup type (e.g., "Breakout", "Support Bounce", "Trendline Break")
-- timeframe: Chart timeframe (e.g., "1H", "4H", "Daily")
-- session: Trading session (e.g., "London", "New York", "Asian")
+═══ CORE TRADE DATA ═══
+- pair: ANY trading instrument (Forex: EURUSD, GBPJPY, XAUUSD; Crypto: BTCUSD, ETHUSD; Stocks: AAPL, TSLA; Indices: US30, NAS100, SPX500)
+- direction: MUST output "buy" or "sell" (convert "long"→"buy", "short"→"sell")
+- entry_price: Exact entry level (read to maximum precision visible)
+- stop_loss: SL price (if visible - check for multiple SL levels, extract all)
+- take_profit: TP price (if visible - check for multiple TP levels, extract all)
+- exit_price: Actual close price if trade is closed
 
-BROKER-ONLY DATA (Only extract if visible in broker platform screenshot):
-- lot_size: Position size ONLY if this is an MT5/broker screenshot
-- profit_loss: P/L amount ONLY if this is a broker screenshot showing closed trade
-- exit_price: Exit price if trade is closed
+═══ POSITION DETAILS ═══
+- lot_size: Volume/size (visible in broker platforms like MT5)
+- profit_loss: Realized P/L in account currency (visible only if trade closed in broker)
+- commission: Trading fees if shown
+- swap: Overnight interest if shown
+- risk_percent: Risk as % of account if mentioned in notes
 
-ANALYSIS DATA:
-- risk_reward: R:R ratio if calculable from visible SL/TP
-- emotion: If trader's notes/text visible, infer emotion (confident/anxious/excited/frustrated/calm/fearful/greedy)
-- notes: Brief context about indicators, confluences, patterns visible, or any trader notes on screenshot
+═══ SETUP CHARACTERISTICS ═══
+- setup_name: Precise setup identification:
+  * "Support Bounce", "Resistance Rejection", "Trendline Break", "Channel Breakout"
+  * "Head and Shoulders", "Double Top/Bottom", "Flag", "Pennant", "Wedge"
+  * "Supply/Demand Zone", "Order Block", "Liquidity Grab", "Market Structure Break"
+  * "Fibonacci Retracement", "Harmonic Pattern", "Smart Money Concept"
+  * Or any custom strategy name visible in notes
+- timeframe: Chart interval (M1, M5, M15, M30, H1, H4, D1, W1, MN)
+- session: Trading session (Asian/Tokyo, London/European, New York/US, overlap periods)
+- confluences: List ALL visible confluences:
+  * Moving averages, Fibonacci levels, pivot points
+  * Support/Resistance zones, trendlines, channels
+  * RSI/MACD/Stochastic signals, volume profile
+  * Round numbers, liquidity zones, order blocks
 
-🚫 DO NOT GUESS:
-- If lot_size not visible (TradingView charts), DO NOT include it
-- If profit_loss not visible, DO NOT include it  
-- If exit_price not shown, DO NOT include it
-- If no emotional cues visible, leave emotion empty
-- Accuracy over completeness - skip fields you're unsure about
+═══ RISK & ANALYTICS ═══
+- risk_reward: Calculate from entry/SL/TP (e.g., "1:2.5", "1:3")
+- pips_risk: Distance from entry to SL in pips
+- pips_target: Distance from entry to TP in pips
+- win_rate_mention: If trader mentions historical WR for this setup
 
-✅ CONFIDENCE CHECK:
-Before returning, ask yourself:
-- Is the direction correct based on SL/TP placement?
-- Did I verify the direction using multiple indicators?
-- Did I only extract data that's clearly visible?`
+═══ PSYCHOLOGICAL & CONTEXT ═══
+- emotion: Detect from visible notes/text:
+  * Pre-trade: confident, patient, disciplined, focused, calm, anxious, hesitant, fearful, rushed, greedy, FOMO
+  * Post-trade: satisfied, relieved, frustrated, angry, regretful, euphoric
+- notes: COMPREHENSIVE extraction:
+  * Strategy rules mentioned
+  * Market narrative/bias
+  * Economic events or news mentioned
+  * Indicator readings
+  * Pattern/structure descriptions
+  * Entry/exit reasoning
+  * Risk management notes
+  * Lessons learned or observations
+
+═══ METADATA ═══
+- trade_timestamp: Date/time if visible (ISO format: YYYY-MM-DDTHH:MM:SSZ)
+- platform: Identify platform (TradingView, MT4, MT5, cTrader, NinjaTrader, etc.)
+- chart_type: Candlestick, bar, line, Heikin Ashi, Renko, etc.
+
+🔍 ADVANCED READING TECHNIQUES:
+- Zoom into price levels - read ALL decimal places visible
+- Check chart corners for platform info, timestamps, account details
+- Scan for overlays: text boxes, arrows, drawings, annotations
+- Look for indicator windows below main chart
+- Check for multiple positions or partial exits
+- Identify any visible stop-loss modifications (trailing stops, break-even moves)
+
+🚨 ABSOLUTE ACCURACY RULES:
+- NEVER guess values - only extract what is clearly visible
+- If direction is unclear after 3-step verification → mark as "uncertain" in notes
+- Prefer conservative extraction over hallucination
+- For broker screenshots: Look for account number, balance, equity (but don't extract sensitive info)
+- For analysis screenshots: Extract ALL analyst commentary and reasoning
+
+🎓 CONTEXT AWARENESS:
+- TradingView charts: Rarely show lot size/P/L (focus on technical analysis)
+- MT5/MT4: Often show position details, balance, floating P/L
+- Mobile screenshots: May have limited info, extract what's visible
+- Annotated charts: Pay special attention to trader's drawings and notes
+
+✅ VALIDATION CHECKLIST (Before submitting extraction):
+□ Direction verified via SL/TP placement
+□ Direction cross-checked with labels/arrows
+□ Direction validated with price action context
+□ All visible prices extracted to maximum precision
+□ Setup name accurately describes the pattern/strategy
+□ Notes contain all readable text and context
+□ No fields filled with guessed data
+□ Confidence level matches data clarity`
             },
             {
               type: 'image_url',
@@ -168,26 +222,92 @@ Before returning, ask yourself:
           type: "function",
           function: {
             name: "extract_trade_data",
-            description: "Extract comprehensive trading data from a chart screenshot with enhanced fields",
+            description: "Extract comprehensive trading data from any trading platform screenshot with maximum accuracy",
             parameters: {
               type: "object",
               properties: {
-                pair: { type: "string", description: "Currency pair (e.g., EURUSD)" },
-                direction: { type: "string", enum: ["buy", "sell"], description: "Trade direction - MUST be buy or sell only. Check SL/TP placement relative to entry to confirm." },
-                entry_price: { type: "number", description: "Entry price" },
-                stop_loss: { type: "number", description: "Stop loss price if visible" },
-                take_profit: { type: "number", description: "Take profit price if visible" },
-                exit_price: { type: "number", description: "Exit price ONLY if trade is closed and visible" },
-                lot_size: { type: "number", description: "Position size ONLY if visible in broker screenshot (not TradingView)" },
-                profit_loss: { type: "number", description: "P/L amount ONLY if visible in broker screenshot (not TradingView)" },
-                setup_name: { type: "string", description: "Trading setup name/type if identifiable" },
-                timeframe: { type: "string", description: "Chart timeframe if visible" },
-                session: { type: "string", description: "Trading session if identifiable" },
-                risk_reward: { type: "string", description: "Risk-reward ratio if calculable (e.g., 1:3)" },
-                result: { type: "string", enum: ["open", "win", "loss", "breakeven"], description: "Trade outcome ONLY if clearly visible (e.g., closed trade in broker)" },
-                emotion: { type: "string", description: "Inferred trader emotion from visible notes/text (confident/anxious/excited/frustrated/calm/fearful/greedy)" },
-                trade_timestamp: { type: "string", description: "Trade date/time in ISO format if visible" },
-                notes: { type: "string", description: "Brief context about indicators, patterns, confluences, or any trader notes visible in the chart" }
+                pair: { 
+                  type: "string", 
+                  description: "Trading instrument - ANY asset class (Forex: EURUSD, GBPJPY; Crypto: BTCUSD; Stocks: AAPL; Indices: SPX500, US30)" 
+                },
+                direction: { 
+                  type: "string", 
+                  enum: ["buy", "sell"], 
+                  description: "Trade direction - CRITICAL: Verify via SL/TP placement first, then labels, then context. MUST be 'buy' or 'sell' only." 
+                },
+                entry_price: { 
+                  type: "number", 
+                  description: "Entry price - extract to maximum visible precision" 
+                },
+                stop_loss: { 
+                  type: "number", 
+                  description: "Stop loss price if clearly visible" 
+                },
+                take_profit: { 
+                  type: "number", 
+                  description: "Take profit price if clearly visible (extract first TP if multiple)" 
+                },
+                exit_price: { 
+                  type: "number", 
+                  description: "Exit price ONLY if trade is closed" 
+                },
+                lot_size: { 
+                  type: "number", 
+                  description: "Position size ONLY if visible in broker platform (MT5, cTrader, etc.)" 
+                },
+                profit_loss: { 
+                  type: "number", 
+                  description: "Realized P/L ONLY if trade closed and visible in broker screenshot" 
+                },
+                setup_name: { 
+                  type: "string", 
+                  description: "Precise setup identification (e.g., 'Support Bounce', 'Trendline Break', 'Order Block', 'SMC', or any strategy name visible)" 
+                },
+                timeframe: { 
+                  type: "string", 
+                  description: "Chart interval if visible (M1/M5/M15/M30/H1/H4/D1/W1/MN)" 
+                },
+                session: { 
+                  type: "string", 
+                  description: "Trading session if identifiable (Asian/London/New York/Overlap)" 
+                },
+                confluences: { 
+                  type: "string", 
+                  description: "List ALL visible technical confluences (MAs, Fib levels, S/R zones, indicators, patterns, etc.)" 
+                },
+                risk_reward: { 
+                  type: "string", 
+                  description: "Calculate R:R from entry/SL/TP if all visible (format: '1:2.5')" 
+                },
+                pips_risk: { 
+                  type: "number", 
+                  description: "Distance from entry to SL in pips if calculable" 
+                },
+                pips_target: { 
+                  type: "number", 
+                  description: "Distance from entry to TP in pips if calculable" 
+                },
+                result: { 
+                  type: "string", 
+                  enum: ["open", "win", "loss", "breakeven"], 
+                  description: "Trade outcome ONLY if clearly visible in broker screenshot" 
+                },
+                emotion: { 
+                  type: "string", 
+                  description: "Trader's emotional state inferred from visible notes/text (confident/patient/anxious/rushed/FOMO/satisfied/frustrated/etc.)" 
+                },
+                trade_timestamp: { 
+                  type: "string", 
+                  description: "Trade entry date/time in ISO format (YYYY-MM-DDTHH:MM:SSZ) if visible on chart" 
+                },
+                platform: { 
+                  type: "string", 
+                  description: "Identified trading platform (TradingView/MT4/MT5/cTrader/NinjaTrader/etc.)" 
+                },
+                notes: { 
+                  type: "string", 
+                  description: "COMPREHENSIVE extraction: strategy rules, market bias, indicators, patterns, entry/exit reasoning, trader commentary, ALL visible text/annotations" 
+                }
               },
               required: ["pair", "direction", "entry_price"]
             }

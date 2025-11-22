@@ -20,11 +20,16 @@ interface ExtractedData {
   setup_name?: string;
   timeframe?: string;
   session?: string;
+  confluences?: string;
   risk_reward?: string;
+  pips_risk?: number;
+  pips_target?: number;
   result?: 'open' | 'win' | 'loss' | 'breakeven';
+  emotion?: string;
   emotion_before?: string;
   emotion_after?: string;
   trade_timestamp?: string;
+  platform?: string;
   notes?: string;
 }
 
@@ -129,11 +134,16 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
         return;
       }
 
-      // Build notes combining extracted context
+      // Build comprehensive notes from all extracted context
       const contextNotes = [
         extractedData.setup_name ? `Setup: ${extractedData.setup_name}` : '',
         extractedData.timeframe ? `Timeframe: ${extractedData.timeframe}` : '',
+        extractedData.platform ? `Platform: ${extractedData.platform}` : '',
         extractedData.risk_reward ? `R:R: ${extractedData.risk_reward}` : '',
+        extractedData.pips_risk ? `Risk: ${extractedData.pips_risk} pips` : '',
+        extractedData.pips_target ? `Target: ${extractedData.pips_target} pips` : '',
+        extractedData.confluences ? `Confluences: ${extractedData.confluences}` : '',
+        extractedData.emotion ? `Emotion: ${extractedData.emotion}` : '',
         extractedData.emotion_before ? `Before: ${extractedData.emotion_before}` : '',
         extractedData.emotion_after ? `After: ${extractedData.emotion_after}` : '',
         extractedData.notes || ''
@@ -186,12 +196,16 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
         </div>
         
         <p className="text-sm text-muted-foreground">
-          Upload a screenshot from TradingView or your broker. AI extracts core data automatically.
+          Upload a screenshot from any platform. Our advanced AI extracts comprehensive trade data automatically.
         </p>
 
         <div className="text-xs space-y-1 p-3 bg-muted/50 rounded-lg">
-          <p className="font-medium">✓ From TradingView: Pair, Direction, Entry, SL, TP, Setup</p>
-          <p className="font-medium">✓ From Broker (MT5/etc): Also extracts Lot Size & P/L</p>
+          <p className="font-medium">🎯 Universal Platform Support</p>
+          <p className="text-muted-foreground">TradingView • MT4/MT5 • cTrader • NinjaTrader • Think or Swim</p>
+          <p className="font-medium mt-2">⚡ Extracts Everything Visible</p>
+          <p className="text-muted-foreground">Direction • Entry/SL/TP • Setup • Confluences • Risk/Reward • Trader Notes</p>
+          <p className="font-medium mt-2">📊 Broker Screenshots</p>
+          <p className="text-muted-foreground">Also extracts: Lot Size • P/L • Exit Price • Account Details</p>
         </div>
 
         {preview && (
