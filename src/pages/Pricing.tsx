@@ -64,7 +64,6 @@ const Pricing = () => {
     name: "Pro Plan",
     price: "$4.99",
     period: "/month",
-    priceAlt: "₦7,500/month",
     description: "For serious traders",
     icon: <Zap className="h-6 w-6" />,
     features: ["Unlimited trade logging", "500 AI credits/month", "AI-powered insights", "Advanced analytics", "Psychology tracking", "Weekly summaries", "Priority support"],
@@ -77,7 +76,6 @@ const Pricing = () => {
     name: "Lifetime Access",
     price: "$19.99",
     period: "one-time",
-    priceAlt: "₦30,000 one-time",
     description: "Limited beta offer",
     icon: <Crown className="h-6 w-6" />,
     badge: "🔥 Best Value",
@@ -113,7 +111,6 @@ const Pricing = () => {
                 <div className="mt-4">
                   <span className="text-4xl font-bold">{plan.price}</span>
                   <span className="text-muted-foreground ml-1">{plan.period}</span>
-                  {plan.priceAlt}
                 </div>
               </CardHeader>
               <CardContent>
