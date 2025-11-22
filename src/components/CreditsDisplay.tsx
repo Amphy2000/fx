@@ -109,9 +109,8 @@ export const CreditsDisplay = () => {
       </div>
       
       {tier === "free" && (
-        <div className="mt-3 pt-3 border-t border-primary/10">
+          <div className="mt-3 pt-3 border-t border-primary/10">
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>AI Chat: 2 credits</span>
             <span>Trade Analysis: 5 credits</span>
             <span>Weekly Summary: 10 credits</span>
           </div>
