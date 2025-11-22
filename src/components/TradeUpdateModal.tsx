@@ -18,11 +18,13 @@ interface TradeUpdateModalProps {
 export const TradeUpdateModal = ({ trade, isOpen, onClose, onUpdated }: TradeUpdateModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    exit_price: trade.exit_price || "",
-    result: trade.result || "open",
-    profit_loss: trade.profit_loss || "",
-    emotion_after: trade.emotion_after || "",
+    exit_price: trade?.exit_price || "",
+    result: trade?.result || "open",
+    profit_loss: trade?.profit_loss || "",
+    emotion_after: trade?.emotion_after || "",
   });
+
+  if (!trade) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
