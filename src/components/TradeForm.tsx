@@ -11,6 +11,7 @@ import { Plus, Image as ImageIcon, X, Mic, Shield } from "lucide-react";
 import { updateStreak, checkTradeAchievements } from "@/utils/streakManager";
 import { VoiceTradeLogger } from "@/components/VoiceTradeLogger";
 import { TradeInterceptorModal } from "@/components/TradeInterceptorModal";
+import { PreTradeChecklist } from "@/components/PreTradeChecklist";
 
 interface TradeFormProps {
   onTradeAdded: () => void;
@@ -24,6 +25,8 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
   const [screenshots, setScreenshots] = useState<File[]>([]);
   const [screenshotPreviews, setScreenshotPreviews] = useState<string[]>([]);
   const [showVoiceLogger, setShowVoiceLogger] = useState(false);
+  const [preTradeRisk, setPreTradeRisk] = useState<'high' | 'medium' | 'low'>('medium');
+  const [showPreTradeCheck, setShowPreTradeCheck] = useState(false);
   const [formData, setFormData] = useState({
     pair: "",
     direction: "buy",
@@ -159,7 +162,13 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await submitTrade();
+    
+    // Auto-trigger validation for high/medium risk trades
+    if (preTradeRisk === 'high' || (preTradeRisk === 'medium' && Math.random() > 0.5)) {
+      await handleValidate();
+    } else {
+      await submitTrade();
+    }
   };
 
   const submitTrade = async () => {
@@ -316,6 +325,11 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
               <VoiceTradeLogger onTradeDataParsed={handleVoiceData} />
             </div>
           )}
+          
+          <div className="mb-6">
+            <PreTradeChecklist onRiskAssessed={setPreTradeRisk} />
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="pair">Pair</Label>

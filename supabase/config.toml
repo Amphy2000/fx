@@ -154,3 +154,6 @@ verify_jwt = true
 
 [functions.trading-assistant]
 verify_jwt = true
+
+[functions.analyze-checkin]
+verify_jwt = true

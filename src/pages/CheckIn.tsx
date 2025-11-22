@@ -118,24 +118,52 @@ const CheckIn = () => {
     setLoading(false);
   };
 
-  const getAIFeedback = () => {
-    if (formData.stress > 7 && formData.sleep_hours < 6) {
-      return "⚠️ High stress + low sleep = increased risk of overtrading today. Consider taking it easy.";
+  const [aiInsight, setAiInsight] = useState<string>("");
+  const [insightLoading, setInsightLoading] = useState(false);
+
+  const getAIInsight = async () => {
+    setInsightLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-checkin', {
+        body: { checkInData: formData }
+      });
+
+      if (error) {
+        if (error.message?.includes('Insufficient AI credits')) {
+          setAiInsight("⚠️ You need 2 AI credits for personalized insights. Showing basic feedback instead.");
+          // Fallback to rule-based
+          if (formData.stress > 7 && formData.sleep_hours < 6) {
+            setAiInsight("⚠️ High stress + low sleep = increased risk of overtrading today. Consider taking it easy.");
+          } else if (formData.confidence < 4 && formData.focus_level < 4) {
+            setAiInsight("💭 Low confidence and focus detected. Maybe skip live trading today.");
+          } else if (formData.stress > 7) {
+            setAiInsight("😰 High stress levels detected. Consider breathing exercises before trading.");
+          } else if (formData.sleep_hours < 6) {
+            setAiInsight("😴 Low sleep hours. Your decision-making may be impaired today.");
+          } else if (formData.confidence >= 7 && formData.focus_level >= 7 && formData.stress < 5) {
+            setAiInsight("✅ You're in great shape! Perfect conditions for focused trading.");
+          } else {
+            setAiInsight("👍 You're doing okay. Stay mindful during your session.");
+          }
+        } else {
+          throw error;
+        }
+      } else {
+        setAiInsight(data.insight || "Unable to generate insight at this time.");
+      }
+    } catch (error) {
+      console.error('Error getting AI insight:', error);
+      setAiInsight("Unable to get AI insight. Please try again later.");
+    } finally {
+      setInsightLoading(false);
     }
-    if (formData.confidence < 4 && formData.focus_level < 4) {
-      return "💭 Low confidence and focus detected. Maybe skip live trading and stick to demo/review today.";
-    }
-    if (formData.stress > 7) {
-      return "😰 High stress levels detected. Consider breathing exercises before trading.";
-    }
-    if (formData.sleep_hours < 6) {
-      return "😴 Low sleep hours. Your decision-making may be impaired today.";
-    }
-    if (formData.confidence >= 7 && formData.focus_level >= 7 && formData.stress < 5) {
-      return "✅ You're in great shape! Perfect conditions for focused trading.";
-    }
-    return "👍 You're doing okay. Stay mindful during your session.";
   };
+
+  useEffect(() => {
+    if (formData.mood && formData.confidence && formData.stress && formData.sleep_hours) {
+      getAIInsight();
+    }
+  }, [formData.mood, formData.confidence, formData.stress, formData.sleep_hours, formData.focus_level]);
 
   return (
     <Layout>
@@ -249,12 +277,22 @@ const CheckIn = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Brain className="w-5 h-5" />
-                AI Feedback
+                AI-Powered Psychological Insight
               </CardTitle>
+              <CardDescription className="text-xs">
+                Based on your data + historical patterns • 2 AI credits
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <p className="text-lg font-medium">{getAIFeedback()}</p>
+                {insightLoading ? (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                    <span className="text-sm">Analyzing your patterns...</span>
+                  </div>
+                ) : (
+                  <p className="text-base font-medium leading-relaxed">{aiInsight}</p>
+                )}
                 
                 <div className="pt-4 border-t space-y-2">
                   <h4 className="font-semibold text-sm">Today's Stats:</h4>

@@ -34,6 +34,7 @@ import Install from "./pages/Install";
 import AbusePreventionAdmin from "./pages/AbusePreventionAdmin";
 import AIFeatures from "./pages/AIFeatures";
 import PsychologyGuide from "./pages/PsychologyGuide";
+import MentalStateCorrelation from "./pages/MentalStateCorrelation";
 import { FloatingActionMenu } from "./components/FloatingActionMenu";
 
 const queryClient = new QueryClient();
@@ -68,6 +69,7 @@ const AppContent = () => {
         <Route path="/routine" element={<Routine />} />
         <Route path="/setups" element={<Setups />} />
         <Route path="/analytics/advanced" element={<AdvancedAnalytics />} />
+        <Route path="/analytics/mental-state" element={<MentalStateCorrelation />} />
         <Route path="/streaks" element={<Streaks />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/achievements" element={<Achievements />} />
