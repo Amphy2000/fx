@@ -168,11 +168,11 @@ const AIFeatures = () => {
                 </div>
                 <div className="flex justify-between">
                   <span>Voice logging:</span>
-                  <span className="font-medium">5 credits</span>
+                  <span className="font-medium">1 credit</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Pattern analysis:</span>
-                  <span className="font-medium">15 credits</span>
+                  <span className="font-medium">3 credits</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Chat message:</span>
