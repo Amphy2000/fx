@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { TrendingUp } from "lucide-react";
+import { Brain } from "lucide-react";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -213,7 +213,7 @@ const Auth = () => {
         <Card className="w-full max-w-md border-border/50 shadow-xl">
           <CardHeader className="space-y-1 text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <TrendingUp className="h-8 w-8 text-primary" />
+              <Brain className="h-8 w-8 text-primary" />
               <CardTitle className="text-2xl font-bold">Set New Password</CardTitle>
             </div>
             <CardDescription>
@@ -249,7 +249,7 @@ const Auth = () => {
       <Card className="w-full max-w-md border-border/50 shadow-xl">
         <CardHeader className="space-y-1 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <TrendingUp className="h-8 w-8 text-primary" />
+            <Brain className="h-8 w-8 text-primary" />
             <CardTitle className="text-2xl font-bold">Amphy AI Trade Journal</CardTitle>
           </div>
           <CardDescription>
