@@ -24,15 +24,15 @@ const AIFeatures = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2">
-            <Tabs defaultValue="voice" className="space-y-4">
+            <Tabs defaultValue="screenshots" className="space-y-4">
               <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="voice" className="flex items-center gap-2">
-                  <Mic className="w-4 h-4" />
-                  Voice
-                </TabsTrigger>
                 <TabsTrigger value="screenshots" className="flex items-center gap-2">
                   <Camera className="w-4 h-4" />
                   Screenshots
+                </TabsTrigger>
+                <TabsTrigger value="voice" className="flex items-center gap-2">
+                  <Mic className="w-4 h-4" />
+                  Voice
                 </TabsTrigger>
                 <TabsTrigger value="patterns" className="flex items-center gap-2">
                   <TrendingUp className="w-4 h-4" />
@@ -48,12 +48,12 @@ const AIFeatures = () => {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="voice">
-                <StandaloneVoiceLogger />
-              </TabsContent>
-
               <TabsContent value="screenshots">
                 <TradeScreenshotBatchUpload />
+              </TabsContent>
+
+              <TabsContent value="voice">
+                <StandaloneVoiceLogger />
               </TabsContent>
 
               <TabsContent value="patterns">
@@ -90,21 +90,21 @@ const AIFeatures = () => {
               <div className="space-y-3 text-sm">
                 <div>
                   <div className="flex items-center gap-2 font-medium mb-1">
-                    <Mic className="w-4 h-4 text-primary" />
-                    Voice Logging
-                  </div>
-                  <p className="text-muted-foreground">
-                    Speak your trade details - AI saves everything automatically
-                  </p>
-                </div>
-
-                <div>
-                  <div className="flex items-center gap-2 font-medium mb-1">
                     <Camera className="w-4 h-4 text-primary" />
                     Screenshot Upload
                   </div>
                   <p className="text-muted-foreground">
                     Upload multiple screenshots - AI extracts all trade data automatically
+                  </p>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2 font-medium mb-1">
+                    <Mic className="w-4 h-4 text-primary" />
+                    Voice Logging
+                  </div>
+                  <p className="text-muted-foreground">
+                    Speak your trade details - AI saves everything automatically
                   </p>
                 </div>
 
@@ -144,12 +144,12 @@ const AIFeatures = () => {
               <h4 className="font-semibold mb-2">💎 AI Credits</h4>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span>Voice logging:</span>
-                  <span className="font-medium">5 credits</span>
-                </div>
-                <div className="flex justify-between">
                   <span>Screenshot extraction:</span>
                   <span className="font-medium">10 credits</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Voice logging:</span>
+                  <span className="font-medium">5 credits</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Pattern analysis:</span>
