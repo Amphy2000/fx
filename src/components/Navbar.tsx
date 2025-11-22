@@ -88,9 +88,9 @@ const Navbar = () => {
     label: "Dashboard",
     icon: LayoutDashboard
   }, {
-    path: "/ai-chat",
-    label: "AI Chat",
-    icon: MessageSquare
+    path: "/ai-features",
+    label: "AI Features Hub",
+    icon: Brain
   }, {
     path: "/weekly-summary",
     label: "Weekly Summary",
