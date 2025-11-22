@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
+import { FreeTierLimitWarning } from "@/components/FreeTrierLimitWarning";
 import TradesList from "@/components/TradesList";
 import { ConsentModal } from "@/components/ConsentModal";
 import { CreditsDisplay } from "@/components/CreditsDisplay";
@@ -27,6 +28,7 @@ import { ExportDialog } from "@/components/ExportDialog";
 import { AccountSelector } from "@/components/AccountSelector";
 import { AccountBreakdown } from "@/components/AccountBreakdown";
 import { MentalStateCheckIn } from "@/components/MentalStateCheckIn";
+import { MentalStateCorrelationCard } from "@/components/MentalStateCorrelationCard";
 import { ValidationInsights } from "@/components/ValidationInsights";
 import { PsychologyFirstBanner } from "@/components/PsychologyFirstBanner";
 
@@ -357,11 +359,13 @@ const Dashboard = () => {
           >
             <TabsContent value="overview" className="space-y-4 md:space-y-6 mt-4 md:mt-6 animate-fade-in w-full">
               <PsychologyFirstBanner />
+              <FreeTierLimitWarning />
               <MentalStateCheckIn />
               {mt5Accounts.length > 1 && !selectedAccountId && (
                 <AccountBreakdown trades={allTrades} accounts={mt5Accounts} />
               )}
               <ValidationInsights />
+              <MentalStateCorrelationCard />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
                 <DailyChallengeCard trades={trades} />
                 <TradingScoreCard trades={trades} />

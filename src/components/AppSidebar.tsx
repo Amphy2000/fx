@@ -53,6 +53,10 @@ const performanceNavItems = [{
   url: "/setups",
   icon: Lightbulb
 }, {
+  title: "Mental State ↔ Performance",
+  url: "/analytics/mental-state",
+  icon: Brain
+}, {
   title: "Streaks",
   url: "/streaks",
   icon: Flame

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
+import { useSessionTracking } from "@/hooks/useSessionTracking";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -29,6 +30,7 @@ import AdvancedAnalytics from "./pages/AdvancedAnalytics";
 import AISetupAnalyzer from "./pages/AISetupAnalyzer";
 import Streaks from "./pages/Streaks";
 import Onboarding from "./pages/Onboarding";
+import OnboardingOptimized from "./pages/OnboardingOptimized";
 import Achievements from "./pages/Achievements";
 import Install from "./pages/Install";
 import AbusePreventionAdmin from "./pages/AbusePreventionAdmin";
@@ -41,6 +43,7 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   useOfflineSync();
+  useSessionTracking();
   return (
     <>
       <BrowserRouter>
@@ -71,7 +74,8 @@ const AppContent = () => {
         <Route path="/analytics/advanced" element={<AdvancedAnalytics />} />
         <Route path="/analytics/mental-state" element={<MentalStateCorrelation />} />
         <Route path="/streaks" element={<Streaks />} />
-        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/onboarding" element={<OnboardingOptimized />} />
+        <Route path="/onboarding-full" element={<Onboarding />} />
         <Route path="/achievements" element={<Achievements />} />
         <Route path="/install" element={<Install />} />
         <Route path="/psychology-guide" element={<PsychologyGuide />} />

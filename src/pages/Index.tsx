@@ -6,6 +6,8 @@ import Navbar from "@/components/Navbar";
 import { Mic, Brain, BarChart3, Target, Shield, Zap, Check, ArrowRight, LineChart, Activity, MessageSquare, AlertTriangle, TrendingUp, Heart } from "lucide-react";
 import heroImage from "@/assets/hero-bg.jpg";
 import { supabase } from "@/integrations/supabase/client";
+import { Testimonials } from "@/components/Testimonials";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -209,6 +211,9 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Testimonials Section */}
+      <Testimonials />
+
       {/* CTA Section */}
       <section className="py-16 sm:py-20 md:py-24 bg-gradient-to-b from-chart-1/5 to-background border-t border-border/50 overflow-x-hidden">
         <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
@@ -230,6 +235,9 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* PWA Install Prompt */}
+      <PWAInstallPrompt />
     </div>
   );
 };
