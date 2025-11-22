@@ -33,6 +33,10 @@ const generalNavItems = [{
 }];
 
 const aiNavItems = [{
+  title: "AI Features",
+  url: "/ai-features",
+  icon: Brain
+}, {
   title: "AI Chat",
   url: "/ai-chat",
   icon: MessageSquare
