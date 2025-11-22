@@ -26,6 +26,7 @@ import { VoiceCommands } from "@/components/VoiceCommands";
 import { ExportDialog } from "@/components/ExportDialog";
 import { AccountSelector } from "@/components/AccountSelector";
 import { AccountBreakdown } from "@/components/AccountBreakdown";
+import { ValidationInsights } from "@/components/ValidationInsights";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -356,6 +357,7 @@ const Dashboard = () => {
               {mt5Accounts.length > 1 && !selectedAccountId && (
                 <AccountBreakdown trades={allTrades} accounts={mt5Accounts} />
               )}
+              <ValidationInsights />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
                 <DailyChallengeCard trades={trades} />
                 <TradingScoreCard trades={trades} />
