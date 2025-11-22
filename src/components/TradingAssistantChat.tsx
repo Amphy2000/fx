@@ -106,7 +106,14 @@ export const TradingAssistantChat = () => {
 
       if (!response.ok) {
         if (response.status === 402) {
-          toast.error('Insufficient AI credits. Please upgrade your plan.');
+          const errorData = await response.json();
+          toast.error(`Insufficient credits: ${errorData.available || 0} available, ${errorData.required || 5} required`);
+          return;
+        }
+        if (response.status === 500) {
+          const errorData = await response.json();
+          console.error('Server error:', errorData);
+          toast.error(errorData.error || 'Server error');
           return;
         }
         throw new Error('Failed to get response');
