@@ -21,6 +21,9 @@ verify_jwt = false
 [functions.analyze-trade]
 verify_jwt = true
 
+[functions.validate-trade]
+verify_jwt = true
+
 [functions.weekly-summary]
 verify_jwt = true
 

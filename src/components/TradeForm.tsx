@@ -7,9 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Image as ImageIcon, X, Mic } from "lucide-react";
+import { Plus, Image as ImageIcon, X, Mic, Shield } from "lucide-react";
 import { updateStreak, checkTradeAchievements } from "@/utils/streakManager";
 import { VoiceTradeLogger } from "@/components/VoiceTradeLogger";
+import { TradeInterceptorModal } from "@/components/TradeInterceptorModal";
 
 interface TradeFormProps {
   onTradeAdded: () => void;
@@ -17,6 +18,9 @@ interface TradeFormProps {
 
 const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationResult, setValidationResult] = useState<any>(null);
+  const [showInterceptorModal, setShowInterceptorModal] = useState(false);
   const [screenshots, setScreenshots] = useState<File[]>([]);
   const [screenshotPreviews, setScreenshotPreviews] = useState<string[]>([]);
   const [showVoiceLogger, setShowVoiceLogger] = useState(false);
@@ -80,7 +84,6 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
       });
     }
 
-    // Reset input
     e.target.value = '';
   };
 
@@ -89,8 +92,77 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
     setScreenshotPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleValidate = async () => {
+    try {
+      setIsValidating(true);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("You must be logged in to validate trades");
+        return;
+      }
+
+      const proposedTrade = {
+        pair: formData.pair,
+        direction: formData.direction,
+        emotion_before: formData.emotion_before,
+      };
+
+      const { data, error } = await supabase.functions.invoke('validate-trade', {
+        body: { proposedTrade }
+      });
+
+      if (error) {
+        if (error.message.includes('Insufficient AI credits')) {
+          toast.error("You need 2 AI credits to validate a trade. Please upgrade or wait for your monthly reset.");
+        } else {
+          throw error;
+        }
+        return;
+      }
+
+      setValidationResult(data);
+      setShowInterceptorModal(true);
+    } catch (error) {
+      console.error('Validation error:', error);
+      toast.error("Could not validate trade. Please try again.");
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  const handleProceedWithTrade = async () => {
+    setShowInterceptorModal(false);
+    
+    if (validationResult?.interception_id) {
+      await supabase
+        .from('trade_interceptions')
+        .update({ user_action: 'logged_anyway' })
+        .eq('id', validationResult.interception_id);
+    }
+    
+    await submitTrade();
+  };
+
+  const handleCancelTrade = async () => {
+    setShowInterceptorModal(false);
+    
+    if (validationResult?.interception_id) {
+      await supabase
+        .from('trade_interceptions')
+        .update({ user_action: 'cancelled' })
+        .eq('id', validationResult.interception_id);
+    }
+
+    toast.success("Trade cancelled. Good decision! Your pattern awareness is improving.");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    await submitTrade();
+  };
+
+  const submitTrade = async () => {
     setIsLoading(true);
 
     try {
@@ -101,7 +173,6 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
       let screenshotUrls: string[] = [];
       const uploadedFiles: { path: string; name: string; size: number }[] = [];
 
-      // Upload screenshots if provided
       if (screenshots.length > 0) {
         for (const screenshot of screenshots) {
           const fileExt = screenshot.name.split('.').pop();
@@ -113,13 +184,12 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
 
           if (uploadError) {
             console.error("Upload error:", uploadError);
-            toast.error("AI is feeling sleepy 😴... Could not upload image right now.");
+            toast.error("Could not upload image right now.");
             continue;
           }
 
           uploadedFiles.push({ path: fileName, name: screenshot.name, size: screenshot.size });
 
-          // Use signed URLs for private bucket (1 hour expiry)
           const { data: signedUrlData, error: signedUrlError } = await supabase.storage
             .from('trade-screenshots')
             .createSignedUrl(fileName, 3600);
@@ -157,7 +227,6 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
 
       if (error) throw error;
 
-      // Save screenshot metadata to trade_screenshots table
       if (uploadedFiles.length > 0 && newTrade) {
         const screenshotMetadata = uploadedFiles.map((f) => ({
           trade_id: newTrade.id,
@@ -172,7 +241,6 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
 
       toast.success("Trade logged successfully! Getting AI feedback...");
 
-      // Get AI feedback
       try {
         const { data: aiData, error: aiError } = await supabase.functions.invoke('analyze-trade', {
           body: { tradeId: newTrade.id }
@@ -185,10 +253,8 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
         }
       } catch (aiError) {
         console.error("AI analysis error:", aiError);
-        // Don't show error to user - analysis is optional
       }
 
-      // Send Telegram notification in background (don't wait for it)
       supabase.functions.invoke('send-telegram-notification', {
         body: { trade: tradeData },
         headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined
@@ -212,7 +278,6 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
       setScreenshots([]);
       setScreenshotPreviews([]);
       
-      // Update streak and check achievements
       await updateStreak(user.id, 'trade_journal');
       await checkTradeAchievements(user.id);
       
@@ -225,270 +290,274 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
   };
 
   return (
-    <Card className="border-border/50">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Plus className="h-5 w-5" />
-            Log New Trade
-          </div>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={() => setShowVoiceLogger(!showVoiceLogger)}
-            className="gap-2"
-          >
-            <Mic className="h-4 w-4" />
-            {showVoiceLogger ? "Hide Voice Logger" : "Voice Logger"}
-          </Button>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {showVoiceLogger && (
-          <div className="mb-6">
-            <VoiceTradeLogger onTradeDataParsed={handleVoiceData} />
-          </div>
-        )}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="pair">Pair</Label>
-            <Input
-              id="pair"
-              placeholder="EUR/USD, XAU/USD"
-              value={formData.pair}
-              onChange={(e) => setFormData({ ...formData, pair: e.target.value })}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="direction">Direction</Label>
-            <Select
-              value={formData.direction}
-              onValueChange={(value) => setFormData({ ...formData, direction: value })}
+    <>
+      <Card className="border-border/50">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Log New Trade
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowVoiceLogger(!showVoiceLogger)}
+              className="gap-2"
             >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="buy">Buy</SelectItem>
-                <SelectItem value="sell">Sell</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="entry_price">Entry Price</Label>
-            <Input
-              id="entry_price"
-              type="number"
-              step="0.00001"
-              placeholder="1.08500"
-              value={formData.entry_price}
-              onChange={(e) => setFormData({ ...formData, entry_price: e.target.value })}
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+              <Mic className="h-4 w-4" />
+              {showVoiceLogger ? "Hide Voice Logger" : "Voice Logger"}
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {showVoiceLogger && (
+            <div className="mb-6">
+              <VoiceTradeLogger onTradeDataParsed={handleVoiceData} />
+            </div>
+          )}
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="stop_loss">Stop Loss</Label>
+              <Label htmlFor="pair">Pair</Label>
               <Input
-                id="stop_loss"
-                type="number"
-                step="0.00001"
-                placeholder="1.08000"
-                value={formData.stop_loss}
-                onChange={(e) => setFormData({ ...formData, stop_loss: e.target.value })}
+                id="pair"
+                placeholder="EUR/USD, XAU/USD"
+                value={formData.pair}
+                onChange={(e) => setFormData({ ...formData, pair: e.target.value })}
+                required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="take_profit">Take Profit</Label>
+              <Label htmlFor="direction">Direction</Label>
+              <Select
+                value={formData.direction}
+                onValueChange={(value) => setFormData({ ...formData, direction: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="buy">Buy</SelectItem>
+                  <SelectItem value="sell">Sell</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="entry_price">Entry Price</Label>
               <Input
-                id="take_profit"
+                id="entry_price"
                 type="number"
                 step="0.00001"
-                placeholder="1.09000"
-                value={formData.take_profit}
-                onChange={(e) => setFormData({ ...formData, take_profit: e.target.value })}
+                placeholder="1.08500"
+                value={formData.entry_price}
+                onChange={(e) => setFormData({ ...formData, entry_price: e.target.value })}
+                required
               />
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="result">Result</Label>
-            <Select
-              value={formData.result}
-              onValueChange={(value) => setFormData({ ...formData, result: value })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="open">Open</SelectItem>
-                <SelectItem value="win">Win</SelectItem>
-                <SelectItem value="loss">Loss</SelectItem>
-                <SelectItem value="breakeven">Breakeven</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {formData.result !== "open" && (
-            <>
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="exit_price">Exit Price</Label>
+                <Label htmlFor="stop_loss">Stop Loss</Label>
                 <Input
-                  id="exit_price"
+                  id="stop_loss"
                   type="number"
                   step="0.00001"
-                  placeholder="1.08750"
-                  value={formData.exit_price}
-                  onChange={(e) => setFormData({ ...formData, exit_price: e.target.value })}
+                  placeholder="1.08000"
+                  value={formData.stop_loss}
+                  onChange={(e) => setFormData({ ...formData, stop_loss: e.target.value })}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="profit_loss">Profit/Loss ($)</Label>
+                <Label htmlFor="take_profit">Take Profit</Label>
                 <Input
-                  id="profit_loss"
+                  id="take_profit"
                   type="number"
-                  step="0.01"
-                  placeholder="150.00"
-                  value={formData.profit_loss}
-                  onChange={(e) => setFormData({ ...formData, profit_loss: e.target.value })}
+                  step="0.00001"
+                  placeholder="1.09000"
+                  value={formData.take_profit}
+                  onChange={(e) => setFormData({ ...formData, take_profit: e.target.value })}
                 />
               </div>
-            </>
-          )}
+            </div>
 
-          {/* Emotion Tracking */}
-          <div className="space-y-4 pt-4 border-t border-border/30">
-            <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              🧘 Emotional Tracking
-            </h3>
-            
             <div className="space-y-2">
-              <Label htmlFor="emotion_before">Emotion Before Trade</Label>
+              <Label htmlFor="result">Result</Label>
               <Select
-                value={formData.emotion_before}
-                onValueChange={(value) => setFormData({ ...formData, emotion_before: value })}
+                value={formData.result}
+                onValueChange={(value) => setFormData({ ...formData, result: value })}
               >
-                <SelectTrigger id="emotion_before" className="bg-card border-border/50">
-                  <SelectValue placeholder="Select emotion..." />
+                <SelectTrigger>
+                  <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-card border-border/50">
-                  <SelectItem value="calm">😌 Calm</SelectItem>
-                  <SelectItem value="confident">😎 Confident</SelectItem>
-                  <SelectItem value="disciplined">🎯 Disciplined</SelectItem>
-                  <SelectItem value="focused">🧠 Focused</SelectItem>
-                  <SelectItem value="patient">⏳ Patient</SelectItem>
-                  <SelectItem value="optimistic">✨ Optimistic</SelectItem>
-                  <SelectItem value="neutral">😐 Neutral</SelectItem>
-                  <SelectItem value="anxious">😟 Anxious</SelectItem>
-                  <SelectItem value="greedy">🤑 Greedy</SelectItem>
-                  <SelectItem value="fearful">😨 Fearful</SelectItem>
-                  <SelectItem value="impatient">😤 Impatient</SelectItem>
-                  <SelectItem value="impulsive">⚡ Impulsive</SelectItem>
-                  <SelectItem value="stressed">😰 Stressed</SelectItem>
-                  <SelectItem value="uncertain">🤔 Uncertain</SelectItem>
+                <SelectContent>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="win">Win</SelectItem>
+                  <SelectItem value="loss">Loss</SelectItem>
+                  <SelectItem value="breakeven">Breakeven</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="emotion_after">Emotion After Trade</Label>
-              <Select
-                value={formData.emotion_after}
-                onValueChange={(value) => setFormData({ ...formData, emotion_after: value })}
-              >
-                <SelectTrigger id="emotion_after" className="bg-card border-border/50">
-                  <SelectValue placeholder="Select emotion..." />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-border/50">
-                  <SelectItem value="satisfied">😁 Satisfied</SelectItem>
-                  <SelectItem value="excited">🎉 Excited</SelectItem>
-                  <SelectItem value="content">😌 Content</SelectItem>
-                  <SelectItem value="relieved">😮‍💨 Relieved</SelectItem>
-                  <SelectItem value="proud">🏆 Proud</SelectItem>
-                  <SelectItem value="neutral">😐 Neutral</SelectItem>
-                  <SelectItem value="frustrated">😤 Frustrated</SelectItem>
-                  <SelectItem value="regretful">😔 Regretful</SelectItem>
-                  <SelectItem value="disappointed">😞 Disappointed</SelectItem>
-                  <SelectItem value="angry">😠 Angry</SelectItem>
-                  <SelectItem value="stressed">😰 Stressed</SelectItem>
-                </SelectContent>
-              </Select>
+            {formData.result !== "open" && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="exit_price">Exit Price</Label>
+                  <Input
+                    id="exit_price"
+                    type="number"
+                    step="0.00001"
+                    placeholder="1.08750"
+                    value={formData.exit_price}
+                    onChange={(e) => setFormData({ ...formData, exit_price: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="profit_loss">Profit/Loss ($)</Label>
+                  <Input
+                    id="profit_loss"
+                    type="number"
+                    step="0.01"
+                    placeholder="150.00"
+                    value={formData.profit_loss}
+                    onChange={(e) => setFormData({ ...formData, profit_loss: e.target.value })}
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="space-y-4 pt-4 border-t border-border/30">
+              <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                🧘 Emotional Tracking
+              </h3>
+              
+              <div className="space-y-2">
+                <Label htmlFor="emotion_before">Emotion Before Trade</Label>
+                <Select
+                  value={formData.emotion_before}
+                  onValueChange={(value) => setFormData({ ...formData, emotion_before: value })}
+                >
+                  <SelectTrigger id="emotion_before">
+                    <SelectValue placeholder="Select emotion..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="calm">😌 Calm</SelectItem>
+                    <SelectItem value="confident">😎 Confident</SelectItem>
+                    <SelectItem value="disciplined">🎯 Disciplined</SelectItem>
+                    <SelectItem value="focused">🧠 Focused</SelectItem>
+                    <SelectItem value="patient">⏳ Patient</SelectItem>
+                    <SelectItem value="anxious">😟 Anxious</SelectItem>
+                    <SelectItem value="greedy">🤑 Greedy</SelectItem>
+                    <SelectItem value="fearful">😨 Fearful</SelectItem>
+                    <SelectItem value="impatient">😤 Impatient</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="emotion_after">Emotion After Trade</Label>
+                <Select
+                  value={formData.emotion_after}
+                  onValueChange={(value) => setFormData({ ...formData, emotion_after: value })}
+                >
+                  <SelectTrigger id="emotion_after">
+                    <SelectValue placeholder="Select emotion..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="satisfied">😁 Satisfied</SelectItem>
+                    <SelectItem value="relieved">😮‍💨 Relieved</SelectItem>
+                    <SelectItem value="accomplished">🎉 Accomplished</SelectItem>
+                    <SelectItem value="disappointed">😞 Disappointed</SelectItem>
+                    <SelectItem value="frustrated">😠 Frustrated</SelectItem>
+                    <SelectItem value="regretful">😔 Regretful</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              placeholder="Trade setup, market conditions, etc."
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              rows={3}
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                placeholder="Trade notes, setup details, etc."
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                rows={3}
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="screenshot">Trade Screenshots ({screenshots.length}/5)</Label>
-            
-            {screenshotPreviews.length > 0 && (
-              <div className="grid grid-cols-2 gap-2 mb-2">
-                {screenshotPreviews.map((preview, index) => (
-                  <div key={index} className="relative">
-                    <img 
-                      src={preview} 
-                      alt={`Trade screenshot ${index + 1}`} 
-                      className="w-full h-32 object-cover rounded-lg border-2 border-border"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-1 right-1 h-6 w-6"
-                      onClick={() => removeImage(index)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="screenshots" className="flex items-center gap-2">
+                <ImageIcon className="h-4 w-4" />
+                Screenshots
+              </Label>
+              <Input
+                id="screenshots"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageChange}
+                className="cursor-pointer"
+              />
+              <p className="text-xs text-muted-foreground">
+                Max 5 images, 5MB each
+              </p>
 
-            {screenshots.length < 5 && (
-              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-smooth cursor-pointer">
-                <input
-                  id="screenshot"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageChange}
-                  className="hidden"
-                />
-                <label htmlFor="screenshot" className="cursor-pointer flex flex-col items-center gap-2">
-                  <ImageIcon className="h-10 w-10 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Click to upload screenshots (max 5)
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    PNG, JPG, WEBP up to 5MB each
-                  </p>
-                </label>
-              </div>
-            )}
-          </div>
+              {screenshotPreviews.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                  {screenshotPreviews.map((preview, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={preview}
+                        alt={`Screenshot ${index + 1}`}
+                        className="w-full h-24 object-cover rounded border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Logging trade..." : "Log Trade"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+            <div className="flex gap-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={handleValidate} 
+                disabled={isValidating || isLoading || !formData.pair || !formData.direction}
+                className="flex-1"
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                {isValidating ? "Validating..." : "Validate Trade"}
+              </Button>
+              <Button type="submit" disabled={isLoading} className="flex-1">
+                {isLoading ? "Saving..." : "Log Trade"}
+              </Button>
+            </div>
+            <p className="text-xs text-center text-muted-foreground">
+              💎 Trade validation costs 2 AI credits
+            </p>
+          </form>
+        </CardContent>
+      </Card>
+
+      <TradeInterceptorModal
+        open={showInterceptorModal}
+        onOpenChange={setShowInterceptorModal}
+        validationResult={validationResult}
+        onProceed={handleProceedWithTrade}
+        onCancel={handleCancelTrade}
+      />
+    </>
   );
 };
 
