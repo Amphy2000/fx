@@ -93,49 +93,66 @@ serve(async (req) => {
           content: [
             {
               type: 'text',
-              text: `You are a professional trading chart analyst with expertise in identifying trade directions. Extract ALL visible trading information from this screenshot with extreme precision.
+              text: `You are a professional trading chart analyst. Extract visible trading data from this screenshot with EXTREME care on direction.
 
-🎯 CRITICAL DIRECTION DETECTION RULES:
-LONG/BUY Indicators:
-- Green/bullish candles dominating
-- Entry level is BELOW the current price
-- Upward arrows or "BUY" text visible
-- Support level entries
-- The word "Long" or "Buy" visible
-- Bullish chart patterns
+🎯 CRITICAL DIRECTION RULES - READ CAREFULLY:
 
-SHORT/SELL Indicators:
-- Red/bearish candles dominating
-- Entry level is ABOVE the current price
-- Downward arrows or "SELL" text visible
-- Resistance level entries
-- The word "Short" or "Sell" visible
-- Bearish chart patterns
+For LONG/BUY trades, you will see:
+- Green/bullish candles at entry area
+- Price is ABOVE previous lows (uptrend context)
+- Entry line is at SUPPORT or pullback level
+- Stop Loss is BELOW entry
+- Take Profit is ABOVE entry
+- Arrows pointing UP or text saying "BUY" or "LONG"
+- Chart shows bullish momentum
 
-⚠️ MAPPING: "Long" → "buy" | "Short" → "sell"
+For SHORT/SELL trades, you will see:
+- Red/bearish candles at entry area  
+- Price is BELOW previous highs (downtrend context)
+- Entry line is at RESISTANCE or rejection level
+- Stop Loss is ABOVE entry
+- Take Profit is BELOW entry
+- Arrows pointing DOWN or text saying "SELL" or "SHORT"
+- Chart shows bearish momentum
 
-📊 EXTRACTION REQUIREMENTS (extract ALL visible data):
-1. pair: Currency pair (e.g., "EURUSD", "GBPJPY")
-2. direction: MUST be "buy" or "sell" (NOT "long" or "short")
-3. entry_price: Exact entry price number
-4. stop_loss: Stop loss price (if visible)
-5. take_profit: Take profit price (if visible)
-6. exit_price: Exit price if closed trade (if visible)
-7. lot_size: Position size in lots/volume (if visible)
-8. profit_loss: Profit or loss amount (if visible)
-9. setup_name: Trading setup type (e.g., "Support Bounce", "Breakout", "Trendline Break", "Supply/Demand", "Moving Average Cross")
-10. timeframe: Chart timeframe (e.g., "1H", "4H", "Daily", "15M", "1M")
-11. session: Trading session (e.g., "London", "New York", "Asian", "Sydney", "London/NY Overlap")
-12. risk_reward: Risk-reward ratio if calculable (e.g., "1:3", "1:2")
-13. trade_timestamp: Date/time of trade if visible (ISO format: YYYY-MM-DDTHH:mm:ss)
-14. notes: Any additional context - indicators, confluences, market conditions, patterns observed
+⚠️ DIRECTION DETECTION PRIORITY:
+1. Look at SL/TP placement relative to entry (SL below entry = BUY, SL above entry = SELL)
+2. Check for arrows or text labels (BUY/SELL/LONG/SHORT)
+3. Analyze candle colors and price action context
+4. If you see "Long" → return "buy" | If you see "Short" → return "sell"
 
-🎯 ACCURACY RULES:
-- Double-check direction by analyzing multiple indicators
-- Be precise with all numerical values
-- If data is not clearly visible, omit the field
-- Never guess - accuracy over completeness
-- Look for text labels, arrows, colors to confirm direction`
+📊 DATA EXTRACTION RULES:
+
+CORE DATA (Always try to extract):
+- pair: Currency pair (e.g., "EURUSD", "GBPJPY")
+- direction: MUST be "buy" or "sell" (NOT "long" or "short")
+- entry_price: Entry price level
+- stop_loss: Stop loss level (if visible)
+- take_profit: Take profit level (if visible)
+- setup_name: Setup type (e.g., "Breakout", "Support Bounce", "Trendline Break")
+- timeframe: Chart timeframe (e.g., "1H", "4H", "Daily")
+- session: Trading session (e.g., "London", "New York", "Asian")
+
+BROKER-ONLY DATA (Only extract if visible in broker platform screenshot):
+- lot_size: Position size ONLY if this is an MT5/broker screenshot
+- profit_loss: P/L amount ONLY if this is a broker screenshot showing closed trade
+- exit_price: Exit price if trade is closed
+
+ANALYSIS DATA:
+- risk_reward: R:R ratio if calculable from visible SL/TP
+- notes: Brief context about indicators, confluences, or patterns visible
+
+🚫 DO NOT GUESS:
+- If lot_size not visible (TradingView charts), DO NOT include it
+- If profit_loss not visible, DO NOT include it  
+- If exit_price not shown, DO NOT include it
+- Accuracy over completeness - skip fields you're unsure about
+
+✅ CONFIDENCE CHECK:
+Before returning, ask yourself:
+- Is the direction correct based on SL/TP placement?
+- Did I verify the direction using multiple indicators?
+- Did I only extract data that's clearly visible?`
             },
             {
               type: 'image_url',
@@ -154,19 +171,19 @@ SHORT/SELL Indicators:
               type: "object",
               properties: {
                 pair: { type: "string", description: "Currency pair (e.g., EURUSD)" },
-                direction: { type: "string", enum: ["buy", "sell"], description: "Trade direction - MUST be buy or sell only" },
+                direction: { type: "string", enum: ["buy", "sell"], description: "Trade direction - MUST be buy or sell only. Check SL/TP placement relative to entry to confirm." },
                 entry_price: { type: "number", description: "Entry price" },
-                stop_loss: { type: "number", description: "Stop loss price" },
-                take_profit: { type: "number", description: "Take profit price" },
-                exit_price: { type: "number", description: "Exit price if trade is closed" },
-                lot_size: { type: "number", description: "Position size in lots" },
-                profit_loss: { type: "number", description: "Profit or loss amount" },
-                setup_name: { type: "string", description: "Trading setup name/type" },
-                timeframe: { type: "string", description: "Chart timeframe" },
-                session: { type: "string", description: "Trading session" },
-                risk_reward: { type: "string", description: "Risk-reward ratio (e.g., 1:3)" },
-                trade_timestamp: { type: "string", description: "Trade date/time in ISO format" },
-                notes: { type: "string", description: "Additional context and observations" }
+                stop_loss: { type: "number", description: "Stop loss price if visible" },
+                take_profit: { type: "number", description: "Take profit price if visible" },
+                exit_price: { type: "number", description: "Exit price ONLY if trade is closed and visible" },
+                lot_size: { type: "number", description: "Position size ONLY if visible in broker screenshot (not TradingView)" },
+                profit_loss: { type: "number", description: "P/L amount ONLY if visible in broker screenshot (not TradingView)" },
+                setup_name: { type: "string", description: "Trading setup name/type if identifiable" },
+                timeframe: { type: "string", description: "Chart timeframe if visible" },
+                session: { type: "string", description: "Trading session if identifiable" },
+                risk_reward: { type: "string", description: "Risk-reward ratio if calculable (e.g., 1:3)" },
+                trade_timestamp: { type: "string", description: "Trade date/time in ISO format if visible" },
+                notes: { type: "string", description: "Brief context about indicators, patterns, or confluences visible in the chart" }
               },
               required: ["pair", "direction", "entry_price"]
             }
