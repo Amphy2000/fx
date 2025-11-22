@@ -217,11 +217,11 @@ const Settings = () => {
           last_trade_date: null,
           onboarding_completed: false,
           onboarding_step: 0,
-          ai_credits: 100,
+          ai_credits: 50,
           subscription_tier: 'free',
           subscription_status: 'active',
           subscription_expires_at: null,
-          monthly_trade_limit: 50
+          monthly_trade_limit: 10
         })
         .eq("id", profile.id);
 
