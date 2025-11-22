@@ -184,6 +184,7 @@ Before returning, ask yourself:
                 timeframe: { type: "string", description: "Chart timeframe if visible" },
                 session: { type: "string", description: "Trading session if identifiable" },
                 risk_reward: { type: "string", description: "Risk-reward ratio if calculable (e.g., 1:3)" },
+                result: { type: "string", enum: ["open", "win", "loss", "breakeven"], description: "Trade outcome ONLY if clearly visible (e.g., closed trade in broker)" },
                 emotion: { type: "string", description: "Inferred trader emotion from visible notes/text (confident/anxious/excited/frustrated/calm/fearful/greedy)" },
                 trade_timestamp: { type: "string", description: "Trade date/time in ISO format if visible" },
                 notes: { type: "string", description: "Brief context about indicators, patterns, confluences, or any trader notes visible in the chart" }
