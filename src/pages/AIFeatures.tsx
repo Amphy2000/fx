@@ -3,8 +3,9 @@ import { TradeScreenshotBatchUpload } from "@/components/TradeScreenshotBatchUpl
 import { PatternsDashboard } from "@/components/PatternsDashboard";
 import { BehavioralAlerts } from "@/components/BehavioralAlerts";
 import { TradingAssistantChat } from "@/components/TradingAssistantChat";
+import { StandaloneVoiceLogger } from "@/components/StandaloneVoiceLogger";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, Camera, TrendingUp, MessageSquare } from "lucide-react";
+import { Brain, Camera, TrendingUp, MessageSquare, Mic } from "lucide-react";
 
 const AIFeatures = () => {
 
@@ -23,11 +24,15 @@ const AIFeatures = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2">
-            <Tabs defaultValue="screenshots" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-4">
+            <Tabs defaultValue="voice" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="voice" className="flex items-center gap-2">
+                  <Mic className="w-4 h-4" />
+                  Voice
+                </TabsTrigger>
                 <TabsTrigger value="screenshots" className="flex items-center gap-2">
                   <Camera className="w-4 h-4" />
-                  Trade Screenshots
+                  Screenshots
                 </TabsTrigger>
                 <TabsTrigger value="patterns" className="flex items-center gap-2">
                   <TrendingUp className="w-4 h-4" />
@@ -42,6 +47,10 @@ const AIFeatures = () => {
                   Assistant
                 </TabsTrigger>
               </TabsList>
+
+              <TabsContent value="voice">
+                <StandaloneVoiceLogger />
+              </TabsContent>
 
               <TabsContent value="screenshots">
                 <TradeScreenshotBatchUpload />
@@ -79,6 +88,16 @@ const AIFeatures = () => {
             <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-6 rounded-lg border">
               <h3 className="font-semibold mb-3">How It Works</h3>
               <div className="space-y-3 text-sm">
+                <div>
+                  <div className="flex items-center gap-2 font-medium mb-1">
+                    <Mic className="w-4 h-4 text-primary" />
+                    Voice Logging
+                  </div>
+                  <p className="text-muted-foreground">
+                    Speak your trade details - AI saves everything automatically
+                  </p>
+                </div>
+
                 <div>
                   <div className="flex items-center gap-2 font-medium mb-1">
                     <Camera className="w-4 h-4 text-primary" />
@@ -124,6 +143,10 @@ const AIFeatures = () => {
             <div className="bg-muted p-4 rounded-lg">
               <h4 className="font-semibold mb-2">💎 AI Credits</h4>
               <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span>Voice logging:</span>
+                  <span className="font-medium">5 credits</span>
+                </div>
                 <div className="flex justify-between">
                   <span>Screenshot extraction:</span>
                   <span className="font-medium">10 credits</span>
