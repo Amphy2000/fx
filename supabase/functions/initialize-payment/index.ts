@@ -54,11 +54,11 @@ serve(async (req) => {
 
     switch (planType) {
       case 'pro':
-        amount = 499; // $4.99 in cents
+        amount = 750000; // ₦7,500 in kobo
         planName = 'Pro Plan';
         break;
       case 'lifetime':
-        amount = 1999; // $19.99 in cents
+        amount = 3000000; // ₦30,000 in kobo
         planName = 'Lifetime Access';
         break;
       default:
@@ -79,7 +79,7 @@ serve(async (req) => {
       body: JSON.stringify({
         email,
         amount: amount,
-        currency: 'USD',
+        currency: 'NGN',
         callback_url: callbackUrl,
         metadata: {
           user_id: user.id,
