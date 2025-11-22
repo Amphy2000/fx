@@ -33,6 +33,7 @@ import Achievements from "./pages/Achievements";
 import Install from "./pages/Install";
 import AbusePreventionAdmin from "./pages/AbusePreventionAdmin";
 import AIFeatures from "./pages/AIFeatures";
+import PsychologyGuide from "./pages/PsychologyGuide";
 import { FloatingActionMenu } from "./components/FloatingActionMenu";
 
 const queryClient = new QueryClient();
@@ -71,6 +72,7 @@ const AppContent = () => {
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/achievements" element={<Achievements />} />
         <Route path="/install" element={<Install />} />
+        <Route path="/psychology-guide" element={<PsychologyGuide />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
