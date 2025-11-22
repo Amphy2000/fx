@@ -152,10 +152,28 @@ Use null for missing values. NO extra text or explanations.`
 
     const tradeData = JSON.parse(jsonMatch[0]);
     
-    // Validate required fields
-    if (!tradeData.pair || !tradeData.direction) {
-      console.error('Missing required fields in parsed data:', tradeData);
-      throw new Error('Could not identify trade pair or direction. Please include the currency pair and whether you bought or sold.');
+    // Validate required pair
+    if (!tradeData.pair) {
+      console.error('Missing pair in parsed data:', tradeData);
+      throw new Error('Could not identify the currency pair. Please specify which pair you traded (e.g., EURUSD, GBPUSD, Gold).');
+    }
+
+    // Smart direction inference if missing
+    if (!tradeData.direction && tradeData.entry_price && tradeData.stop_loss) {
+      const entry = parseFloat(tradeData.entry_price);
+      const stop = parseFloat(tradeData.stop_loss);
+      
+      if (!isNaN(entry) && !isNaN(stop)) {
+        // If stop loss is below entry, it's a buy. If above, it's a sell.
+        tradeData.direction = stop < entry ? 'buy' : 'sell';
+        console.log(`Inferred direction: ${tradeData.direction} (entry: ${entry}, stop: ${stop})`);
+      }
+    }
+
+    // Final validation - now we only error if we truly can't determine direction
+    if (!tradeData.direction) {
+      console.error('Could not determine direction in parsed data:', tradeData);
+      throw new Error('Could not determine if this is a buy or sell trade. Please specify "buy", "sell", "long", or "short", or provide both entry price and stop loss so direction can be inferred.');
     }
 
     // Deduct credits
