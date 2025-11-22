@@ -121,13 +121,15 @@ export const VoiceTradeLogger = ({
 
       const { data, error } = await supabase.functions.invoke('validate-trade', {
         body: {
-          pair: parsedData.pair,
-          direction: parsedData.direction,
-          entry_price: parsedData.entry_price,
-          stop_loss: parsedData.stop_loss,
-          take_profit: parsedData.take_profit,
-          session: parsedData.session,
-          emotion_before: parsedData.emotion_before,
+          proposedTrade: {
+            pair: parsedData.pair,
+            direction: parsedData.direction,
+            entry_price: parsedData.entry_price,
+            stop_loss: parsedData.stop_loss,
+            take_profit: parsedData.take_profit,
+            session: parsedData.session,
+            emotion_before: parsedData.emotion_before,
+          }
         }
       });
 

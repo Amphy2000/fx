@@ -134,13 +134,15 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
 
       const { data, error } = await supabase.functions.invoke('validate-trade', {
         body: {
-          pair: extractedData.pair,
-          direction: extractedData.direction,
-          entry_price: extractedData.entry_price,
-          stop_loss: extractedData.stop_loss,
-          take_profit: extractedData.take_profit,
-          session: extractedData.session,
-          emotion_before: extractedData.emotion_before,
+          proposedTrade: {
+            pair: extractedData.pair,
+            direction: extractedData.direction,
+            entry_price: extractedData.entry_price,
+            stop_loss: extractedData.stop_loss,
+            take_profit: extractedData.take_profit,
+            session: extractedData.session,
+            emotion_before: extractedData.emotion_before,
+          }
         }
       });
 
