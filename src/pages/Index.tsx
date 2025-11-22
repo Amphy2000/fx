@@ -80,7 +80,7 @@ const Index = () => {
         {/* Grid pattern overlay */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border)/0.1)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border)/0.1)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
         
-        <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-16 md:py-32 relative">
+        <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 pt-8 md:pt-16 pb-16 md:pb-32 relative">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12 sm:mb-16">
               {/* Badge */}
