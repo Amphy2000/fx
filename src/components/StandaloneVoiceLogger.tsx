@@ -13,7 +13,6 @@ declare global {
     webkitSpeechRecognition: any;
   }
 }
-
 export const StandaloneVoiceLogger = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -21,20 +20,17 @@ export const StandaloneVoiceLogger = () => {
   const [isSupported, setIsSupported] = useState(true);
   const [savedTrade, setSavedTrade] = useState<any>(null);
   const recognitionRef = useRef<any>(null);
-
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setIsSupported(false);
       return;
     }
-
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
     recognition.maxAlternatives = 1;
-
     recognition.onresult = (event: any) => {
       let finalTranscript = '';
       for (let i = 0; i < event.results.length; i++) {
@@ -46,20 +42,21 @@ export const StandaloneVoiceLogger = () => {
         setTranscript(prev => prev + finalTranscript);
       }
     };
-
     recognition.onerror = (event: any) => {
       console.error('Speech recognition error:', event.error);
       if (event.error === 'no-speech') {
-        toast.error("No speech detected", { description: "Please try speaking again" });
+        toast.error("No speech detected", {
+          description: "Please try speaking again"
+        });
       } else if (event.error !== 'aborted') {
-        toast.error("Speech recognition error", { description: event.error });
+        toast.error("Speech recognition error", {
+          description: event.error
+        });
       }
       setIsRecording(false);
     };
-
     recognition.onend = () => setIsRecording(false);
     recognitionRef.current = recognition;
-
     return () => {
       if (recognitionRef.current) {
         try {
@@ -70,7 +67,6 @@ export const StandaloneVoiceLogger = () => {
       }
     };
   }, []);
-
   const startRecording = async () => {
     if (!isSupported) {
       toast.error("Speech recognition not supported", {
@@ -78,7 +74,6 @@ export const StandaloneVoiceLogger = () => {
       });
       return;
     }
-
     try {
       setTranscript("");
       setIsProcessing(false);
@@ -93,7 +88,6 @@ export const StandaloneVoiceLogger = () => {
       toast.error("Could not start recording");
     }
   };
-
   const stopRecording = () => {
     if (recognitionRef.current && isRecording) {
       try {
@@ -107,21 +101,24 @@ export const StandaloneVoiceLogger = () => {
       setIsRecording(false);
     }
   };
-
   const processTranscript = async (text: string) => {
     if (!text.trim()) {
-      toast.error("No speech detected", { description: "Please try again and speak clearly" });
+      toast.error("No speech detected", {
+        description: "Please try again and speak clearly"
+      });
       return;
     }
-
     setIsProcessing(true);
-
     try {
       // Parse voice to trade data
-      const { data: parseData, error: parseError } = await supabase.functions.invoke('parse-voice-trade', {
-        body: { transcript: text }
+      const {
+        data: parseData,
+        error: parseError
+      } = await supabase.functions.invoke('parse-voice-trade', {
+        body: {
+          transcript: text
+        }
       });
-
       if (parseError) {
         if ((parseError as any)?.status === 402) {
           toast.error("Insufficient credits", {
@@ -135,15 +132,17 @@ export const StandaloneVoiceLogger = () => {
         }
         throw parseError;
       }
-
       if (!parseData?.tradeData) {
         throw new Error("No trade data extracted");
       }
 
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-
       const tradeData = parseData.tradeData;
 
       // Validate required fields
@@ -152,27 +151,24 @@ export const StandaloneVoiceLogger = () => {
       }
 
       // Save trade directly to database
-      const { data: trade, error: insertError } = await supabase
-        .from('trades')
-        .insert({
-          user_id: user.id,
-          pair: tradeData.pair,
-          direction: tradeData.direction,
-          entry_price: tradeData.entry_price || null,
-          stop_loss: tradeData.stop_loss || null,
-          take_profit: tradeData.take_profit || null,
-          exit_price: tradeData.exit_price || null,
-          profit_loss: tradeData.profit_loss || null,
-          result: tradeData.result || 'open',
-          emotion_before: tradeData.emotion_before || null,
-          emotion_after: tradeData.emotion_after || null,
-          notes: tradeData.notes || null,
-        })
-        .select()
-        .single();
-
+      const {
+        data: trade,
+        error: insertError
+      } = await supabase.from('trades').insert({
+        user_id: user.id,
+        pair: tradeData.pair,
+        direction: tradeData.direction,
+        entry_price: tradeData.entry_price || null,
+        stop_loss: tradeData.stop_loss || null,
+        take_profit: tradeData.take_profit || null,
+        exit_price: tradeData.exit_price || null,
+        profit_loss: tradeData.profit_loss || null,
+        result: tradeData.result || 'open',
+        emotion_before: tradeData.emotion_before || null,
+        emotion_after: tradeData.emotion_after || null,
+        notes: tradeData.notes || null
+      }).select().single();
       if (insertError) throw insertError;
-
       setSavedTrade(trade);
       toast.success("Trade logged successfully! 🎉", {
         description: `${tradeData.direction} ${tradeData.pair} saved`
@@ -180,9 +176,10 @@ export const StandaloneVoiceLogger = () => {
 
       // Trigger AI analysis in background
       supabase.functions.invoke('analyze-trade', {
-        body: { tradeId: trade.id }
+        body: {
+          tradeId: trade.id
+        }
       }).catch(console.error);
-
     } catch (error: any) {
       console.error("Error processing voice trade:", error);
       toast.error("Failed to save trade", {
@@ -192,10 +189,8 @@ export const StandaloneVoiceLogger = () => {
       setIsProcessing(false);
     }
   };
-
   if (!isSupported) {
-    return (
-      <Card className="border-destructive/20 bg-destructive/5">
+    return <Card className="border-destructive/20 bg-destructive/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-destructive">
             <MicOff className="h-5 w-5" />
@@ -205,12 +200,9 @@ export const StandaloneVoiceLogger = () => {
             Your browser doesn't support speech recognition. Please use Chrome, Edge, or Safari.
           </CardDescription>
         </CardHeader>
-      </Card>
-    );
+      </Card>;
   }
-
-  return (
-    <Card className="border-primary/20">
+  return <Card className="border-primary/20">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -229,38 +221,26 @@ export const StandaloneVoiceLogger = () => {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!savedTrade ? (
-          <>
+        {!savedTrade ? <>
             <div className="flex gap-2">
-              <Button
-                onClick={isRecording ? stopRecording : startRecording}
-                disabled={isProcessing}
-                variant={isRecording ? "destructive" : "default"}
-                className="flex-1"
-              >
-                {isProcessing ? (
-                  <>
+              <Button onClick={isRecording ? stopRecording : startRecording} disabled={isProcessing} variant={isRecording ? "destructive" : "default"} className="flex-1">
+                {isProcessing ? <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Processing & Saving...
-                  </>
-                ) : isRecording ? (
-                  <>
+                  </> : isRecording ? <>
                     <MicOff className="mr-2 h-4 w-4" />
                     Stop Recording
-                  </>
-                ) : (
-                  <>
+                  </> : <>
                     <Mic className="mr-2 h-4 w-4" />
                     Start Recording
-                  </>
-                )}
+                  </>}
               </Button>
             </div>
 
             <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
               <p className="text-xs font-semibold mb-2 text-foreground">Example phrases:</p>
               <ul className="text-xs space-y-1 text-muted-foreground">
-                <li>• "Long EUR/USD at 1.0850, stop 1.0800, target 1.0950, feeling confident"</li>
+                
                 <li>• "Sold gold at 2050, stop 2060, closed at 2031, made 380 dollars, anxious before, relieved after winning"</li>
                 <li>• "Bought GBP/USD 1.2650, stop 1.2620, exited at 1.2615, lost 70 bucks, felt impulsive before"</li>
               </ul>
@@ -269,15 +249,11 @@ export const StandaloneVoiceLogger = () => {
               </p>
             </div>
 
-            {transcript && !isProcessing && (
-              <div className="p-3 bg-muted rounded-lg">
+            {transcript && !isProcessing && <div className="p-3 bg-muted rounded-lg">
                 <p className="text-sm font-medium mb-1">Transcript:</p>
                 <p className="text-sm text-muted-foreground">{transcript}</p>
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="text-center py-8 space-y-4">
+              </div>}
+          </> : <div className="text-center py-8 space-y-4">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/10">
               <CheckCircle2 className="h-8 w-8 text-green-500" />
             </div>
@@ -288,14 +264,12 @@ export const StandaloneVoiceLogger = () => {
               </p>
             </div>
             <Button onClick={() => {
-              setSavedTrade(null);
-              setTranscript("");
-            }} className="w-full">
+          setSavedTrade(null);
+          setTranscript("");
+        }} className="w-full">
               Log Another Trade
             </Button>
-          </div>
-        )}
+          </div>}
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
