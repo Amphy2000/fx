@@ -2323,6 +2323,48 @@ export type Database = {
           },
         ]
       }
+      trade_patterns: {
+        Row: {
+          confidence_score: number | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          pattern_description: string
+          pattern_type: string
+          recommendations: string | null
+          sample_size: number | null
+          updated_at: string | null
+          user_id: string
+          win_rate: number | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          pattern_description: string
+          pattern_type: string
+          recommendations?: string | null
+          sample_size?: number | null
+          updated_at?: string | null
+          user_id: string
+          win_rate?: number | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          pattern_description?: string
+          pattern_type?: string
+          recommendations?: string | null
+          sample_size?: number | null
+          updated_at?: string | null
+          user_id?: string
+          win_rate?: number | null
+        }
+        Relationships: []
+      }
       trade_screenshots: {
         Row: {
           created_at: string
@@ -2401,6 +2443,8 @@ export type Database = {
       }
       trades: {
         Row: {
+          ai_confidence: number | null
+          ai_extracted_data: Json | null
           close_time: string | null
           comment: string | null
           commission: number | null
@@ -2432,6 +2476,8 @@ export type Database = {
           volume: number | null
         }
         Insert: {
+          ai_confidence?: number | null
+          ai_extracted_data?: Json | null
           close_time?: string | null
           comment?: string | null
           commission?: number | null
@@ -2463,6 +2509,8 @@ export type Database = {
           volume?: number | null
         }
         Update: {
+          ai_confidence?: number | null
+          ai_extracted_data?: Json | null
           close_time?: string | null
           comment?: string | null
           commission?: number | null
@@ -2509,6 +2557,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      trading_behaviors: {
+        Row: {
+          ai_recommendation: string | null
+          behavior_type: string
+          created_at: string | null
+          detected_at: string | null
+          id: string
+          is_resolved: boolean | null
+          severity: string
+          trade_sequence: Json | null
+          user_id: string
+        }
+        Insert: {
+          ai_recommendation?: string | null
+          behavior_type: string
+          created_at?: string | null
+          detected_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          severity: string
+          trade_sequence?: Json | null
+          user_id: string
+        }
+        Update: {
+          ai_recommendation?: string | null
+          behavior_type?: string
+          created_at?: string | null
+          detected_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          severity?: string
+          trade_sequence?: Json | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
