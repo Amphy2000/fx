@@ -90,9 +90,9 @@ const Index = () => {
               </div>
               
               {/* Main headline */}
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 sm:mb-8 text-foreground tracking-tight leading-[1.1] px-2">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 sm:mb-8 text-foreground tracking-tight leading-[1.2] px-2">
                 Your Biggest Enemy Isn't The Market
-                <span className="block mt-2 sm:mt-3 bg-gradient-to-r from-chart-1 via-chart-2 to-chart-3 bg-clip-text text-transparent text-2xl sm:text-3xl md:text-4xl lg:text-5xl">
+                <span className="block mt-2 sm:mt-3 bg-gradient-to-r from-chart-1 via-chart-2 to-chart-3 bg-clip-text text-transparent text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-[1.3] pb-2">
                   It's Your Psychology
                 </span>
               </h1>
