@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Trophy, TrendingUp, Target, Award, Zap } from "lucide-react";
 import confetti from "canvas-confetti";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Milestone {
   title: string;
@@ -13,15 +14,35 @@ interface Milestone {
 
 interface MilestoneNotificationProps {
   trades: any[];
+  userId: string;
 }
 
-export function MilestoneNotification({ trades }: MilestoneNotificationProps) {
+export function MilestoneNotification({ trades, userId }: MilestoneNotificationProps) {
   const [open, setOpen] = useState(false);
   const [milestone, setMilestone] = useState<Milestone | null>(null);
   const [checkedMilestones, setCheckedMilestones] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+
+  // Load achieved milestones from database on mount
+  useEffect(() => {
+    const loadAchievements = async () => {
+      const { data } = await supabase
+        .from('achievements')
+        .select('achievement_name')
+        .eq('user_id', userId)
+        .eq('achievement_type', 'milestone');
+      
+      if (data) {
+        setCheckedMilestones(new Set(data.map(a => a.achievement_name)));
+      }
+      setLoading(false);
+    };
+    
+    loadAchievements();
+  }, [userId]);
 
   useEffect(() => {
-    if (trades.length === 0) return;
+    if (trades.length === 0 || loading) return;
 
     const totalTrades = trades.length;
     const wins = trades.filter(t => t.result === "win").length;
@@ -83,7 +104,14 @@ export function MilestoneNotification({ trades }: MilestoneNotificationProps) {
     }
   }, [trades]);
 
-  const showMilestone = (ms: Milestone, key: string) => {
+  const showMilestone = async (ms: Milestone, key: string) => {
+    // Save to database
+    await supabase.from('achievements').insert({
+      user_id: userId,
+      achievement_type: 'milestone',
+      achievement_name: key
+    });
+    
     setMilestone(ms);
     setCheckedMilestones(prev => new Set([...prev, key]));
     setOpen(true);

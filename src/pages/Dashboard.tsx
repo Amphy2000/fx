@@ -403,7 +403,7 @@ const Dashboard = () => {
         setShowConsentModal(false);
         fetchProfile(user.id);
       }} userId={user.id} />
-          <MilestoneNotification trades={trades} />
+          <MilestoneNotification trades={trades} userId={user.id} />
           <GamificationOverlay />
           <ExportDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} />
         </>}
