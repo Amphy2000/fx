@@ -2323,6 +2323,45 @@ export type Database = {
           },
         ]
       }
+      trade_interceptions: {
+        Row: {
+          created_at: string | null
+          id: string
+          pattern_matched: string | null
+          proposed_trade: Json
+          risk_score: number
+          similar_trades_count: number | null
+          suggested_action: string
+          user_action: string | null
+          user_id: string
+          win_rate: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          pattern_matched?: string | null
+          proposed_trade: Json
+          risk_score: number
+          similar_trades_count?: number | null
+          suggested_action: string
+          user_action?: string | null
+          user_id: string
+          win_rate?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          pattern_matched?: string | null
+          proposed_trade?: Json
+          risk_score?: number
+          similar_trades_count?: number | null
+          suggested_action?: string
+          user_action?: string | null
+          user_id?: string
+          win_rate?: number | null
+        }
+        Relationships: []
+      }
       trade_patterns: {
         Row: {
           confidence_score: number | null
