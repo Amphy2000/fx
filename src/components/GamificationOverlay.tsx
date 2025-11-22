@@ -19,8 +19,12 @@ export const GamificationOverlay = () => {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
+  }, []);
 
-    // Listen for achievement events
+  useEffect(() => {
+    if (!user?.id) return;
+
+    // Listen for achievement events - only for NEW achievements
     const channel = supabase
       .channel('achievements')
       .on(
@@ -29,11 +33,17 @@ export const GamificationOverlay = () => {
           event: 'INSERT',
           schema: 'public',
           table: 'achievements',
-          filter: `user_id=eq.${user?.id}`
+          filter: `user_id=eq.${user.id}`
         },
         (payload) => {
           const achievement = payload.new as any;
-          addFloatingAchievement(achievement);
+          const achievementTime = new Date(achievement.earned_at).getTime();
+          const now = Date.now();
+          
+          // Only show notification if achievement was earned in the last 10 seconds
+          if (now - achievementTime < 10000) {
+            addFloatingAchievement(achievement);
+          }
         }
       )
       .subscribe();
