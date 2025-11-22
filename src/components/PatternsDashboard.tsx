@@ -67,8 +67,19 @@ export const PatternsDashboard = () => {
 
       if (error) {
         console.error('Function invocation error:', error);
-        if (error.message?.includes('Insufficient credits')) {
-          toast.error('Insufficient AI credits. Please upgrade your plan.');
+        
+        // Parse error response for credit info
+        let errorData;
+        try {
+          errorData = typeof error === 'string' ? JSON.parse(error) : error;
+        } catch {
+          errorData = error;
+        }
+        
+        if (errorData?.error?.includes?.('Insufficient credits') || error.message?.includes('Insufficient credits')) {
+          const required = errorData?.required || 15;
+          const available = errorData?.available || 0;
+          toast.error(`Insufficient AI credits. Need ${required}, have ${available}. Please upgrade your plan.`);
         } else if (error.message?.includes('Not enough trade data')) {
           toast.error('Need at least 5 trades to analyze patterns');
         } else if (error.message?.includes('Unauthorized')) {
