@@ -3,8 +3,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Brain, X, Heart, AlertTriangle, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 export const PsychologyFirstBanner = () => {
+  const navigate = useNavigate();
   const [show, setShow] = useState(false);
   const [trades, setTrades] = useState<any[]>([]);
 
@@ -105,7 +107,7 @@ export const PsychologyFirstBanner = () => {
               <Button onClick={handleDismiss} variant="outline" size="sm">
                 I Understand
               </Button>
-              <Button onClick={() => window.open('https://docs.lovable.dev', '_blank')} variant="ghost" size="sm" className="text-xs">
+              <Button onClick={() => navigate('/psychology-guide')} variant="ghost" size="sm" className="text-xs">
                 Learn More About Psychology-First Trading
               </Button>
             </div>
