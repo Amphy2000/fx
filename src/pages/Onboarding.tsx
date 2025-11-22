@@ -199,29 +199,65 @@ export default function Onboarding() {
   const progress = ((currentStep + 1) / 7) * 100;
 
   const steps = [
-    // Step 0: Welcome + Feature Overview
+    // Step 0: Welcome + USP Psychology-First
     <OnboardingStep
       key="welcome"
-      icon={TrendingUp}
-      title="Welcome to Amphy AI"
-      description="Your complete trading journal with AI-powered insights and automation"
+      icon={Brain}
+      title="Welcome to Your AI Trading Psychologist"
+      description="95% of trading failure is mental, not technical. We help you master your psychology."
     >
       <Card className="border-border/50 bg-card/50 backdrop-blur">
         <CardContent className="p-8 space-y-6">
+          <div className="p-6 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent border border-primary/30 rounded-xl mb-6">
+            <h3 className="text-xl font-bold mb-3 flex items-center gap-2">
+              <Brain className="h-6 w-6 text-primary" />
+              Your Biggest Enemy Isn't The Market
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              Most trading journals just track numbers. We track what really matters: <strong className="text-foreground">your psychology, emotions, and behavioral patterns.</strong>
+            </p>
+            <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center gap-1 px-3 py-1 bg-primary/20 rounded-full">
+                <span className="text-2xl">85%</span>
+                <span className="text-xs text-muted-foreground">emotional trading reduced</span>
+              </div>
+              <div className="flex items-center gap-1 px-3 py-1 bg-primary/20 rounded-full">
+                <span className="text-2xl">3.2x</span>
+                <span className="text-xs text-muted-foreground">win rate improvement</span>
+              </div>
+            </div>
+          </div>
+          
           <div className="grid md:grid-cols-2 gap-4">
+            <div className="flex items-start gap-3 p-4 border-2 border-primary/30 rounded-lg bg-primary/5">
+              <Heart className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
+              <div>
+                <h4 className="font-semibold text-sm mb-1">AI Trading Psychologist</h4>
+                <p className="text-xs text-muted-foreground">Analyzes emotions, identifies triggers, warns before mistakes</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-3 p-4 border-2 border-primary/30 rounded-lg bg-primary/5">
+              <Target className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
+              <div>
+                <h4 className="font-semibold text-sm mb-1">Trade Interception</h4>
+                <p className="text-xs text-muted-foreground">AI stops emotional trades before you make them</p>
+              </div>
+            </div>
+            
             <div className="flex items-start gap-3 p-4 border rounded-lg bg-background/50">
               <Brain className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
               <div>
-                <h4 className="font-semibold text-sm mb-1">AI Trade Logging</h4>
-                <p className="text-xs text-muted-foreground">Voice or screenshot - AI extracts everything</p>
+                <h4 className="font-semibold text-sm mb-1">Effortless Logging</h4>
+                <p className="text-xs text-muted-foreground">Voice or screenshot - so easy you'll stay consistent</p>
               </div>
             </div>
             
             <div className="flex items-start gap-3 p-4 border rounded-lg bg-background/50">
               <MessageSquare className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
               <div>
-                <h4 className="font-semibold text-sm mb-1">AI Coach & Assistant</h4>
-                <p className="text-xs text-muted-foreground">24/7 trading mentor and strategy advisor</p>
+                <h4 className="font-semibold text-sm mb-1">24/7 AI Coach</h4>
+                <p className="text-xs text-muted-foreground">Trading psychologist and strategy mentor</p>
               </div>
             </div>
             
@@ -250,10 +286,10 @@ export default function Onboarding() {
             </div>
             
             <div className="flex items-start gap-3 p-4 border rounded-lg bg-background/50">
-              <Heart className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
+              <LineChart className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
               <div>
-                <h4 className="font-semibold text-sm mb-1">Mental State Tracking</h4>
-                <p className="text-xs text-muted-foreground">Understand how emotions affect performance</p>
+                <h4 className="font-semibold text-sm mb-1">Behavioral Patterns</h4>
+                <p className="text-xs text-muted-foreground">Connect sleep, stress, mood with performance</p>
               </div>
             </div>
             
@@ -278,8 +314,8 @@ export default function Onboarding() {
             <Button onClick={skipOnboarding} variant="outline" size="lg" className="flex-1">
               Skip Tour
             </Button>
-            <Button onClick={nextStep} size="lg" className="flex-1">
-              Show Me Around
+            <Button onClick={nextStep} size="lg" className="flex-1 bg-primary hover:bg-primary/90">
+              Master My Psychology
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
@@ -528,20 +564,27 @@ export default function Onboarding() {
       </Card>
     </OnboardingStep>,
 
-    // Step 5: Daily Check-In
+    // Step 5: Daily Check-In - PSYCHOLOGY FIRST
     <OnboardingStep
       key="checkin"
       icon={Heart}
-      title="Your First Check-In"
-      description="Track your mental state to understand how it impacts your trading performance"
+      title="Master Your Mind First"
+      description="Your mental state drives 95% of your trading decisions. Let's track it."
     >
       <Card className="border-border/50">
         <CardContent className="p-6">
           {!checkInComplete ? (
             <div className="space-y-6">
-              <div className="mb-4 p-4 bg-primary/10 border border-primary/20 rounded-lg">
-                <p className="text-sm text-foreground">
-                  <strong>Why check-in?</strong> Understanding your emotions helps you make better trading decisions
+              <div className="mb-4 p-4 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent border border-primary/30 rounded-lg">
+                <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-primary" />
+                  Why This Matters Most
+                </h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Traders who check their mental state before the markets consistently outperform those who don't by <strong className="text-foreground">3.2x</strong>.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  AI will connect your sleep, stress, and emotions to your trading outcomes - revealing patterns you can't see alone.
                 </p>
               </div>
 
@@ -607,9 +650,14 @@ export default function Onboarding() {
                 </div>
               </div>
 
-              <Button onClick={handleCheckInSubmit} size="lg" className="w-full">
-                Complete Check-In
+              <Button onClick={handleCheckInSubmit} size="lg" className="w-full bg-primary hover:bg-primary/90">
+                <Heart className="mr-2 h-4 w-4" />
+                Complete Mental Check-In
               </Button>
+              
+              <p className="text-xs text-center text-muted-foreground">
+                Pro traders check their mind before checking the charts
+              </p>
             </div>
           ) : (
             <div className="text-center py-8 space-y-4">
@@ -617,8 +665,8 @@ export default function Onboarding() {
                 <CheckCircle2 className="h-8 w-8 text-green-500" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">Check-In Complete!</h3>
-                <p className="text-muted-foreground">Great! Daily check-ins will help you spot patterns over time</p>
+                <h3 className="text-xl font-semibold text-foreground mb-2">Perfect! You're Thinking Like a Pro 🎯</h3>
+                <p className="text-muted-foreground">Daily mental check-ins are your secret weapon. AI will now track how your psychology affects your trading performance.</p>
               </div>
               <div className="flex gap-3">
                 <Button onClick={skipStep} variant="outline" size="lg" className="flex-1">

@@ -26,7 +26,9 @@ import { VoiceCommands } from "@/components/VoiceCommands";
 import { ExportDialog } from "@/components/ExportDialog";
 import { AccountSelector } from "@/components/AccountSelector";
 import { AccountBreakdown } from "@/components/AccountBreakdown";
+import { MentalStateCheckIn } from "@/components/MentalStateCheckIn";
 import { ValidationInsights } from "@/components/ValidationInsights";
+import { PsychologyFirstBanner } from "@/components/PsychologyFirstBanner";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -354,6 +356,8 @@ const Dashboard = () => {
             className="touch-pan-y w-full"
           >
             <TabsContent value="overview" className="space-y-4 md:space-y-6 mt-4 md:mt-6 animate-fade-in w-full">
+              <PsychologyFirstBanner />
+              <MentalStateCheckIn />
               {mt5Accounts.length > 1 && !selectedAccountId && (
                 <AccountBreakdown trades={allTrades} accounts={mt5Accounts} />
               )}
