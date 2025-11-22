@@ -208,7 +208,7 @@ export const TradingAssistantChat = () => {
                     : 'bg-muted'
                 }`}
               >
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                <p className="text-sm whitespace-pre-wrap">{message.content.replace(/\*\*/g, '').replace(/\*/g, '')}</p>
               </div>
             </div>
 
