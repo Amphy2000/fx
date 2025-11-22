@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Upload, Loader2, Check, X, AlertCircle, CheckCircle, ArrowUpDown } from 'lucide-react';
+import { Upload, Loader2, Check, X, AlertCircle, CheckCircle, ArrowUpDown, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { TradeInterceptorModal } from './TradeInterceptorModal';
 
 interface ExtractedData {
   pair: string;
@@ -45,6 +46,10 @@ export const TradeScreenshotBatchUpload = () => {
   const [processing, setProcessing] = useState(false);
   const [trades, setTrades] = useState<ProcessedTrade[]>([]);
   const [savingAll, setSavingAll] = useState(false);
+  const [validatingTradeId, setValidatingTradeId] = useState<string | null>(null);
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [validationResult, setValidationResult] = useState<any>(null);
+  const [pendingTradeId, setPendingTradeId] = useState<string | null>(null);
 
   const handleFilesUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -170,6 +175,46 @@ export const TradeScreenshotBatchUpload = () => {
       }
       return t;
     }));
+  };
+
+  const handleValidateTrade = async (tradeId: string) => {
+    const trade = trades.find(t => t.id === tradeId);
+    if (!trade || !trade.extractedData) return;
+
+    try {
+      setValidatingTradeId(tradeId);
+
+      const { data, error } = await supabase.functions.invoke('validate-trade', {
+        body: {
+          pair: trade.extractedData.pair,
+          direction: trade.extractedData.direction,
+          entry_price: trade.extractedData.entry_price,
+          stop_loss: trade.extractedData.stop_loss,
+          take_profit: trade.extractedData.take_profit,
+          session: trade.extractedData.session,
+          emotion_before: trade.extractedData.emotion_before,
+        }
+      });
+
+      if (error) {
+        if (error.message.includes('Insufficient credits')) {
+          toast.error('Insufficient AI credits for validation');
+        } else {
+          throw error;
+        }
+        return;
+      }
+
+      setValidationResult(data);
+      setPendingTradeId(tradeId);
+      setShowValidationModal(true);
+
+    } catch (error: any) {
+      console.error('Validation error:', error);
+      toast.error(error.message || 'Failed to validate trade');
+    } finally {
+      setValidatingTradeId(null);
+    }
   };
 
   const handleSaveTrade = async (tradeId: string) => {
@@ -385,6 +430,20 @@ export const TradeScreenshotBatchUpload = () => {
                             >
                               <ArrowUpDown className="w-3 h-3" />
                               Flip
+                            </Button>
+                            <Button
+                              onClick={() => handleValidateTrade(trade.id)}
+                              disabled={validatingTradeId === trade.id}
+                              variant="secondary"
+                              size="sm"
+                              className="gap-1"
+                            >
+                              {validatingTradeId === trade.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Shield className="w-3 h-3" />
+                              )}
+                              Validate
                             </Button>
                             <Button
                               onClick={() => handleSaveTrade(trade.id)}
@@ -659,6 +718,24 @@ export const TradeScreenshotBatchUpload = () => {
           </div>
         </ScrollArea>
       )}
+
+      <TradeInterceptorModal
+        open={showValidationModal}
+        onOpenChange={setShowValidationModal}
+        validationResult={validationResult}
+        onProceed={async () => {
+          setShowValidationModal(false);
+          if (pendingTradeId) {
+            await handleSaveTrade(pendingTradeId);
+            setPendingTradeId(null);
+          }
+        }}
+        onCancel={() => {
+          setShowValidationModal(false);
+          setPendingTradeId(null);
+          toast.info('Trade validation cancelled');
+        }}
+      />
     </div>
   );
 };

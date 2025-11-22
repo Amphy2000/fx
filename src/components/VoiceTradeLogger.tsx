@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mic, MicOff, Loader2, Sparkles } from "lucide-react";
+import { Mic, MicOff, Loader2, Sparkles, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { TradeInterceptorModal } from './TradeInterceptorModal';
+import { Textarea } from "@/components/ui/textarea";
 interface VoiceTradeLoggerProps {
   onTradeDataParsed: (data: any) => void;
 }
@@ -21,8 +23,12 @@ export const VoiceTradeLogger = ({
 }: VoiceTradeLoggerProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [isSupported, setIsSupported] = useState(true);
+  const [parsedData, setParsedData] = useState<any>(null);
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [validationResult, setValidationResult] = useState<any>(null);
   const recognitionRef = useRef<any>(null);
   useEffect(() => {
     // Check if Speech Recognition is supported
@@ -107,6 +113,44 @@ export const VoiceTradeLogger = ({
       setIsRecording(false);
     }
   };
+  const handleValidateTrade = async () => {
+    if (!parsedData) return;
+
+    try {
+      setIsValidating(true);
+
+      const { data, error } = await supabase.functions.invoke('validate-trade', {
+        body: {
+          pair: parsedData.pair,
+          direction: parsedData.direction,
+          entry_price: parsedData.entry_price,
+          stop_loss: parsedData.stop_loss,
+          take_profit: parsedData.take_profit,
+          session: parsedData.session,
+          emotion_before: parsedData.emotion_before,
+        }
+      });
+
+      if (error) {
+        if (error.message.includes('Insufficient credits')) {
+          toast.error('Insufficient AI credits for validation');
+        } else {
+          throw error;
+        }
+        return;
+      }
+
+      setValidationResult(data);
+      setShowValidationModal(true);
+
+    } catch (error: any) {
+      console.error('Validation error:', error);
+      toast.error(error.message || 'Failed to validate trade');
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
   const processTranscript = async (text: string) => {
     if (!text.trim()) {
       toast.error("No speech detected", {
@@ -138,6 +182,7 @@ export const VoiceTradeLogger = ({
         throw error;
       }
       if (data?.tradeData) {
+        setParsedData(data.tradeData);
         onTradeDataParsed(data.tradeData);
         toast.success("Trade data extracted from voice!", {
           description: "Form populated automatically"
@@ -215,17 +260,68 @@ export const VoiceTradeLogger = ({
         {transcript && !isProcessing && <>
             <div className="p-3 bg-muted rounded-lg">
               <p className="text-sm font-medium mb-1">Heard:</p>
-              <p className="text-sm text-muted-foreground">{transcript}</p>
+              <Textarea
+                value={transcript}
+                readOnly
+                className="text-sm min-h-[60px] resize-none bg-transparent border-0 p-0"
+              />
             </div>
-            <Button onClick={() => processTranscript(transcript)} variant="outline" size="sm" disabled={isProcessing} className="w-full">
-              {isProcessing ? <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Parsing...
-                </> : "Parse Again"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleValidateTrade}
+                disabled={isValidating || !parsedData}
+                variant="secondary"
+                size="sm"
+                className="flex-1"
+              >
+                {isValidating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Validating...
+                  </>
+                ) : (
+                  <>
+                    <Shield className="mr-2 h-4 w-4" />
+                    Validate
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={() => processTranscript(transcript)}
+                variant="outline"
+                size="sm"
+                disabled={isProcessing}
+                className="flex-1"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Parsing...
+                  </>
+                ) : (
+                  "Parse Again"
+                )}
+              </Button>
+            </div>
           </>}
 
         
       </CardContent>
+
+      <TradeInterceptorModal
+        open={showValidationModal}
+        onOpenChange={setShowValidationModal}
+        validationResult={validationResult}
+        onProceed={() => {
+          setShowValidationModal(false);
+          if (parsedData) {
+            onTradeDataParsed(parsedData);
+          }
+        }}
+        onCancel={() => {
+          setShowValidationModal(false);
+          toast.info('Trade validation cancelled');
+        }}
+      />
     </Card>;
 };
