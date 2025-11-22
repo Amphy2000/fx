@@ -129,7 +129,6 @@ export const GlobalVoiceAssistant = ({
           const routes: Record<string, { path: string; name: string }> = {
             'dashboard': { path: '/dashboard', name: 'Dashboard' },
             'journal': { path: '/journal', name: 'Journal' },
-            'trades': { path: '/dashboard', name: 'Trades' },
             'analytics': { path: '/analytics', name: 'Analytics' },
             'targets': { path: '/targets', name: 'Targets' },
             'achievements': { path: '/achievements', name: 'Achievements' },
@@ -137,12 +136,19 @@ export const GlobalVoiceAssistant = ({
             'streaks': { path: '/streaks', name: 'Streaks' },
             'settings': { path: '/settings', name: 'Settings' },
             'pricing': { path: '/pricing', name: 'Pricing' },
-            'integrations': { path: '/integrations', name: 'Integrations' }
+            'integrations': { path: '/integrations', name: 'Integrations' },
+            'calendar': { path: '/calendar', name: 'Trade Calendar' },
+            'weekly_summary': { path: '/weekly-summary', name: 'Weekly Summary' },
+            'patterns': { path: '/pattern-recognition', name: 'Pattern Recognition' },
+            'setups': { path: '/setups', name: 'Setups' },
+            'routine': { path: '/routine', name: 'Trading Routine' },
+            'checkin': { path: '/checkin', name: 'Daily Check-in' },
+            'ai_coach': { path: '/ai-coach', name: 'AI Coach' },
+            'ai_chat': { path: '/ai-chat', name: 'AI Chat' }
           };
           const route = routes[data.data.destination];
           if (route) {
             navigate(route.path);
-            // Speak the actual destination name
             speak(`Navigating to ${route.name}`);
           }
         }
@@ -266,14 +272,14 @@ export const GlobalVoiceAssistant = ({
         <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
           <p className="font-medium">Example commands:</p>
           <ul className="list-disc list-inside space-y-0.5 ml-2">
-            <li>"Go to journal"</li>
-            <li>"Show my analytics"</li>
+            <li>"Go to journal" / "Show calendar" / "Open AI coach"</li>
+            <li>"Show my analytics" / "Check patterns"</li>
             <li>"What's my current streak?"</li>
-            <li>"Show my recent trades"</li>
+            <li>"Show my recent trades" / "Show wins this week"</li>
             <li>"Mark last trade as win"</li>
-            <li>"Close my trade with profit 100"</li>
+            <li>"Close trade with profit 100"</li>
             <li>"Delete last trade"</li>
-            <li>"Show my stats for this week"</li>
+            <li>"Go to weekly summary" / "Show setups"</li>
           </ul>
         </div>
       </CardContent>
