@@ -1,22 +1,12 @@
 import { Layout } from "@/components/Layout";
-import { TradeScreenshotUpload } from "@/components/TradeScreenshotUpload";
 import { TradeScreenshotBatchUpload } from "@/components/TradeScreenshotBatchUpload";
 import { PatternsDashboard } from "@/components/PatternsDashboard";
 import { BehavioralAlerts } from "@/components/BehavioralAlerts";
 import { TradingAssistantChat } from "@/components/TradingAssistantChat";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, Camera, TrendingUp, MessageSquare, Images } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
+import { Brain, Camera, TrendingUp, MessageSquare } from "lucide-react";
 
 const AIFeatures = () => {
-  const [extractedData, setExtractedData] = useState<any>(null);
-
-  const handleDataExtracted = (data: any) => {
-    setExtractedData(data);
-    toast.success("Trade data extracted! You can now edit and save it.");
-    // Could auto-fill a trade form here
-  };
 
   return (
     <Layout>
@@ -33,15 +23,11 @@ const AIFeatures = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2">
-            <Tabs defaultValue="upload" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="upload" className="flex items-center gap-2">
+            <Tabs defaultValue="screenshots" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="screenshots" className="flex items-center gap-2">
                   <Camera className="w-4 h-4" />
-                  Single
-                </TabsTrigger>
-                <TabsTrigger value="batch" className="flex items-center gap-2">
-                  <Images className="w-4 h-4" />
-                  Batch
+                  Trade Screenshots
                 </TabsTrigger>
                 <TabsTrigger value="patterns" className="flex items-center gap-2">
                   <TrendingUp className="w-4 h-4" />
@@ -57,29 +43,7 @@ const AIFeatures = () => {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="upload" className="space-y-4">
-                <TradeScreenshotUpload onDataExtracted={handleDataExtracted} />
-                
-                {extractedData && (
-                  <div className="p-4 bg-muted rounded-lg">
-                    <h4 className="font-semibold mb-2">Extracted Data:</h4>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div><span className="font-medium">Pair:</span> {extractedData.pair}</div>
-                      <div><span className="font-medium">Direction:</span> {extractedData.direction}</div>
-                      <div><span className="font-medium">Entry:</span> {extractedData.entry_price}</div>
-                      <div><span className="font-medium">Exit:</span> {extractedData.exit_price || 'Open'}</div>
-                      {extractedData.stop_loss && (
-                        <div><span className="font-medium">Stop Loss:</span> {extractedData.stop_loss}</div>
-                      )}
-                      {extractedData.take_profit && (
-                        <div><span className="font-medium">Take Profit:</span> {extractedData.take_profit}</div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="batch">
+              <TabsContent value="screenshots">
                 <TradeScreenshotBatchUpload />
               </TabsContent>
 
@@ -121,7 +85,7 @@ const AIFeatures = () => {
                     Screenshot Upload
                   </div>
                   <p className="text-muted-foreground">
-                    Single or batch upload - AI extracts all trade data automatically
+                    Upload multiple screenshots - AI extracts all trade data automatically
                   </p>
                 </div>
 
