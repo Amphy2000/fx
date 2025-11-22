@@ -29,9 +29,16 @@ export const PatternsDashboard = () => {
 
   const loadPatterns = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('trade_patterns')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(10);
 
@@ -48,13 +55,27 @@ export const PatternsDashboard = () => {
     try {
       setAnalyzing(true);
       
-      const { data, error } = await supabase.functions.invoke('analyze-patterns');
+      // Check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Please log in to analyze patterns');
+        return;
+      }
+      
+      const { data, error } = await supabase.functions.invoke('analyze-patterns', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
 
       if (error) {
+        console.error('Function invocation error:', error);
         if (error.message.includes('Insufficient credits')) {
           toast.error('Insufficient AI credits. Please upgrade your plan.');
         } else if (error.message.includes('Not enough trade data')) {
           toast.error('Need at least 5 trades to analyze patterns');
+        } else if (error.message.includes('Unauthorized')) {
+          toast.error('Authentication error. Please log in again.');
         } else {
           throw error;
         }
