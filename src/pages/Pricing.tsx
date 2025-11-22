@@ -113,7 +113,7 @@ const Pricing = () => {
                 <div className="mt-4">
                   <span className="text-4xl font-bold">{plan.price}</span>
                   <span className="text-muted-foreground ml-1">{plan.period}</span>
-                  {plan.priceAlt && <p className="text-sm text-muted-foreground mt-1">{plan.priceAlt}</p>}
+                  {plan.priceAlt}
                 </div>
               </CardHeader>
               <CardContent>
