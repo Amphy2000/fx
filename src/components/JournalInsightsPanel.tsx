@@ -38,6 +38,9 @@ export const JournalInsightsPanel = () => {
       });
 
       if (error) {
+        console.error("Edge function error:", error);
+        
+        // Handle insufficient credits
         if ((error as any)?.status === 402) {
           toast.error("Insufficient credits", {
             description: "You need 5 credits for journal insights. Upgrade to continue.",
@@ -45,18 +48,38 @@ export const JournalInsightsPanel = () => {
           });
           return;
         }
+        
+        // Handle insufficient data
         if ((error as any)?.status === 400) {
-          toast.error(data?.message || "Not enough data for analysis");
+          const message = data?.message || error.message || "Not enough data for analysis";
+          toast.error("Not enough data", {
+            description: message
+          });
           return;
         }
-        throw error;
+        
+        // Handle other errors
+        toast.error("Failed to generate insights", {
+          description: error.message || "Please try again later"
+        });
+        return;
+      }
+
+      // Check if data exists and has insights
+      if (!data || !data.insights) {
+        toast.error("No insights returned", {
+          description: "Please try again later"
+        });
+        return;
       }
 
       setInsights(data.insights);
       toast.success("AI insights generated successfully!");
     } catch (error: any) {
       console.error("Error generating insights:", error);
-      toast.error("Failed to generate insights");
+      toast.error("Failed to generate insights", {
+        description: error.message || "An unexpected error occurred"
+      });
     } finally {
       setLoading(false);
     }
@@ -83,7 +106,8 @@ export const JournalInsightsPanel = () => {
           <div className="text-center py-8">
             <Brain className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <p className="text-sm text-muted-foreground mb-4">
-              Generate AI-powered insights from your journal entries, check-ins, and trade emotions
+              Generate AI-powered insights from your journal entries, check-ins, and trade emotions.
+              Requires at least 5 trades in the last 30 days.
             </p>
             <Button onClick={generateInsights} disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
