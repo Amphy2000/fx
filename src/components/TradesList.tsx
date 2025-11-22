@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Trash2, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, Filter, Image as ImageIcon, Brain, Loader2 } from "lucide-react";
+import { Trash2, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, Filter, Image as ImageIcon, Brain, Loader2, Edit } from "lucide-react";
 import { formatDistance, format } from "date-fns";
 import { TradeInsightBadge } from "@/components/TradeInsightBadge";
 import { EmotionTrackingModal } from "./EmotionTrackingModal";
 import { Checkbox } from "@/components/ui/checkbox";
+import { TradeUpdateModal } from "./TradeUpdateModal";
 
 interface TradesListProps {
   trades: any[];
@@ -32,6 +33,8 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
   const [selectedTradeForEmotion, setSelectedTradeForEmotion] = useState<any>(null);
   const [selectedTrades, setSelectedTrades] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [updateModalOpen, setUpdateModalOpen] = useState(false);
+  const [selectedTradeForUpdate, setSelectedTradeForUpdate] = useState<any>(null);
   
   const itemsPerPage = 10;
   const handleDelete = async (tradeId: string) => {
@@ -392,9 +395,14 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
                     )}
                     {trade.direction?.toUpperCase() ?? 'N/A'}
                   </Badge>
-                  <Badge className={getResultColor(trade.result)}>
+                   <Badge className={getResultColor(trade.result)}>
                     {trade.result?.toUpperCase() ?? 'PENDING'}
                   </Badge>
+                  {trade.result === "open" && (
+                    <Badge variant="outline" className="text-warning border-warning/50">
+                      📝 Needs Update
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {formatDistance(new Date(trade.created_at), new Date(), {
@@ -403,6 +411,21 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
                 </p>
               </div>
               <div className="flex gap-1 sm:gap-2 flex-shrink-0">
+                {trade.result === "open" && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedTradeForUpdate(trade);
+                      setUpdateModalOpen(true);
+                    }}
+                    title="Complete trade"
+                    className="h-8 px-3"
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Update
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
@@ -620,6 +643,20 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
           )}
         </DialogContent>
       </Dialog>
+
+      <TradeUpdateModal
+        trade={selectedTradeForUpdate}
+        isOpen={updateModalOpen}
+        onClose={() => setUpdateModalOpen(false)}
+        onUpdated={onTradeDeleted}
+      />
+
+      <EmotionTrackingModal
+        trade={selectedTradeForEmotion}
+        open={emotionModalOpen}
+        onClose={() => setEmotionModalOpen(false)}
+        onUpdated={onTradeDeleted}
+      />
     </Card>
   );
 };
