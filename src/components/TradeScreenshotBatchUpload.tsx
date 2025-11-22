@@ -533,13 +533,13 @@ export const TradeScreenshotBatchUpload = () => {
                               />
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-xs">P/L</Label>
+                              <Label className="text-xs">P/L (for AI analytics)</Label>
                               <Input
                                 type="number"
                                 step="0.01"
                                 value={trade.extractedData.profit_loss || ''}
                                 onChange={(e) => handleFieldEdit(trade.id, 'profit_loss', e.target.value ? parseFloat(e.target.value) : undefined)}
-                                placeholder="Optional"
+                                placeholder="Enter P/L"
                                 className="h-8 text-xs"
                               />
                             </div>
