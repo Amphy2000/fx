@@ -198,6 +198,36 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_earnings: {
+        Row: {
+          created_at: string | null
+          credits_earned: number
+          description: string | null
+          earned_at: string | null
+          earning_type: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          credits_earned: number
+          description?: string | null
+          earned_at?: string | null
+          earning_type: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          credits_earned?: number
+          description?: string | null
+          earned_at?: string | null
+          earning_type?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_checkins: {
         Row: {
           check_in_date: string
@@ -237,6 +267,33 @@ export type Database = {
           stress?: number
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      edge_function_rate_limits: {
+        Row: {
+          created_at: string | null
+          function_name: string
+          id: string
+          request_count: number | null
+          user_id: string
+          window_start: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          function_name: string
+          id?: string
+          request_count?: number | null
+          user_id: string
+          window_start?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          function_name?: string
+          id?: string
+          request_count?: number | null
+          user_id?: string
+          window_start?: string | null
         }
         Relationships: []
       }
@@ -2659,8 +2716,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      award_credits: {
+        Args: {
+          p_credits: number
+          p_description?: string
+          p_earning_type: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       can_send_email: {
         Args: { check_domain: string; email_count?: number }
+        Returns: boolean
+      }
+      check_rate_limit: {
+        Args: {
+          p_function_name: string
+          p_max_requests?: number
+          p_user_id: string
+          p_window_minutes?: number
+        }
         Returns: boolean
       }
       delete_all_user_data: { Args: { p_user_id: string }; Returns: undefined }
