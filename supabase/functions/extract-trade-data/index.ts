@@ -140,12 +140,14 @@ BROKER-ONLY DATA (Only extract if visible in broker platform screenshot):
 
 ANALYSIS DATA:
 - risk_reward: R:R ratio if calculable from visible SL/TP
-- notes: Brief context about indicators, confluences, or patterns visible
+- emotion: If trader's notes/text visible, infer emotion (confident/anxious/excited/frustrated/calm/fearful/greedy)
+- notes: Brief context about indicators, confluences, patterns visible, or any trader notes on screenshot
 
 🚫 DO NOT GUESS:
 - If lot_size not visible (TradingView charts), DO NOT include it
 - If profit_loss not visible, DO NOT include it  
 - If exit_price not shown, DO NOT include it
+- If no emotional cues visible, leave emotion empty
 - Accuracy over completeness - skip fields you're unsure about
 
 ✅ CONFIDENCE CHECK:
@@ -182,8 +184,9 @@ Before returning, ask yourself:
                 timeframe: { type: "string", description: "Chart timeframe if visible" },
                 session: { type: "string", description: "Trading session if identifiable" },
                 risk_reward: { type: "string", description: "Risk-reward ratio if calculable (e.g., 1:3)" },
+                emotion: { type: "string", description: "Inferred trader emotion from visible notes/text (confident/anxious/excited/frustrated/calm/fearful/greedy)" },
                 trade_timestamp: { type: "string", description: "Trade date/time in ISO format if visible" },
-                notes: { type: "string", description: "Brief context about indicators, patterns, or confluences visible in the chart" }
+                notes: { type: "string", description: "Brief context about indicators, patterns, confluences, or any trader notes visible in the chart" }
               },
               required: ["pair", "direction", "entry_price"]
             }

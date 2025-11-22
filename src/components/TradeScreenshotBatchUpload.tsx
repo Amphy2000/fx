@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Upload, Loader2, Check, X, AlertCircle, CheckCircle, ArrowUpDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ExtractedData {
   pair: string;
@@ -22,6 +26,7 @@ interface ExtractedData {
   risk_reward?: string;
   trade_timestamp?: string;
   notes?: string;
+  emotion?: string;
 }
 
 interface ProcessedTrade {
@@ -150,6 +155,21 @@ export const TradeScreenshotBatchUpload = () => {
     }));
   };
 
+  const handleFieldEdit = (tradeId: string, field: keyof ExtractedData, value: any) => {
+    setTrades(prev => prev.map(t => {
+      if (t.id === tradeId && t.extractedData) {
+        return {
+          ...t,
+          extractedData: {
+            ...t.extractedData,
+            [field]: value
+          }
+        };
+      }
+      return t;
+    }));
+  };
+
   const handleSaveTrade = async (tradeId: string) => {
     const trade = trades.find(t => t.id === tradeId);
     if (!trade || !trade.extractedData) return;
@@ -169,6 +189,7 @@ export const TradeScreenshotBatchUpload = () => {
         trade.extractedData.setup_name ? `Setup: ${trade.extractedData.setup_name}` : '',
         trade.extractedData.timeframe ? `Timeframe: ${trade.extractedData.timeframe}` : '',
         trade.extractedData.risk_reward ? `R:R: ${trade.extractedData.risk_reward}` : '',
+        trade.extractedData.emotion ? `Emotion: ${trade.extractedData.emotion}` : '',
         trade.extractedData.notes || ''
       ].filter(Boolean).join(' | ');
 
@@ -343,10 +364,10 @@ export const TradeScreenshotBatchUpload = () => {
                       )}
                     </div>
 
-                    {/* Trade Data */}
-                    <div className="flex-1 space-y-2">
+                    {/* Trade Data - Editable Form */}
+                    <div className="flex-1 space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium truncate">{trade.fileName}</span>
+                        <span className="text-xs font-medium text-muted-foreground truncate">{trade.fileName}</span>
                         {trade.status === 'ready' && (
                           <div className="flex gap-2">
                             <Button
@@ -378,7 +399,7 @@ export const TradeScreenshotBatchUpload = () => {
                       )}
 
                       {trade.status === 'extracting' && (
-                        <p className="text-sm text-muted-foreground">Extracting data...</p>
+                        <p className="text-sm text-muted-foreground">Extracting data with AI...</p>
                       )}
 
                       {trade.status === 'error' && (
@@ -389,39 +410,180 @@ export const TradeScreenshotBatchUpload = () => {
                       )}
 
                       {trade.extractedData && trade.status !== 'error' && (
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <span className="text-muted-foreground">Pair:</span>
-                            <span className="ml-2 font-medium">{trade.extractedData.pair}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Direction:</span>
-                            <span className={`ml-2 font-medium ${trade.extractedData.direction === 'buy' ? 'text-green-500' : 'text-red-500'}`}>
-                              {trade.extractedData.direction.toUpperCase()}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Entry:</span>
-                            <span className="ml-2 font-medium">{trade.extractedData.entry_price}</span>
-                          </div>
-                          {trade.extractedData.setup_name && (
-                            <div>
-                              <span className="text-muted-foreground">Setup:</span>
-                              <span className="ml-2 font-medium">{trade.extractedData.setup_name}</span>
+                        <div className="space-y-3">
+                          {/* Core Trade Fields */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Pair *</Label>
+                              <Input
+                                value={trade.extractedData.pair || ''}
+                                onChange={(e) => handleFieldEdit(trade.id, 'pair', e.target.value)}
+                                placeholder="e.g., XAUUSD"
+                                className="h-8 text-xs"
+                              />
                             </div>
-                          )}
-                          {trade.extractedData.timeframe && (
-                            <div>
-                              <span className="text-muted-foreground">Timeframe:</span>
-                              <span className="ml-2 font-medium">{trade.extractedData.timeframe}</span>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Direction *</Label>
+                              <Select
+                                value={trade.extractedData.direction}
+                                onValueChange={(value) => handleFieldEdit(trade.id, 'direction', value)}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="buy">BUY ↑</SelectItem>
+                                  <SelectItem value="sell">SELL ↓</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
-                          )}
-                          {trade.extractedData.session && (
-                            <div>
-                              <span className="text-muted-foreground">Session:</span>
-                              <span className="ml-2 font-medium">{trade.extractedData.session}</span>
+                          </div>
+
+                          {/* Price Fields */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Entry Price *</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={trade.extractedData.entry_price || ''}
+                                onChange={(e) => handleFieldEdit(trade.id, 'entry_price', parseFloat(e.target.value))}
+                                className="h-8 text-xs"
+                              />
                             </div>
-                          )}
+                            <div className="space-y-1">
+                              <Label className="text-xs">Exit Price</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={trade.extractedData.exit_price || ''}
+                                onChange={(e) => handleFieldEdit(trade.id, 'exit_price', e.target.value ? parseFloat(e.target.value) : undefined)}
+                                placeholder="If closed"
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Stop Loss</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={trade.extractedData.stop_loss || ''}
+                                onChange={(e) => handleFieldEdit(trade.id, 'stop_loss', e.target.value ? parseFloat(e.target.value) : undefined)}
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Take Profit</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={trade.extractedData.take_profit || ''}
+                                onChange={(e) => handleFieldEdit(trade.id, 'take_profit', e.target.value ? parseFloat(e.target.value) : undefined)}
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Context Fields */}
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Setup</Label>
+                              <Input
+                                value={trade.extractedData.setup_name || ''}
+                                onChange={(e) => handleFieldEdit(trade.id, 'setup_name', e.target.value)}
+                                placeholder="e.g., Breakout"
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Timeframe</Label>
+                              <Input
+                                value={trade.extractedData.timeframe || ''}
+                                onChange={(e) => handleFieldEdit(trade.id, 'timeframe', e.target.value)}
+                                placeholder="e.g., 1H"
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Session</Label>
+                              <Input
+                                value={trade.extractedData.session || ''}
+                                onChange={(e) => handleFieldEdit(trade.id, 'session', e.target.value)}
+                                placeholder="e.g., London"
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Broker Fields */}
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Lot Size</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={trade.extractedData.lot_size || ''}
+                                onChange={(e) => handleFieldEdit(trade.id, 'lot_size', e.target.value ? parseFloat(e.target.value) : undefined)}
+                                placeholder="Broker only"
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">P/L</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={trade.extractedData.profit_loss || ''}
+                                onChange={(e) => handleFieldEdit(trade.id, 'profit_loss', e.target.value ? parseFloat(e.target.value) : undefined)}
+                                placeholder="Broker only"
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Risk:Reward</Label>
+                              <Input
+                                value={trade.extractedData.risk_reward || ''}
+                                onChange={(e) => handleFieldEdit(trade.id, 'risk_reward', e.target.value)}
+                                placeholder="e.g., 1:5"
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Emotion & Notes */}
+                          <div className="space-y-1">
+                            <Label className="text-xs">Emotion</Label>
+                            <Select
+                              value={trade.extractedData.emotion || ''}
+                              onValueChange={(value) => handleFieldEdit(trade.id, 'emotion', value)}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="How did you feel?" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="confident">😊 Confident</SelectItem>
+                                <SelectItem value="anxious">😰 Anxious</SelectItem>
+                                <SelectItem value="excited">🤩 Excited</SelectItem>
+                                <SelectItem value="frustrated">😤 Frustrated</SelectItem>
+                                <SelectItem value="calm">😌 Calm</SelectItem>
+                                <SelectItem value="fearful">😨 Fearful</SelectItem>
+                                <SelectItem value="greedy">🤑 Greedy</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-1">
+                            <Label className="text-xs">AI Notes</Label>
+                            <Textarea
+                              value={trade.extractedData.notes || ''}
+                              onChange={(e) => handleFieldEdit(trade.id, 'notes', e.target.value)}
+                              placeholder="Additional context, confluences, lessons..."
+                              className="text-xs min-h-16"
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
