@@ -54,11 +54,11 @@ serve(async (req) => {
 
     switch (planType) {
       case 'pro':
-        amount = 7500;
+        amount = 499; // $4.99 in cents
         planName = 'Pro Plan';
         break;
       case 'lifetime':
-        amount = 30000;
+        amount = 1999; // $19.99 in cents
         planName = 'Lifetime Access';
         break;
       default:
@@ -78,8 +78,8 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         email,
-        amount: amount * 100,
-        currency: 'NGN',
+        amount: amount,
+        currency: 'USD',
         callback_url: callbackUrl,
         metadata: {
           user_id: user.id,

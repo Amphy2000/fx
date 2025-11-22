@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { awardCredits, CREDIT_REWARDS } from "@/utils/creditManager";
 
 export interface StreakData {
   id: string;
@@ -42,6 +43,13 @@ export async function updateStreak(
       // Check if last update was yesterday (increment)
       else if (lastUpdated === yesterdayStr) {
         newCount = existingStreak.current_count + 1;
+        
+        // Award bonus credits for streak milestones
+        if (newCount === 7) {
+          await awardCredits(userId, 'streak_milestone', CREDIT_REWARDS.streak_milestone_7, '7-day streak milestone');
+        } else if (newCount === 30) {
+          await awardCredits(userId, 'streak_milestone', CREDIT_REWARDS.streak_milestone_30, '30-day streak milestone');
+        }
       }
       // Otherwise reset to 1
       else {
@@ -100,6 +108,9 @@ export async function awardAchievement(
           achievement_name: achievementName,
           achievement_type: achievementType
         });
+      
+      // Award credits for achievement
+      await awardCredits(userId, 'achievement_unlocked', CREDIT_REWARDS.achievement_unlocked, `Achievement: ${achievementName}`);
     }
   } catch (error) {
     console.error('Error awarding achievement:', error);

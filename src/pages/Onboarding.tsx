@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { awardCredits, CREDIT_REWARDS } from "@/utils/creditManager";
 
 const OnboardingStep = ({ 
   children, 
@@ -152,6 +153,9 @@ export default function Onboarding() {
         });
 
       if (error) throw error;
+      
+      // Award credits for first check-in
+      await awardCredits(userId, 'daily_checkin', CREDIT_REWARDS.daily_checkin, 'First daily check-in completed');
       
       setCheckInComplete(true);
       toast.success("Check-in complete! Keep it up! 💪");

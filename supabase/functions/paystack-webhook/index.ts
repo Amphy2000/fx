@@ -86,10 +86,12 @@ serve(async (req) => {
         subscription_tier: subscriptionTier,
         subscription_status: 'active',
         subscription_expires_at: expiresAt,
+        monthly_trade_limit: null,
+        ai_credits: planType === 'lifetime' ? 999999 : planType === 'pro' ? 500 : 50,
       };
 
-      if (planType === 'lifetime' || planType === 'pro') {
-        updateData.monthly_trade_limit = null;
+      if (planType === 'lifetime') {
+        updateData.credits_reset_date = null; // No reset for lifetime
       }
 
       const { error: profileError } = await supabase

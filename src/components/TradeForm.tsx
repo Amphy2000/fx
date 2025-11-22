@@ -12,6 +12,7 @@ import { updateStreak, checkTradeAchievements } from "@/utils/streakManager";
 import { VoiceTradeLogger } from "@/components/VoiceTradeLogger";
 import { TradeInterceptorModal } from "@/components/TradeInterceptorModal";
 import { PreTradeChecklist } from "@/components/PreTradeChecklist";
+import { awardCredits, CREDIT_REWARDS } from "@/utils/creditManager";
 
 interface TradeFormProps {
   onTradeAdded: () => void;
@@ -289,6 +290,9 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
       
       await updateStreak(user.id, 'trade_journal');
       await checkTradeAchievements(user.id);
+      
+      // Award credit for logging trade
+      await awardCredits(user.id, 'trade_logged', CREDIT_REWARDS.trade_logged, 'Logged a new trade');
       
       onTradeAdded();
     } catch (error: any) {
