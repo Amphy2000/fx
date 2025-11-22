@@ -136,3 +136,15 @@ verify_jwt = false
 
 [functions.metaapi-sync]
 verify_jwt = false
+
+[functions.extract-trade-data]
+verify_jwt = true
+
+[functions.analyze-patterns]
+verify_jwt = true
+
+[functions.detect-behavior]
+verify_jwt = true
+
+[functions.trading-assistant]
+verify_jwt = true

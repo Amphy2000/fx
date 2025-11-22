@@ -35,6 +35,7 @@ import Onboarding from "./pages/Onboarding";
 import Achievements from "./pages/Achievements";
 import Install from "./pages/Install";
 import AbusePreventionAdmin from "./pages/AbusePreventionAdmin";
+import AIFeatures from "./pages/AIFeatures";
 import { FloatingActionMenu } from "./components/FloatingActionMenu";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const AppContent = () => {
           <Route path="/ai-journal" element={<AIJournal />} />
         <Route path="/pattern-recognition" element={<PatternRecognition />} />
         <Route path="/ai-setup-analyzer" element={<AISetupAnalyzer />} />
+        <Route path="/ai-features" element={<AIFeatures />} />
         <Route path="/journal" element={<Journal />} />
         
         <Route path="/leaderboard" element={<Leaderboard />} />
