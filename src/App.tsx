@@ -11,7 +11,6 @@ import Dashboard from "./pages/Dashboard";
 import Calculators from "./pages/Calculators";
 import WeeklySummary from "./pages/WeeklySummary";
 import AIJournal from "./pages/AIJournal";
-import Journal from "./pages/Journal";
 import Leaderboard from "./pages/Leaderboard";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
@@ -52,7 +51,6 @@ const AppContent = () => {
         <Route path="/ai-journal" element={<AIJournal />} />
         <Route path="/ai-setup-analyzer" element={<AISetupAnalyzer />} />
         <Route path="/ai-features" element={<AIFeatures />} />
-        <Route path="/journal" element={<Journal />} />
         
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/settings" element={<Settings />} />
