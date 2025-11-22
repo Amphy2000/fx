@@ -54,12 +54,19 @@ serve(async (req) => {
     
     console.log('User authenticated:', user.id);
 
-    // Check credits (cost: 15 credits)
-    const { data: profile } = await supabaseClient
+    // Check credits (cost: 15 credits) - use service role to bypass RLS
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+    
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('ai_credits')
       .eq('id', user.id)
       .single();
+      
+    console.log('Profile data:', profile, 'Error:', profileError);
       
     const ANALYSIS_COST = 15;
     if (!profile || profile.ai_credits < ANALYSIS_COST) {
@@ -185,12 +192,7 @@ Identify the top 5 most important patterns. For each pattern provide:
     const toolCall = data.choices[0].message.tool_calls?.[0];
     const patterns = toolCall ? JSON.parse(toolCall.function.arguments).patterns : [];
     
-    // Store patterns in database
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
+    // Store patterns in database (reuse admin client)
     for (const pattern of patterns) {
       await supabaseAdmin.from('trade_patterns').insert({
         user_id: user.id,
