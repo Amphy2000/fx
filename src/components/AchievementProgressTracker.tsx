@@ -65,6 +65,12 @@ export default function AchievementProgressTracker({
     const totalTrades = allTrades.length;
     const wins = allTrades.filter(t => t.result === 'win').length;
     const winRate = totalTrades > 0 ? wins / totalTrades * 100 : 0;
+    
+    // Count validation achievements
+    const validationCount = Array.from(earned).filter(name => 
+      name.includes('Validation')
+    ).length;
+
     const achievementsList: Achievement[] = [
     // Milestone Achievements
     {
@@ -152,6 +158,37 @@ export default function AchievementProgressTracker({
       requirement: 14,
       currentProgress: Math.min(streaksMap['trade_journal']?.current_count || 0, 14),
       isUnlocked: streaksMap['trade_journal']?.current_count >= 14
+    },
+    // Validation Achievements
+    {
+      id: 'first_validation',
+      name: 'Wise Trader',
+      description: 'Use trade validator for the first time',
+      icon: '🧠',
+      type: 'milestone',
+      requirement: 1,
+      currentProgress: validationCount,
+      isUnlocked: earned.has('First Validation')
+    },
+    {
+      id: 'validation_10',
+      name: 'Risk Manager',
+      description: 'Validate 10 trades',
+      icon: '🛡️',
+      type: 'milestone',
+      requirement: 10,
+      currentProgress: validationCount,
+      isUnlocked: earned.has('10 Validations')
+    },
+    {
+      id: 'validation_50',
+      name: 'Master Analyst',
+      description: 'Validate 50 trades',
+      icon: '🏆',
+      type: 'milestone',
+      requirement: 50,
+      currentProgress: validationCount,
+      isUnlocked: earned.has('50 Validations')
     }];
     setAchievements(achievementsList);
   };
