@@ -22,10 +22,32 @@ export const PatternsDashboard = () => {
   const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
+  const [tradesCount, setTradesCount] = useState<number>(0);
 
   useEffect(() => {
     loadPatterns();
+    loadTradesCount();
   }, []);
+  
+  const loadTradesCount = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+      const { count } = await supabase
+        .from('trades')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', ninetyDaysAgo.toISOString());
+
+      setTradesCount(count || 0);
+    } catch (error) {
+      console.error('Error loading trades count:', error);
+    }
+  };
 
   const loadPatterns = async () => {
     try {
@@ -126,7 +148,7 @@ export const PatternsDashboard = () => {
             <Sparkles className="w-5 h-5 text-primary" />
             <h3 className="font-semibold">AI Pattern Analysis</h3>
           </div>
-          <Button onClick={runAnalysis} disabled={analyzing}>
+          <Button onClick={runAnalysis} disabled={analyzing || tradesCount < 5}>
             {analyzing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {analyzing ? 'Analyzing...' : 'Run Analysis'}
           </Button>
@@ -135,8 +157,21 @@ export const PatternsDashboard = () => {
         {patterns.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <p>No patterns analyzed yet.</p>
-            <p className="text-sm mt-2">Click "Run Analysis" to discover your trading patterns!</p>
-            <p className="text-xs mt-4">💎 Cost: 15 AI credits</p>
+            {tradesCount < 5 ? (
+              <>
+                <p className="text-sm mt-2 text-amber-500">
+                  You need at least 5 trades in the last 90 days to analyze patterns.
+                </p>
+                <p className="text-xs mt-2">
+                  Current trades: {tradesCount}/5
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm mt-2">Click "Run Analysis" to discover your trading patterns!</p>
+                <p className="text-xs mt-4">💎 Cost: 15 AI credits</p>
+              </>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
