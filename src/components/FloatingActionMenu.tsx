@@ -6,8 +6,6 @@ import {
   MessageSquare, 
   X,
   TrendingUp,
-  BookOpen,
-  Download,
   Sparkles
 } from "lucide-react";
 import { GlobalVoiceAssistant } from "./GlobalVoiceAssistant";
@@ -36,19 +34,10 @@ export const FloatingActionMenu = () => {
       icon: TrendingUp,
       label: "Log Trade",
       action: () => {
-        navigate("/dashboard?action=add-trade");
+        navigate("/ai-features");
         setIsOpen(false);
       },
       color: "bg-green-600 hover:bg-green-700"
-    },
-    {
-      icon: BookOpen,
-      label: "Journal Entry",
-      action: () => {
-        navigate("/journal?action=new");
-        setIsOpen(false);
-      },
-      color: "bg-blue-600 hover:bg-blue-700"
     },
     {
       icon: Sparkles,
