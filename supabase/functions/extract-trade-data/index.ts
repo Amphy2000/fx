@@ -88,42 +88,85 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        messages: [
-          { 
-            role: "system", 
-            content: "You are a forex trading screenshot analyzer. Extract all visible trading data." 
-          },
-          { 
-            role: "user", 
-            content: [
-              {
-                type: "text",
-                text: "Analyze this forex trading screenshot and extract all visible data."
-              },
-              {
-                type: "image_url",
-                image_url: { url: imageUrl }
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `You are a professional trading chart analyst with expertise in identifying trade directions. Extract ALL visible trading information from this screenshot with extreme precision.
+
+🎯 CRITICAL DIRECTION DETECTION RULES:
+LONG/BUY Indicators:
+- Green/bullish candles dominating
+- Entry level is BELOW the current price
+- Upward arrows or "BUY" text visible
+- Support level entries
+- The word "Long" or "Buy" visible
+- Bullish chart patterns
+
+SHORT/SELL Indicators:
+- Red/bearish candles dominating
+- Entry level is ABOVE the current price
+- Downward arrows or "SELL" text visible
+- Resistance level entries
+- The word "Short" or "Sell" visible
+- Bearish chart patterns
+
+⚠️ MAPPING: "Long" → "buy" | "Short" → "sell"
+
+📊 EXTRACTION REQUIREMENTS (extract ALL visible data):
+1. pair: Currency pair (e.g., "EURUSD", "GBPJPY")
+2. direction: MUST be "buy" or "sell" (NOT "long" or "short")
+3. entry_price: Exact entry price number
+4. stop_loss: Stop loss price (if visible)
+5. take_profit: Take profit price (if visible)
+6. exit_price: Exit price if closed trade (if visible)
+7. lot_size: Position size in lots/volume (if visible)
+8. profit_loss: Profit or loss amount (if visible)
+9. setup_name: Trading setup type (e.g., "Support Bounce", "Breakout", "Trendline Break", "Supply/Demand", "Moving Average Cross")
+10. timeframe: Chart timeframe (e.g., "1H", "4H", "Daily", "15M", "1M")
+11. session: Trading session (e.g., "London", "New York", "Asian", "Sydney", "London/NY Overlap")
+12. risk_reward: Risk-reward ratio if calculable (e.g., "1:3", "1:2")
+13. trade_timestamp: Date/time of trade if visible (ISO format: YYYY-MM-DDTHH:mm:ss)
+14. notes: Any additional context - indicators, confluences, market conditions, patterns observed
+
+🎯 ACCURACY RULES:
+- Double-check direction by analyzing multiple indicators
+- Be precise with all numerical values
+- If data is not clearly visible, omit the field
+- Never guess - accuracy over completeness
+- Look for text labels, arrows, colors to confirm direction`
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: imageUrl
               }
-            ]
-          }
-        ],
+            }
+          ]
+        }],
         tools: [{
           type: "function",
           function: {
             name: "extract_trade_data",
-            description: "Extract trading data from screenshot",
+            description: "Extract comprehensive trading data from a chart screenshot with enhanced fields",
             parameters: {
               type: "object",
               properties: {
-                pair: { type: "string", description: "Currency pair (e.g., EUR/USD)" },
-                direction: { type: "string", enum: ["long", "short"] },
-                entry_price: { type: "number" },
-                exit_price: { type: "number", description: "Exit price if visible, null if still open" },
-                stop_loss: { type: "number", description: "Stop loss if visible" },
-                take_profit: { type: "number", description: "Take profit if visible" },
-                lot_size: { type: "number", description: "Trade volume/lot size" },
-                profit_loss: { type: "number", description: "P&L if visible" },
-                timestamp: { type: "string", description: "Trade timestamp if visible" }
+                pair: { type: "string", description: "Currency pair (e.g., EURUSD)" },
+                direction: { type: "string", enum: ["buy", "sell"], description: "Trade direction - MUST be buy or sell only" },
+                entry_price: { type: "number", description: "Entry price" },
+                stop_loss: { type: "number", description: "Stop loss price" },
+                take_profit: { type: "number", description: "Take profit price" },
+                exit_price: { type: "number", description: "Exit price if trade is closed" },
+                lot_size: { type: "number", description: "Position size in lots" },
+                profit_loss: { type: "number", description: "Profit or loss amount" },
+                setup_name: { type: "string", description: "Trading setup name/type" },
+                timeframe: { type: "string", description: "Chart timeframe" },
+                session: { type: "string", description: "Trading session" },
+                risk_reward: { type: "string", description: "Risk-reward ratio (e.g., 1:3)" },
+                trade_timestamp: { type: "string", description: "Trade date/time in ISO format" },
+                notes: { type: "string", description: "Additional context and observations" }
               },
               required: ["pair", "direction", "entry_price"]
             }
