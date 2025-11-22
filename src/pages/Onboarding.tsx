@@ -4,9 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { TrendingUp, Heart, Plug, CheckCircle2, ArrowRight, X } from "lucide-react";
+import { TrendingUp, Heart, Plug, CheckCircle2, ArrowRight, X, Brain, Camera, Mic } from "lucide-react";
 import { toast } from "sonner";
-import TradeForm from "@/components/TradeForm";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
@@ -43,7 +42,6 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
-  const [tradeLogged, setTradeLogged] = useState(false);
   const [checkInComplete, setCheckInComplete] = useState(false);
   const [mt5Connected, setMt5Connected] = useState(false);
 
@@ -103,7 +101,7 @@ export default function Onboarding() {
       .from('profiles')
       .update({ 
         onboarding_completed: true,
-        onboarding_step: 5
+        onboarding_step: 4
       })
       .eq('id', userId);
     
@@ -123,7 +121,7 @@ export default function Onboarding() {
         .from('profiles')
         .update({ 
           onboarding_completed: true,
-          onboarding_step: 5 
+          onboarding_step: 4 
         })
         .eq('id', userId);
       
@@ -137,10 +135,6 @@ export default function Onboarding() {
     }
   };
 
-  const handleTradeAdded = () => {
-    setTradeLogged(true);
-    toast.success("Great job! Your first trade is logged! 📊");
-  };
 
   const handleCheckInSubmit = async () => {
     if (!userId) return;
@@ -202,7 +196,7 @@ export default function Onboarding() {
     toast.info("Step skipped");
   };
 
-  const progress = ((currentStep + 1) / 5) * 100;
+  const progress = ((currentStep + 1) / 4) * 100;
 
   const steps = [
     // Step 0: Welcome
@@ -217,11 +211,11 @@ export default function Onboarding() {
           <div className="space-y-4">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <TrendingUp className="h-5 w-5 text-primary" />
+                <Brain className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground mb-1">Track Every Trade</h3>
-                <p className="text-sm text-muted-foreground">Journal your trades with AI-powered insights and pattern recognition</p>
+                <h3 className="font-semibold text-foreground mb-1">AI-Powered Trade Logging</h3>
+                <p className="text-sm text-muted-foreground">Voice or Screenshot - AI extracts all details automatically</p>
               </div>
             </div>
             
@@ -259,49 +253,58 @@ export default function Onboarding() {
       </Card>
     </OnboardingStep>,
 
-    // Step 1: Log First Trade
+    // Step 1: AI Trade Logging
     <OnboardingStep
-      key="trade"
-      icon={TrendingUp}
-      title="Log Your First Trade"
-      description="Start building your trading journal by recording your first trade"
+      key="ai-logging"
+      icon={Brain}
+      title="AI-Powered Trade Logging"
+      description="Log trades instantly with Voice or Screenshots - no manual forms!"
     >
       <Card className="border-border/50">
-        <CardContent className="p-6">
-          {!tradeLogged ? (
-            <>
-              <div className="mb-4 p-4 bg-primary/10 border border-primary/20 rounded-lg">
-                <p className="text-sm text-foreground">
-                  <strong>Tip:</strong> Include as much detail as possible. The more you log, the better insights you'll receive!
-                </p>
-              </div>
-              <TradeForm onTradeAdded={handleTradeAdded} />
-              <div className="mt-4 flex justify-end">
-                <Button onClick={skipStep} variant="outline" size="sm">
-                  Skip this step
-                </Button>
-              </div>
-            </>
-          ) : (
-            <div className="text-center py-8 space-y-4">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/10">
-                <CheckCircle2 className="h-8 w-8 text-green-500" />
+        <CardContent className="p-6 space-y-6">
+          <div className="mb-4 p-4 bg-primary/10 border border-primary/20 rounded-lg">
+            <p className="text-sm text-foreground">
+              <strong>Smart Logging:</strong> Use AI Features to log trades faster - Voice or Screenshot extraction!
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-start gap-4 p-4 border rounded-lg">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Mic className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">Trade Logged Successfully!</h3>
-                <p className="text-muted-foreground">You're building great trading habits already</p>
-              </div>
-              <div className="flex gap-3">
-                <Button onClick={skipStep} variant="outline" size="lg" className="flex-1">
-                  Skip
-                </Button>
-                <Button onClick={nextStep} size="lg" className="flex-1">
-                  Continue
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                <h4 className="font-semibold mb-1">Voice Logger</h4>
+                <p className="text-sm text-muted-foreground">
+                  Simply speak: "Long EUR/USD at 1.0850, stop 1.0800, target 1.0950, feeling confident"
+                </p>
               </div>
             </div>
-          )}
+
+            <div className="flex items-start gap-4 p-4 border rounded-lg">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Camera className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-semibold mb-1">Screenshot Upload</h4>
+                <p className="text-sm text-muted-foreground">
+                  Upload screenshots - AI extracts all trade details automatically
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button onClick={skipStep} variant="outline" size="lg" className="flex-1">
+              Skip
+            </Button>
+            <Button onClick={() => {
+              navigate("/ai-features");
+            }} size="lg" className="flex-1">
+              Try AI Features
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </OnboardingStep>,

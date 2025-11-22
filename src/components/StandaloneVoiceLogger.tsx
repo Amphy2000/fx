@@ -1,0 +1,290 @@
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Mic, MicOff, Loader2, Sparkles, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
+
+// Extend Window interface for Speech Recognition
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
+
+export const StandaloneVoiceLogger = () => {
+  const [isRecording, setIsRecording] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [transcript, setTranscript] = useState("");
+  const [isSupported, setIsSupported] = useState(true);
+  const [savedTrade, setSavedTrade] = useState<any>(null);
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setIsSupported(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event: any) => {
+      const result = event.results[0][0].transcript;
+      setTranscript(result);
+      setIsRecording(false);
+      setTimeout(() => processTranscript(result), 100);
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error:', event.error);
+      if (event.error === 'no-speech') {
+        toast.error("No speech detected", { description: "Please try speaking again" });
+      } else if (event.error !== 'aborted') {
+        toast.error("Speech recognition error", { description: event.error });
+      }
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => setIsRecording(false);
+    recognitionRef.current = recognition;
+
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          // Ignore if already stopped
+        }
+      }
+    };
+  }, []);
+
+  const startRecording = async () => {
+    if (!isSupported) {
+      toast.error("Speech recognition not supported", {
+        description: "Try using Chrome, Edge, or Safari"
+      });
+      return;
+    }
+
+    try {
+      setTranscript("");
+      setIsProcessing(false);
+      setSavedTrade(null);
+      recognitionRef.current.start();
+      setIsRecording(true);
+      toast.success("Listening...", {
+        description: "Speak your trade details clearly"
+      });
+    } catch (error) {
+      console.error("Error starting recognition:", error);
+      toast.error("Could not start recording");
+    }
+  };
+
+  const stopRecording = () => {
+    if (recognitionRef.current && isRecording) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        console.error("Error stopping recognition:", e);
+      }
+      setIsRecording(false);
+    }
+  };
+
+  const processTranscript = async (text: string) => {
+    if (!text.trim()) {
+      toast.error("No speech detected", { description: "Please try again and speak clearly" });
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // Parse voice to trade data
+      const { data: parseData, error: parseError } = await supabase.functions.invoke('parse-voice-trade', {
+        body: { transcript: text }
+      });
+
+      if (parseError) {
+        if ((parseError as any)?.status === 402) {
+          toast.error("Insufficient credits", {
+            description: "You need credits to parse voice trades. Upgrade to continue.",
+            action: {
+              label: "Upgrade",
+              onClick: () => window.location.href = "/pricing"
+            }
+          });
+          return;
+        }
+        throw parseError;
+      }
+
+      if (!parseData?.tradeData) {
+        throw new Error("No trade data extracted");
+      }
+
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const tradeData = parseData.tradeData;
+
+      // Save trade directly to database
+      const { data: trade, error: insertError } = await supabase
+        .from('trades')
+        .insert({
+          user_id: user.id,
+          pair: tradeData.pair,
+          direction: tradeData.direction,
+          entry_price: tradeData.entry_price,
+          stop_loss: tradeData.stop_loss,
+          take_profit: tradeData.take_profit,
+          exit_price: tradeData.exit_price,
+          profit_loss: tradeData.profit_loss,
+          result: tradeData.result,
+          emotion_before: tradeData.emotion_before,
+          emotion_after: tradeData.emotion_after,
+          notes: tradeData.notes,
+          lot_size: tradeData.lot_size,
+          risk_reward: tradeData.risk_reward,
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      setSavedTrade(trade);
+      toast.success("Trade logged successfully! 🎉", {
+        description: `${tradeData.direction} ${tradeData.pair} saved`
+      });
+
+      // Trigger AI analysis in background
+      supabase.functions.invoke('analyze-trade', {
+        body: { tradeId: trade.id }
+      }).catch(console.error);
+
+    } catch (error: any) {
+      console.error("Error processing voice trade:", error);
+      toast.error("Failed to save trade", {
+        description: error.message || "Please try again"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  if (!isSupported) {
+    return (
+      <Card className="border-destructive/20 bg-destructive/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-destructive">
+            <MicOff className="h-5 w-5" />
+            Voice Recognition Unavailable
+          </CardTitle>
+          <CardDescription>
+            Your browser doesn't support speech recognition. Please use Chrome, Edge, or Safari.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="border-primary/20">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Mic className="h-5 w-5 text-primary" />
+              Voice Trade Logger
+            </CardTitle>
+            <CardDescription>
+              Speak your trade details - AI saves it automatically
+            </CardDescription>
+          </div>
+          <Badge variant="outline" className="gap-1 bg-primary/10 text-primary border-primary/20">
+            <Sparkles className="h-3 w-3" />
+            5 credits
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {!savedTrade ? (
+          <>
+            <div className="flex gap-2">
+              <Button
+                onClick={isRecording ? stopRecording : startRecording}
+                disabled={isProcessing}
+                variant={isRecording ? "destructive" : "default"}
+                className="flex-1"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing & Saving...
+                  </>
+                ) : isRecording ? (
+                  <>
+                    <MicOff className="mr-2 h-4 w-4" />
+                    Stop Recording
+                  </>
+                ) : (
+                  <>
+                    <Mic className="mr-2 h-4 w-4" />
+                    Start Recording
+                  </>
+                )}
+              </Button>
+            </div>
+
+            <div className="p-3 bg-muted/50 rounded-lg border border-border/50">
+              <p className="text-xs font-semibold mb-2 text-foreground">Example phrases:</p>
+              <ul className="text-xs space-y-1 text-muted-foreground">
+                <li>• "Long EUR/USD at 1.0850, stop 1.0800, target 1.0950, feeling confident"</li>
+                <li>• "Sold gold at 2050, stop 2060, closed at 2031, made 380 dollars, anxious before, relieved after winning"</li>
+                <li>• "Bought GBP/USD 1.2650, stop 1.2620, exited at 1.2615, lost 70 bucks, felt impulsive before"</li>
+              </ul>
+              <p className="text-xs mt-2 text-muted-foreground italic">
+                Tip: Mention pair, direction, prices, result (win/loss), emotions, and notes
+              </p>
+            </div>
+
+            {transcript && !isProcessing && (
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm font-medium mb-1">Transcript:</p>
+                <p className="text-sm text-muted-foreground">{transcript}</p>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-center py-8 space-y-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/10">
+              <CheckCircle2 className="h-8 w-8 text-green-500" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-2">Trade Logged!</h3>
+              <p className="text-muted-foreground">
+                {savedTrade.direction} {savedTrade.pair} saved successfully
+              </p>
+            </div>
+            <Button onClick={() => {
+              setSavedTrade(null);
+              setTranscript("");
+            }} className="w-full">
+              Log Another Trade
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};

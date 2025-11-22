@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
-import TradeForm from "@/components/TradeForm";
 import TradesList from "@/components/TradesList";
 import { ConsentModal } from "@/components/ConsentModal";
 import { CreditsDisplay } from "@/components/CreditsDisplay";
@@ -52,7 +51,7 @@ const Dashboard = () => {
     worstTrade: 0
   });
   // Swipe gesture handling
-  const tabs = ["overview", "analytics", "trades", "voice", "comparison"];
+  const tabs = ["overview", "analytics", "trades", "comparison"];
   const minSwipeDistance = 50;
 
   const onTouchStart = (e: React.TouchEvent) => {
@@ -105,21 +104,8 @@ const Dashboard = () => {
       if (!session) navigate("/auth");else setUser(session.user);
     });
 
-    // Listen for custom event to open trade form
-    const handleOpenTradeForm = () => {
-      setActiveTab("trades");
-    };
-    window.addEventListener('open-trade-form', handleOpenTradeForm);
-
-    // Check URL params for action
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('action') === 'add-trade') {
-      setActiveTab("trades");
-    }
-
     return () => {
       subscription.unsubscribe();
-      window.removeEventListener('open-trade-form', handleOpenTradeForm);
     };
   }, [navigate]);
   const fetchProfile = async (userId: string) => {
@@ -341,7 +327,7 @@ const Dashboard = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto text-xs md:text-sm">
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto text-xs md:text-sm">
             <TabsTrigger value="overview" className="px-2 md:px-4">
               <BarChart3 className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
               <span className="hidden sm:inline">Overview</span>
@@ -353,10 +339,6 @@ const Dashboard = () => {
             <TabsTrigger value="trades" className="px-2 md:px-4">
               <Activity className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
               <span className="hidden sm:inline">Trades</span>
-            </TabsTrigger>
-            <TabsTrigger value="voice" className="px-2 md:px-4">
-              <Brain className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
-              <span className="hidden sm:inline">Voice</span>
             </TabsTrigger>
             <TabsTrigger value="comparison" className="px-2 md:px-4">
               <Target className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
@@ -391,12 +373,21 @@ const Dashboard = () => {
             </TabsContent>
 
             <TabsContent value="trades" className="space-y-4 md:space-y-6 mt-4 md:mt-6 animate-fade-in w-full">
-              <TradeForm onTradeAdded={handleTradeAdded} />
-              <TradesList trades={trades} onTradeDeleted={handleTradeAdded} />
-            </TabsContent>
-
-            <TabsContent value="voice" className="space-y-4 md:space-y-6 mt-4 md:mt-6 animate-fade-in w-full">
-              <VoiceCommands onCommandExecuted={handleTradeAdded} />
+              <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+                <CardContent className="p-6 text-center space-y-4">
+                  <Brain className="h-12 w-12 mx-auto text-primary" />
+                  <div>
+                    <h3 className="text-xl font-semibold mb-2">AI-Powered Trade Logging</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Log trades faster with Voice or Screenshot AI - no manual forms needed!
+                    </p>
+                  </div>
+                  <Button onClick={() => navigate("/ai-features")} size="lg" className="gap-2">
+                    <Brain className="h-4 w-4" />
+                    Go to AI Features
+                  </Button>
+                </CardContent>
+              </Card>
               <TradesList trades={trades} onTradeDeleted={handleTradeAdded} />
             </TabsContent>
 
