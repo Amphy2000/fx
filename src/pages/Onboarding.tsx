@@ -328,16 +328,9 @@ export default function Onboarding() {
             </div>
           </div>
 
-          <div className="flex gap-3">
-            <Button onClick={skipStep} variant="outline" size="lg" className="flex-1">
-              Skip
-            </Button>
-            <Button onClick={() => {
-              navigate("/ai-features");
-            }} size="lg" className="flex-1">
-              Try AI Features
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+          <div className="flex justify-between">
+            <Button variant="outline" onClick={skipStep}>Skip</Button>
+            <Button onClick={nextStep}>Continue</Button>
           </div>
         </CardContent>
       </Card>
