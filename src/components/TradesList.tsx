@@ -390,10 +390,10 @@ const TradesList = ({ trades, onTradeDeleted }: TradesListProps) => {
                     ) : (
                       <TrendingDown className="h-3 w-3 mr-1" />
                     )}
-                    {trade.direction.toUpperCase()}
+                    {trade.direction?.toUpperCase() ?? 'N/A'}
                   </Badge>
                   <Badge className={getResultColor(trade.result)}>
-                    {trade.result.toUpperCase()}
+                    {trade.result?.toUpperCase() ?? 'PENDING'}
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
