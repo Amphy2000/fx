@@ -13,7 +13,10 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+    
     if (!authHeader) {
+      console.error('No authorization header provided');
       return new Response(JSON.stringify({ error: 'No authorization header' }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -21,22 +24,35 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
+    console.log('Token extracted, length:', token.length);
+    
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
-    if (authError || !user) {
+    
+    if (authError) {
       console.error('Auth error:', authError);
       return new Response(JSON.stringify({ 
         error: 'Unauthorized', 
-        details: authError?.message 
+        details: authError.message 
       }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    
+    if (!user) {
+      console.error('No user found from token');
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    
+    console.log('User authenticated:', user.id);
 
     // Check credits (cost: 15 credits)
     const { data: profile } = await supabaseClient

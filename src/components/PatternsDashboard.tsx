@@ -56,32 +56,30 @@ export const PatternsDashboard = () => {
       setAnalyzing(true);
       
       // Check if user is authenticated
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
         toast.error('Please log in to analyze patterns');
         return;
       }
       
-      const { data, error } = await supabase.functions.invoke('analyze-patterns', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
-      });
+      console.log('Calling analyze-patterns function...');
+      const { data, error } = await supabase.functions.invoke('analyze-patterns');
 
       if (error) {
         console.error('Function invocation error:', error);
-        if (error.message.includes('Insufficient credits')) {
+        if (error.message?.includes('Insufficient credits')) {
           toast.error('Insufficient AI credits. Please upgrade your plan.');
-        } else if (error.message.includes('Not enough trade data')) {
+        } else if (error.message?.includes('Not enough trade data')) {
           toast.error('Need at least 5 trades to analyze patterns');
-        } else if (error.message.includes('Unauthorized')) {
-          toast.error('Authentication error. Please log in again.');
+        } else if (error.message?.includes('Unauthorized')) {
+          toast.error('Authentication error. Please refresh and try again.');
         } else {
-          throw error;
+          toast.error('Failed to analyze patterns. Please try again.');
         }
         return;
       }
 
+      console.log('Analysis successful:', data);
       toast.success(`Found ${data.patterns.length} patterns from ${data.trades_analyzed} trades!`);
       await loadPatterns();
     } catch (error: any) {
