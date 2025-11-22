@@ -31,6 +31,7 @@ import { MentalStateCheckIn } from "@/components/MentalStateCheckIn";
 import { MentalStateCorrelationCard } from "@/components/MentalStateCorrelationCard";
 import { ValidationInsights } from "@/components/ValidationInsights";
 import { PsychologyFirstBanner } from "@/components/PsychologyFirstBanner";
+import { SubscriptionBanner } from "@/components/SubscriptionBanner";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -358,6 +359,7 @@ const Dashboard = () => {
             className="touch-pan-y w-full"
           >
             <TabsContent value="overview" className="space-y-4 md:space-y-6 mt-4 md:mt-6 animate-fade-in w-full">
+              {profile && <SubscriptionBanner profile={profile} />}
               <PsychologyFirstBanner />
               <FreeTierLimitWarning />
               <MentalStateCheckIn />

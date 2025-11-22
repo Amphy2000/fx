@@ -68,7 +68,7 @@ serve(async (req) => {
         );
     }
 
-    const callbackUrl = `${req.headers.get('origin')}/dashboard`;
+    const callbackUrl = `${req.headers.get('origin')}/dashboard?payment=success`;
 
     const paystackResponse = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
