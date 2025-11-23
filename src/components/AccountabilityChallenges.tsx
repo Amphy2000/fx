@@ -287,6 +287,13 @@ export default function AccountabilityChallenges() {
                       goal_criteria: { target: parseInt(e.target.value) }
                     })}
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {newChallenge.challenge_type === 'streak' && 'Number of consecutive days to trade'}
+                    {newChallenge.challenge_type === 'win_rate' && 'Target win rate percentage (e.g., 70 for 70%)'}
+                    {newChallenge.challenge_type === 'profit_target' && 'Target profit amount in your currency'}
+                    {newChallenge.challenge_type === 'consistency' && 'Number of days to maintain consistent trading'}
+                    {newChallenge.challenge_type === 'custom' && 'Your custom target metric'}
+                  </p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
