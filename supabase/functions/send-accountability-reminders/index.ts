@@ -60,6 +60,7 @@ Deno.serve(async (req) => {
             partnership_id: partnership.id,
             sender_id: partnership.user_id === goal.user_id ? partnership.partner_id : partnership.user_id,
             message_type: 'system',
+            is_system: true,
             content: `⏰ Reminder: Time to check in on your goal "${goal.goal_text}"`,
             metadata: {
               type: 'goal_reminder',
@@ -86,6 +87,7 @@ Deno.serve(async (req) => {
             partnership_id: partnership.id,
             sender_id: partnership.partner_id,
             message_type: 'system',
+            is_system: true,
             content: `👋 Hey! Your accountability partner might need some encouragement. Send them a message!`,
             metadata: { type: 'engagement_reminder' },
           }),
@@ -93,6 +95,7 @@ Deno.serve(async (req) => {
             partnership_id: partnership.id,
             sender_id: partnership.user_id,
             message_type: 'system',
+            is_system: true,
             content: `👋 Hey! Your accountability partner might need some encouragement. Send them a message!`,
             metadata: { type: 'engagement_reminder' },
           }),
@@ -114,6 +117,7 @@ Deno.serve(async (req) => {
           partnership_id: partnership.id,
           sender_id: partnership.user_id === goal.user_id ? partnership.partner_id : partnership.user_id,
           message_type: 'system',
+          is_system: true,
           content: `⚠️ Goal overdue: "${goal.goal_text}" - Time to update the status!`,
           metadata: {
             type: 'overdue_goal',
