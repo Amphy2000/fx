@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Mail, Send, Loader2, Calendar, CheckCircle2 } from "lucide-react";
@@ -8,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 
 export const WeeklySummaryEmailManager = () => {
   const [isSending, setIsSending] = useState(false);
+  const [isSendingTest, setIsSendingTest] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
   const [lastRun, setLastRun] = useState<any>(null);
 
   const handleSendWeeklySummaries = async () => {
@@ -37,6 +40,30 @@ export const WeeklySummaryEmailManager = () => {
       });
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleSendTest = async () => {
+    if (!testEmail || !testEmail.includes('@')) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    setIsSendingTest(true);
+    try {
+      const { error } = await supabase.functions.invoke('send-test-weekly-summary', {
+        body: { email: testEmail }
+      });
+
+      if (error) throw error;
+      
+      toast.success(`Test weekly summary sent to ${testEmail}`);
+      setTestEmail('');
+    } catch (error: any) {
+      console.error('Error sending test email:', error);
+      toast.error(error.message || "Failed to send test email");
+    } finally {
+      setIsSendingTest(false);
     }
   };
 
@@ -74,13 +101,50 @@ export const WeeklySummaryEmailManager = () => {
           </div>
         </div>
 
+        {/* Test Email */}
+        <div className="space-y-3 border-b pb-4">
+          <div>
+            <h4 className="font-semibold text-sm">Send Test Email</h4>
+            <p className="text-xs text-muted-foreground">
+              Preview the weekly summary email with sample data
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Input
+              type="email"
+              placeholder="Enter email address"
+              value={testEmail}
+              onChange={(e) => setTestEmail(e.target.value)}
+              className="flex-1"
+            />
+            <Button
+              onClick={handleSendTest}
+              disabled={isSendingTest || !testEmail}
+              className="gap-2"
+              variant="outline"
+            >
+              {isSendingTest ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4" />
+                  Send Test
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+
         {/* Manual Trigger */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-semibold text-sm">Manual Send</h4>
+              <h4 className="font-semibold text-sm">Manual Send to All Users</h4>
               <p className="text-xs text-muted-foreground">
-                Test the weekly summary or send it manually
+                Send weekly summaries to all eligible users now
               </p>
             </div>
             <Button
@@ -96,7 +160,7 @@ export const WeeklySummaryEmailManager = () => {
               ) : (
                 <>
                   <Send className="h-4 w-4" />
-                  Send Now
+                  Send to All
                 </>
               )}
             </Button>
