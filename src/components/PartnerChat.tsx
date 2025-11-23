@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, Mic, MicOff, Heart, Flame, ThumbsUp, PartyPopper } from "lucide-react";
+import { Mic, MicOff, Send, ThumbsUp, PartyPopper, Heart, Flame, MessageSquare, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -29,7 +29,8 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
   useEffect(() => {
     loadMessages();
     getCurrentUser();
-    setupRealtimeSubscription();
+    const cleanup = setupRealtimeSubscription();
+    return cleanup;
   }, [partnershipId]);
 
   useEffect(() => {
@@ -77,6 +78,20 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
       )
       .subscribe();
 
+    // Subscribe to message reactions
+    const reactionsChannel = supabase
+      .channel(`reactions:${partnershipId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'message_reactions'
+        },
+        () => loadMessages()
+      )
+      .subscribe();
+
     // Subscribe to typing indicators
     const typingChannel = supabase
       .channel(`typing:${partnershipId}`)
@@ -109,6 +124,7 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
 
     return () => {
       supabase.removeChannel(messageChannel);
+      supabase.removeChannel(reactionsChannel);
       supabase.removeChannel(typingChannel);
     };
   };
@@ -228,6 +244,40 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
     return icons[type] || Heart;
   };
 
+  const handleEditMessage = async (messageId: string, newContent: string) => {
+    try {
+      const { error } = await supabase
+        .from('partner_messages')
+        .update({ content: newContent, updated_at: new Date().toISOString() })
+        .eq('id', messageId)
+        .eq('sender_id', currentUserId);
+
+      if (error) throw error;
+      toast.success("Message updated");
+      loadMessages();
+    } catch (error: any) {
+      console.error('Error editing message:', error);
+      toast.error("Failed to edit message");
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('partner_messages')
+        .delete()
+        .eq('id', messageId)
+        .eq('sender_id', currentUserId);
+
+      if (error) throw error;
+      toast.success("Message deleted");
+      loadMessages();
+    } catch (error: any) {
+      console.error('Error deleting message:', error);
+      toast.error("Failed to delete message");
+    }
+  };
+
   return (
     <Card className="h-[600px] flex flex-col">
       <CardHeader className="border-b">
@@ -246,62 +296,117 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
           <div className="space-y-4">
             {messages.map((message) => {
               const isOwn = message.sender_id === currentUserId;
-              return (
-                <div
-                  key={message.id}
-                  className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}
-                >
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback>
-                      {(message.sender?.full_name || message.sender?.email || '?').substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  
-                  <div className={`flex-1 max-w-[70%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
-                    <div className={`rounded-lg p-3 ${isOwn ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                      <p className="text-sm">{message.content}</p>
-                    </div>
+              const MessageComponent = () => {
+                const [isEditing, setIsEditing] = useState(false);
+                const [editContent, setEditContent] = useState(message.content);
+                
+                return (
+                  <div
+                    key={message.id}
+                    className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}
+                  >
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>
+                        {(message.sender?.full_name || message.sender?.email || '?').substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
                     
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-                      </span>
-                      
-                      {!isOwn && (
-                        <div className="flex gap-1">
-                          {['heart', 'fire', 'thumbs_up'].map((type) => {
-                            const Icon = getReactionIcon(type);
-                            return (
-                              <button
-                                key={type}
-                                onClick={() => handleReaction(message.id, type)}
-                                className="p-1 hover:bg-muted rounded opacity-50 hover:opacity-100 transition-opacity"
-                              >
-                                <Icon className="h-3 w-3" />
-                              </button>
-                            );
-                          })}
+                    <div className={`flex-1 max-w-[70%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
+                      {isEditing ? (
+                        <div className="flex gap-2 w-full">
+                          <Input
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            className="flex-1"
+                          />
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              handleEditMessage(message.id, editContent);
+                              setIsEditing(false);
+                            }}
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setIsEditing(false)}
+                          >
+                            Cancel
+                          </Button>
                         </div>
+                      ) : (
+                        <>
+                          <div className={`rounded-lg p-3 ${isOwn ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                            <p className="text-sm">{message.content}</p>
+                            {message.updated_at !== message.created_at && (
+                              <span className="text-xs opacity-70">(edited)</span>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+                            </span>
+                            
+                            {!isOwn && (
+                              <div className="flex gap-1">
+                                {['heart', 'fire', 'thumbs_up'].map((type) => {
+                                  const Icon = getReactionIcon(type);
+                                  return (
+                                    <button
+                                      key={type}
+                                      onClick={() => handleReaction(message.id, type)}
+                                      className="p-1 hover:bg-muted rounded opacity-50 hover:opacity-100 transition-opacity"
+                                    >
+                                      <Icon className="h-3 w-3" />
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            
+                            {isOwn && (
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => setIsEditing(true)}
+                                  className="p-1 hover:bg-muted rounded opacity-50 hover:opacity-100 transition-opacity"
+                                >
+                                  <MessageSquare className="h-3 w-3" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteMessage(message.id)}
+                                  className="p-1 hover:bg-muted rounded opacity-50 hover:opacity-100 transition-opacity"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {message.reactions && message.reactions.length > 0 && (
+                            <div className="flex gap-1 flex-wrap">
+                              {Array.from(new Set(message.reactions.map((r: any) => r.reaction_type))).map((type: any) => {
+                                const Icon = getReactionIcon(type);
+                                const count = message.reactions.filter((r: any) => r.reaction_type === type).length;
+                                return (
+                                  <Badge key={type} variant="secondary" className="text-xs">
+                                    <Icon className="h-3 w-3 mr-1" />
+                                    {count}
+                                  </Badge>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
-
-                    {message.reactions && message.reactions.length > 0 && (
-                      <div className="flex gap-1 flex-wrap">
-                        {Array.from(new Set(message.reactions.map((r: any) => r.reaction_type))).map((type: any) => {
-                          const Icon = getReactionIcon(type);
-                          const count = message.reactions.filter((r: any) => r.reaction_type === type).length;
-                          return (
-                            <Badge key={type} variant="secondary" className="text-xs">
-                              <Icon className="h-3 w-3 mr-1" />
-                              {count}
-                            </Badge>
-                          );
-                        })}
-                      </div>
-                    )}
                   </div>
-                </div>
-              );
+                );
+              };
+              
+              return <MessageComponent key={message.id} />;
             })}
             
             {typingUsers.size > 0 && (
