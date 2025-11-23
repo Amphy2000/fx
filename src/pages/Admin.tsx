@@ -200,61 +200,60 @@ const Admin = () => {
 
   return (
     <Layout>
-      <div className="w-full px-3 sm:px-4 lg:px-6 py-4 max-w-full overflow-x-hidden">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Admin Panel</h1>
-          <Button onClick={handleExportCSV} variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
+      <div className="w-full px-2 py-3 max-w-[100vw] overflow-x-hidden">
+        <div className="flex flex-col gap-2 mb-4">
+          <div className="flex items-center justify-between gap-2">
+            <h1 className="text-lg font-bold text-foreground truncate">Admin Panel</h1>
+            <Button onClick={handleExportCSV} variant="outline" size="sm" className="text-xs h-8 px-2">
+              <Download className="mr-1 h-3 w-3" />
+              <span className="hidden sm:inline">Export</span>
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="users" className="w-full">
-          <ScrollArea className="w-full whitespace-nowrap">
-            <TabsList className="inline-flex mb-4 h-auto flex-wrap gap-1">
-              <TabsTrigger value="users" className="text-xs sm:text-sm">Users</TabsTrigger>
-              <TabsTrigger value="weekly-summaries" className="text-xs sm:text-sm">
-                <Mail className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Weekly Summaries</span>
-                <span className="sm:hidden">Weekly</span>
+          <div className="mb-3 overflow-x-auto">
+            <TabsList className="flex flex-wrap w-full justify-start gap-1 h-auto bg-muted/50 p-1">
+              <TabsTrigger value="users" className="text-xs px-2 py-1.5">Users</TabsTrigger>
+              <TabsTrigger value="weekly-summaries" className="text-xs px-2 py-1.5">
+                <Mail className="h-3 w-3 mr-1" />
+                <span>Weekly</span>
               </TabsTrigger>
-              <TabsTrigger value="abuse-prevention" className="text-xs sm:text-sm">
-                <Shield className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Abuse Prevention</span>
-                <span className="sm:hidden">Abuse</span>
+              <TabsTrigger value="abuse-prevention" className="text-xs px-2 py-1.5">
+                <Shield className="h-3 w-3 mr-1" />
+                <span>Abuse</span>
               </TabsTrigger>
-              <TabsTrigger value="email-lists" className="text-xs sm:text-sm">Lists</TabsTrigger>
-              <TabsTrigger value="email-templates" className="text-xs sm:text-sm">Templates</TabsTrigger>
-              <TabsTrigger value="email-campaigns" className="text-xs sm:text-sm">Campaigns</TabsTrigger>
-              <TabsTrigger value="email-workflows" className="text-xs sm:text-sm">Workflows</TabsTrigger>
-              <TabsTrigger value="ab-tests" className="text-xs sm:text-sm">A/B Tests</TabsTrigger>
-              <TabsTrigger value="personalization" className="text-xs sm:text-sm">Personalization</TabsTrigger>
-              <TabsTrigger value="warmup" className="text-xs sm:text-sm">Warm-Up</TabsTrigger>
-              <TabsTrigger value="email-analytics" className="text-xs sm:text-sm">
-                <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Analytics</span>
-                <span className="sm:hidden">Stats</span>
+              <TabsTrigger value="email-lists" className="text-xs px-2 py-1.5">Lists</TabsTrigger>
+              <TabsTrigger value="email-templates" className="text-xs px-2 py-1.5">Templates</TabsTrigger>
+              <TabsTrigger value="email-campaigns" className="text-xs px-2 py-1.5">Campaigns</TabsTrigger>
+              <TabsTrigger value="email-workflows" className="text-xs px-2 py-1.5">Workflows</TabsTrigger>
+              <TabsTrigger value="ab-tests" className="text-xs px-2 py-1.5">A/B</TabsTrigger>
+              <TabsTrigger value="personalization" className="text-xs px-2 py-1.5">Personal</TabsTrigger>
+              <TabsTrigger value="warmup" className="text-xs px-2 py-1.5">Warm-Up</TabsTrigger>
+              <TabsTrigger value="email-analytics" className="text-xs px-2 py-1.5">
+                <BarChart3 className="h-3 w-3 mr-1" />
+                Stats
               </TabsTrigger>
             </TabsList>
-          </ScrollArea>
+          </div>
 
-          <TabsContent value="users" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <TabsContent value="users" className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
               <Card className="border-border bg-card">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-foreground">Total Users</CardTitle>
+                <CardHeader className="pb-2 px-3 pt-3">
+                  <CardTitle className="text-xs font-medium text-foreground">Total Users</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold text-primary">{stats.totalUsers}</p>
+                <CardContent className="px-3 pb-3">
+                  <p className="text-2xl font-bold text-primary">{stats.totalUsers}</p>
                 </CardContent>
               </Card>
 
               <Card className="border-border bg-card">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-foreground">Total Trades</CardTitle>
+                <CardHeader className="pb-2 px-3 pt-3">
+                  <CardTitle className="text-xs font-medium text-foreground">Total Trades</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold text-primary">{stats.totalTrades}</p>
+                <CardContent className="px-3 pb-3">
+                  <p className="text-2xl font-bold text-primary">{stats.totalTrades}</p>
                 </CardContent>
               </Card>
             </div>
@@ -263,57 +262,59 @@ const Admin = () => {
             <AdminCreditManager />
 
             {/* Search Bar */}
-            <div>
+            <div className="px-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground h-3 w-3" />
                 <Input
-                  placeholder="Search by name or email..."
+                  placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-10"
+                  className="pl-7 h-8 text-xs"
                 />
               </div>
             </div>
 
             {/* Users Table */}
             <Card className="border-border">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base text-foreground">All Users</CardTitle>
+              <CardHeader className="pb-2 px-3 pt-3">
+                <CardTitle className="text-sm text-foreground">All Users</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
-                  <ScrollArea className="h-[500px] w-full">
+                  <ScrollArea className="h-[400px] w-full">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="whitespace-nowrap">Email</TableHead>
-                          <TableHead className="whitespace-nowrap">Name</TableHead>
-                          <TableHead className="whitespace-nowrap">Trades</TableHead>
-                          <TableHead className="whitespace-nowrap min-w-[200px]">Subscription</TableHead>
-                          <TableHead className="whitespace-nowrap">Joined</TableHead>
-                          <TableHead className="whitespace-nowrap">Actions</TableHead>
+                          <TableHead className="text-xs px-2">Email</TableHead>
+                          <TableHead className="text-xs px-2">Name</TableHead>
+                          <TableHead className="text-xs px-2">Trades</TableHead>
+                          <TableHead className="text-xs px-2 min-w-[180px]">Subscription</TableHead>
+                          <TableHead className="text-xs px-2">Joined</TableHead>
+                          <TableHead className="text-xs px-2">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredUsers.map((user) => (
                           <TableRow key={user.id}>
-                            <TableCell className="text-foreground whitespace-nowrap text-sm">{user.email}</TableCell>
-                            <TableCell className="text-foreground whitespace-nowrap text-sm">{user.full_name || "N/A"}</TableCell>
-                            <TableCell className="text-foreground text-sm">{user.trades_count || 0}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                {getSubscriptionBadge(user.subscription_tier || 'free')}
+                            <TableCell className="text-foreground text-xs px-2 max-w-[150px] truncate">{user.email}</TableCell>
+                            <TableCell className="text-foreground text-xs px-2 max-w-[100px] truncate">{user.full_name || "N/A"}</TableCell>
+                            <TableCell className="text-foreground text-xs px-2">{user.trades_count || 0}</TableCell>
+                            <TableCell className="px-2">
+                              <div className="flex items-center gap-1 flex-nowrap">
+                                <div className="flex-shrink-0">
+                                  {getSubscriptionBadge(user.subscription_tier || 'free')}
+                                </div>
                                 <Select
                                   value={user.subscription_tier || 'free'}
                                   onValueChange={(value) => handleUpdateSubscription(user.id, value)}
                                 >
-                                  <SelectTrigger className="w-[110px] h-8 text-xs">
+                                  <SelectTrigger className="w-[90px] h-7 text-xs">
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="free">Free</SelectItem>
-                                    <SelectItem value="monthly">Monthly</SelectItem>
-                                    <SelectItem value="lifetime">
+                                    <SelectItem value="free" className="text-xs">Free</SelectItem>
+                                    <SelectItem value="monthly" className="text-xs">Monthly</SelectItem>
+                                    <SelectItem value="lifetime" className="text-xs">
                                       <div className="flex items-center gap-1">
                                         <Crown className="h-3 w-3" />
                                         Lifetime
@@ -323,18 +324,17 @@ const Admin = () => {
                                 </Select>
                               </div>
                             </TableCell>
-                            <TableCell className="text-muted-foreground whitespace-nowrap text-sm">
-                              {new Date(user.created_at).toLocaleDateString()}
+                            <TableCell className="text-muted-foreground text-xs px-2">
+                              {new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="px-2">
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleViewDetails(user)}
-                                className="h-8"
+                                className="h-6 px-2"
                               >
-                                <Eye className="h-3 w-3 mr-1" />
-                                <span className="text-xs">View</span>
+                                <Eye className="h-3 w-3" />
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -428,57 +428,59 @@ const Admin = () => {
 
         {/* User Details Modal */}
         <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
-          <DialogContent className="max-w-full sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-base sm:text-lg">User Details: {selectedUser?.email}</DialogTitle>
+              <DialogTitle className="text-sm sm:text-base truncate">User: {selectedUser?.email}</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Full Name</p>
-                  <p className="text-sm sm:text-base text-foreground font-medium">{selectedUser?.full_name || "N/A"}</p>
+                  <p className="text-xs text-muted-foreground">Full Name</p>
+                  <p className="text-sm text-foreground font-medium truncate">{selectedUser?.full_name || "N/A"}</p>
                 </div>
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Total Trades</p>
-                  <p className="text-sm sm:text-base text-foreground font-medium">{selectedUser?.trades_count || 0}</p>
+                  <p className="text-xs text-muted-foreground">Total Trades</p>
+                  <p className="text-sm text-foreground font-medium">{selectedUser?.trades_count || 0}</p>
                 </div>
                 <div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Subscription</p>
+                  <p className="text-xs text-muted-foreground">Subscription</p>
                   <div className="mt-1">{getSubscriptionBadge(selectedUser?.subscription_tier || 'free')}</div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Recent Trades</h3>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-xs sm:text-sm whitespace-nowrap">Pair</TableHead>
-                        <TableHead className="text-xs sm:text-sm whitespace-nowrap">Direction</TableHead>
-                        <TableHead className="text-xs sm:text-sm whitespace-nowrap">Result</TableHead>
-                        <TableHead className="text-xs sm:text-sm whitespace-nowrap">P/L</TableHead>
-                        <TableHead className="text-xs sm:text-sm whitespace-nowrap">Date</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {userTrades.map((trade) => (
-                        <TableRow key={trade.id}>
-                          <TableCell className="text-foreground text-xs sm:text-sm">{trade.pair}</TableCell>
-                          <TableCell className="text-foreground text-xs sm:text-sm">{trade.direction}</TableCell>
-                          <TableCell className="text-xs sm:text-sm">
-                            <span className={trade.result === 'win' ? 'text-success' : trade.result === 'loss' ? 'text-destructive' : 'text-muted-foreground'}>
-                              {trade.result || 'pending'}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-foreground text-xs sm:text-sm">{trade.profit_loss || 'N/A'}</TableCell>
-                          <TableCell className="text-muted-foreground text-xs sm:text-sm whitespace-nowrap">
-                            {new Date(trade.created_at).toLocaleDateString()}
-                          </TableCell>
+                <h3 className="text-sm font-semibold mb-2 text-foreground">Recent Trades</h3>
+                <div className="overflow-x-auto -mx-3">
+                  <div className="inline-block min-w-full px-3">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs px-2">Pair</TableHead>
+                          <TableHead className="text-xs px-2">Direction</TableHead>
+                          <TableHead className="text-xs px-2">Result</TableHead>
+                          <TableHead className="text-xs px-2">P/L</TableHead>
+                          <TableHead className="text-xs px-2">Date</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {userTrades.map((trade) => (
+                          <TableRow key={trade.id}>
+                            <TableCell className="text-foreground text-xs px-2">{trade.pair}</TableCell>
+                            <TableCell className="text-foreground text-xs px-2">{trade.direction}</TableCell>
+                            <TableCell className="text-xs px-2">
+                              <span className={trade.result === 'win' ? 'text-success' : trade.result === 'loss' ? 'text-destructive' : 'text-muted-foreground'}>
+                                {trade.result || 'pending'}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-foreground text-xs px-2">{trade.profit_loss || 'N/A'}</TableCell>
+                            <TableCell className="text-muted-foreground text-xs px-2 whitespace-nowrap">
+                              {new Date(trade.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               </div>
             </div>
