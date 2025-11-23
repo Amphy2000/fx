@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
       throw new Error('Missing authorization header');
     }
 
-    // Create Supabase client with the JWT token  
+    // Create Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY');
     
@@ -30,19 +30,13 @@ Deno.serve(async (req) => {
     
     const supabaseClient = createClient(
       supabaseUrl ?? '',
-      supabaseKey ?? '',
-      {
-        global: {
-          headers: {
-            Authorization: authHeader
-          }
-        }
-      }
+      supabaseKey ?? ''
     );
 
-    // Verify the user by getting their info from the JWT
+    // Verify the user by passing the JWT token directly
     console.log('Attempting to verify user with JWT...');
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    const jwt = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(jwt);
     
     console.log('User verification result:', { 
       hasUser: !!user, 
