@@ -1392,6 +1392,68 @@ export type Database = {
           },
         ]
       }
+      goal_comments: {
+        Row: {
+          author_id: string
+          check_in_id: string | null
+          content: string
+          created_at: string | null
+          goal_id: string
+          id: string
+          parent_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          author_id: string
+          check_in_id?: string | null
+          content: string
+          created_at?: string | null
+          goal_id: string
+          id?: string
+          parent_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string
+          check_in_id?: string | null
+          content?: string
+          created_at?: string | null
+          goal_id?: string
+          id?: string
+          parent_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goal_comments_check_in_id_fkey"
+            columns: ["check_in_id"]
+            isOneToOne: false
+            referencedRelation: "goal_check_ins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goal_comments_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "partner_goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goal_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "goal_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journal_entries: {
         Row: {
           created_at: string
@@ -1520,6 +1582,45 @@ export type Database = {
           win_rate?: number
         }
         Relationships: []
+      }
+      message_reactions: {
+        Row: {
+          created_at: string | null
+          id: string
+          message_id: string
+          reaction_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message_id: string
+          reaction_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message_id?: string
+          reaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "partner_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mt5_accounts: {
         Row: {
@@ -1861,6 +1962,63 @@ export type Database = {
           {
             foreignKeyName: "partner_goals_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_messages: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          id: string
+          message_type: string
+          metadata: Json | null
+          partnership_id: string
+          read_at: string | null
+          sender_id: string
+          updated_at: string | null
+          voice_duration: number | null
+          voice_url: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          message_type?: string
+          metadata?: Json | null
+          partnership_id: string
+          read_at?: string | null
+          sender_id: string
+          updated_at?: string | null
+          voice_duration?: number | null
+          voice_url?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          message_type?: string
+          metadata?: Json | null
+          partnership_id?: string
+          read_at?: string | null
+          sender_id?: string
+          updated_at?: string | null
+          voice_duration?: number | null
+          voice_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_messages_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "accountability_partnerships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_messages_sender_id_fkey"
+            columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -3143,6 +3301,45 @@ export type Database = {
         }
         Relationships: []
       }
+      typing_indicators: {
+        Row: {
+          id: string
+          is_typing: boolean | null
+          partnership_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          is_typing?: boolean | null
+          partnership_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          is_typing?: boolean | null
+          partnership_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "typing_indicators_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "accountability_partnerships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "typing_indicators_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -3191,6 +3388,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      clean_old_typing_indicators: { Args: never; Returns: undefined }
       delete_all_user_data: { Args: { p_user_id: string }; Returns: undefined }
       has_role: {
         Args: {

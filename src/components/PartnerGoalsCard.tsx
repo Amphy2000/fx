@@ -3,10 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { CheckCircle2, Calendar, Heart, PartyPopper, ThumbsUp, Zap } from "lucide-react";
+import { CheckCircle2, Calendar, Heart, PartyPopper, ThumbsUp, Zap, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import GoalComments from "./GoalComments";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface PartnerGoalsCardProps {
   goal: any;
@@ -16,6 +18,7 @@ interface PartnerGoalsCardProps {
 
 export default function PartnerGoalsCard({ goal, onCheckIn, onReload }: PartnerGoalsCardProps) {
   const [sending, setSending] = useState(false);
+  const [showComments, setShowComments] = useState(false);
 
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { label: string; variant: any; icon: any }> = {
@@ -175,6 +178,18 @@ export default function PartnerGoalsCard({ goal, onCheckIn, onReload }: PartnerG
             </p>
           </div>
         )}
+
+        <Collapsible open={showComments} onOpenChange={setShowComments}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="w-full mt-2">
+              <MessageSquare className="h-4 w-4 mr-2" />
+              {showComments ? 'Hide' : 'Show'} Comments
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-3">
+            <GoalComments goalId={goal.id} checkInId={todayCheckIn?.id} />
+          </CollapsibleContent>
+        </Collapsible>
       </CardContent>
     </Card>
   );

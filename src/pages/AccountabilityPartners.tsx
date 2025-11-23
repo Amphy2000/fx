@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, UserPlus, Settings, Target, TrendingUp } from "lucide-react";
+import { Users, UserPlus, Settings, Target, TrendingUp, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import WeeklyCommitments from "@/components/WeeklyCommitments";
 import PartnerActivityFeed from "@/components/PartnerActivityFeed";
 import AccountabilityDebug from "@/components/AccountabilityDebug";
 import AccountabilityAnalytics from "@/components/AccountabilityAnalytics";
+import PartnerChat from "@/components/PartnerChat";
 
 export default function AccountabilityPartners() {
   const navigate = useNavigate();
@@ -94,14 +95,18 @@ export default function AccountabilityPartners() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="partners" disabled={!hasProfile}>
               <Users className="h-4 w-4 mr-2" />
-              My Partners
+              Partners
             </TabsTrigger>
             <TabsTrigger value="goals" disabled={!hasProfile || activePartnerships.length === 0}>
               <Target className="h-4 w-4 mr-2" />
               Goals
+            </TabsTrigger>
+            <TabsTrigger value="chat" disabled={!hasProfile || activePartnerships.length === 0}>
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Chat
             </TabsTrigger>
             <TabsTrigger value="find" disabled={!hasProfile}>
               <UserPlus className="h-4 w-4 mr-2" />
@@ -134,6 +139,16 @@ export default function AccountabilityPartners() {
             ) : (
               <div className="text-center py-12 text-muted-foreground">
                 You need an active partnership to create goals
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="chat" className="mt-6">
+            {activePartnerships.length > 0 ? (
+              <PartnerChat partnershipId={activePartnerships[0].id} />
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                Connect with a partner to start chatting
               </div>
             )}
           </TabsContent>

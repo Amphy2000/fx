@@ -1,0 +1,350 @@
+import { useState, useEffect, useRef } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Send, Mic, MicOff, Heart, Flame, ThumbsUp, PartyPopper } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
+import { RealtimeChat } from "@/utils/RealtimeAudio";
+
+interface PartnerChatProps {
+  partnershipId: string;
+}
+
+export default function PartnerChat({ partnershipId }: PartnerChatProps) {
+  const [messages, setMessages] = useState<any[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [sending, setSending] = useState(false);
+  const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const realtimeChatRef = useRef<RealtimeChat | null>(null);
+
+  useEffect(() => {
+    loadMessages();
+    getCurrentUser();
+    setupRealtimeSubscription();
+  }, [partnershipId]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const getCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) setCurrentUserId(user.id);
+  };
+
+  const loadMessages = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('partner_messages')
+        .select(`
+          *,
+          sender:profiles!partner_messages_sender_id_fkey(full_name, email),
+          reactions:message_reactions(id, user_id, reaction_type)
+        `)
+        .eq('partnership_id', partnershipId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setMessages(data || []);
+    } catch (error: any) {
+      console.error('Error loading messages:', error);
+      toast.error("Failed to load messages");
+    }
+  };
+
+  const setupRealtimeSubscription = () => {
+    // Subscribe to new messages
+    const messageChannel = supabase
+      .channel(`messages:${partnershipId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'partner_messages',
+          filter: `partnership_id=eq.${partnershipId}`
+        },
+        () => loadMessages()
+      )
+      .subscribe();
+
+    // Subscribe to typing indicators
+    const typingChannel = supabase
+      .channel(`typing:${partnershipId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'typing_indicators',
+          filter: `partnership_id=eq.${partnershipId}`
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const { user_id, is_typing } = payload.new;
+            if (user_id !== currentUserId) {
+              setTypingUsers(prev => {
+                const newSet = new Set(prev);
+                if (is_typing) {
+                  newSet.add(user_id);
+                } else {
+                  newSet.delete(user_id);
+                }
+                return newSet;
+              });
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(messageChannel);
+      supabase.removeChannel(typingChannel);
+    };
+  };
+
+  const scrollToBottom = () => {
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const updateTypingStatus = async (isTyping: boolean) => {
+    try {
+      await supabase
+        .from('typing_indicators')
+        .upsert({
+          partnership_id: partnershipId,
+          user_id: currentUserId,
+          is_typing: isTyping,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'partnership_id,user_id'
+        });
+    } catch (error) {
+      console.error('Error updating typing status:', error);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+    
+    // Update typing indicator
+    updateTypingStatus(true);
+    
+    // Clear previous timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    // Set new timeout to clear typing indicator
+    typingTimeoutRef.current = setTimeout(() => {
+      updateTypingStatus(false);
+    }, 3000);
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() || sending) return;
+
+    setSending(true);
+    updateTypingStatus(false);
+
+    try {
+      const { error } = await supabase
+        .from('partner_messages')
+        .insert({
+          partnership_id: partnershipId,
+          sender_id: currentUserId,
+          message_type: 'text',
+          content: newMessage.trim(),
+        });
+
+      if (error) throw error;
+      setNewMessage("");
+    } catch (error: any) {
+      console.error('Error sending message:', error);
+      toast.error("Failed to send message");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleVoiceToggle = async () => {
+    if (isVoiceActive) {
+      realtimeChatRef.current?.disconnect();
+      realtimeChatRef.current = null;
+      setIsVoiceActive(false);
+      toast.success("Voice chat ended");
+    } else {
+      try {
+        realtimeChatRef.current = new RealtimeChat((event) => {
+          console.log('Voice event:', event);
+          // Handle voice events - could display transcripts, etc.
+        });
+        await realtimeChatRef.current.init();
+        setIsVoiceActive(true);
+        toast.success("Voice chat started - speak naturally!");
+      } catch (error: any) {
+        console.error('Error starting voice:', error);
+        toast.error("Failed to start voice chat");
+      }
+    }
+  };
+
+  const handleReaction = async (messageId: string, reactionType: string) => {
+    try {
+      const { error } = await supabase
+        .from('message_reactions')
+        .insert({
+          message_id: messageId,
+          user_id: currentUserId,
+          reaction_type: reactionType,
+        });
+
+      if (error) throw error;
+      await loadMessages();
+    } catch (error: any) {
+      console.error('Error adding reaction:', error);
+      toast.error("Failed to add reaction");
+    }
+  };
+
+  const getReactionIcon = (type: string) => {
+    const icons: Record<string, any> = {
+      heart: Heart,
+      fire: Flame,
+      thumbs_up: ThumbsUp,
+      celebrate: PartyPopper,
+    };
+    return icons[type] || Heart;
+  };
+
+  return (
+    <Card className="h-[600px] flex flex-col">
+      <CardHeader className="border-b">
+        <CardTitle className="flex items-center gap-2">
+          Partner Chat
+          {isVoiceActive && (
+            <Badge variant="default" className="animate-pulse">
+              Voice Active
+            </Badge>
+          )}
+        </CardTitle>
+      </CardHeader>
+
+      <CardContent className="flex-1 flex flex-col p-0">
+        <ScrollArea className="flex-1 p-4">
+          <div className="space-y-4">
+            {messages.map((message) => {
+              const isOwn = message.sender_id === currentUserId;
+              return (
+                <div
+                  key={message.id}
+                  className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}
+                >
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>
+                      {(message.sender?.full_name || message.sender?.email || '?').substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  <div className={`flex-1 max-w-[70%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
+                    <div className={`rounded-lg p-3 ${isOwn ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                      <p className="text-sm">{message.content}</p>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+                      </span>
+                      
+                      {!isOwn && (
+                        <div className="flex gap-1">
+                          {['heart', 'fire', 'thumbs_up'].map((type) => {
+                            const Icon = getReactionIcon(type);
+                            return (
+                              <button
+                                key={type}
+                                onClick={() => handleReaction(message.id, type)}
+                                className="p-1 hover:bg-muted rounded opacity-50 hover:opacity-100 transition-opacity"
+                              >
+                                <Icon className="h-3 w-3" />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {message.reactions && message.reactions.length > 0 && (
+                      <div className="flex gap-1 flex-wrap">
+                        {Array.from(new Set(message.reactions.map((r: any) => r.reaction_type))).map((type: any) => {
+                          const Icon = getReactionIcon(type);
+                          const count = message.reactions.filter((r: any) => r.reaction_type === type).length;
+                          return (
+                            <Badge key={type} variant="secondary" className="text-xs">
+                              <Icon className="h-3 w-3 mr-1" />
+                              {count}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            
+            {typingUsers.size > 0 && (
+              <div className="flex gap-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback>...</AvatarFallback>
+                </Avatar>
+                <div className="bg-muted rounded-lg p-3">
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div ref={scrollRef} />
+          </div>
+        </ScrollArea>
+
+        <div className="border-t p-4">
+          <form onSubmit={handleSendMessage} className="flex gap-2">
+            <Button
+              type="button"
+              variant={isVoiceActive ? "default" : "outline"}
+              size="icon"
+              onClick={handleVoiceToggle}
+            >
+              {isVoiceActive ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            </Button>
+            <Input
+              value={newMessage}
+              onChange={handleInputChange}
+              placeholder="Type a message..."
+              disabled={sending || isVoiceActive}
+            />
+            <Button type="submit" disabled={sending || !newMessage.trim() || isVoiceActive}>
+              <Send className="h-4 w-4" />
+            </Button>
+          </form>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
