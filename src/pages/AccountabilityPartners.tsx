@@ -1,19 +1,23 @@
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, UserPlus, Settings } from "lucide-react";
+import { Users, UserPlus, Settings, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import PartnerFinder from "@/components/PartnerFinder";
 import MyPartners from "@/components/MyPartners";
 import AccountabilityProfileSetup from "@/components/AccountabilityProfileSetup";
+import WeeklyCommitments from "@/components/WeeklyCommitments";
+import PartnerActivityFeed from "@/components/PartnerActivityFeed";
+import AccountabilityDebug from "@/components/AccountabilityDebug";
 
 export default function AccountabilityPartners() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState(false);
   const [activeTab, setActiveTab] = useState("partners");
+  const [activePartnerships, setActivePartnerships] = useState<any[]>([]);
 
   useEffect(() => {
     checkAuth();
@@ -43,6 +47,15 @@ export default function AccountabilityPartners() {
       if (!profile) {
         setActiveTab("setup");
       }
+
+      // Load active partnerships
+      const { data: partnerships } = await supabase
+        .from('accountability_partnerships')
+        .select('*')
+        .or(`user_id.eq.${user.id},partner_id.eq.${user.id}`)
+        .eq('status', 'active');
+      
+      setActivePartnerships(partnerships || []);
     } catch (error) {
       console.error('Error checking profile:', error);
     } finally {
@@ -80,10 +93,14 @@ export default function AccountabilityPartners() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="partners" disabled={!hasProfile}>
               <Users className="h-4 w-4 mr-2" />
               My Partners
+            </TabsTrigger>
+            <TabsTrigger value="goals" disabled={!hasProfile || activePartnerships.length === 0}>
+              <Target className="h-4 w-4 mr-2" />
+              Goals
             </TabsTrigger>
             <TabsTrigger value="find" disabled={!hasProfile}>
               <UserPlus className="h-4 w-4 mr-2" />
@@ -96,7 +113,24 @@ export default function AccountabilityPartners() {
           </TabsList>
 
           <TabsContent value="partners" className="mt-6">
-            <MyPartners />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <MyPartners />
+              </div>
+              <div>
+                <PartnerActivityFeed />
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="goals" className="mt-6">
+            {activePartnerships.length > 0 ? (
+              <WeeklyCommitments partnershipId={activePartnerships[0].id} />
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                You need an active partnership to create goals
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="find" className="mt-6">
@@ -104,7 +138,14 @@ export default function AccountabilityPartners() {
           </TabsContent>
 
           <TabsContent value="setup" className="mt-6">
-            <AccountabilityProfileSetup onProfileCreated={handleProfileCreated} />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <AccountabilityProfileSetup onProfileCreated={handleProfileCreated} />
+              </div>
+              <div>
+                <AccountabilityDebug />
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

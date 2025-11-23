@@ -175,3 +175,15 @@ verify_jwt = true
 
 [functions.send-test-weekly-summary]
 verify_jwt = true
+
+[functions.create-partner-goal]
+verify_jwt = true
+
+[functions.submit-goal-checkin]
+verify_jwt = true
+
+[functions.send-partner-reaction]
+verify_jwt = true
+
+[functions.get-partner-goals]
+verify_jwt = true
