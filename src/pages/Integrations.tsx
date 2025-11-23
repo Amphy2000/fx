@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { MT5AccountCard } from "@/components/MT5AccountCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { X, Crown } from "lucide-react";
 
 import { MT5IntegrationCard } from "@/components/MT5IntegrationCard";
 import { MT5SyncLogs } from "@/components/MT5SyncLogs";
@@ -25,6 +27,8 @@ const Integrations = () => {
   const [uploading, setUploading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [manualUploadCount, setManualUploadCount] = useState(0);
+  const [showUpgradeBanner, setShowUpgradeBanner] = useState(false);
   
   const [formData, setFormData] = useState({
     accountName: "",
@@ -49,6 +53,22 @@ const Integrations = () => {
         return;
       }
       await fetchMT5Connection();
+      
+      // Fetch user profile for upload tracking
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("manual_upload_count")
+        .eq("id", session.user.id)
+        .single();
+      
+      if (profile?.manual_upload_count) {
+        setManualUploadCount(profile.manual_upload_count);
+        // Show banner if uploaded 3+ times and not dismissed
+        const dismissed = localStorage.getItem("mt5-upgrade-banner-dismissed");
+        if (profile.manual_upload_count >= 3 && !dismissed) {
+          setShowUpgradeBanner(true);
+        }
+      }
     } catch (error) {
       console.error("Error checking auth:", error);
       toast.error("Failed to verify authentication");
@@ -192,7 +212,39 @@ const Integrations = () => {
         throw new Error("No trades found in the file. Please check the file format.");
       }
 
-      toast.success(`Successfully imported ${data.importedCount} trades!`);
+      // Increment manual upload count
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("manual_upload_count")
+          .eq("id", user.id)
+          .single();
+        
+        const newCount = (profile?.manual_upload_count || 0) + 1;
+        
+        await supabase
+          .from("profiles")
+          .update({ 
+            manual_upload_count: newCount,
+            last_manual_upload_at: new Date().toISOString()
+          })
+          .eq("id", user.id);
+        
+        setManualUploadCount(newCount);
+        
+        // Show banner after 3rd upload
+        if (newCount >= 3) {
+          const dismissed = localStorage.getItem("mt5-upgrade-banner-dismissed");
+          if (!dismissed) {
+            setShowUpgradeBanner(true);
+          }
+        }
+      }
+
+      toast.success(`Successfully imported ${data.importedCount} trades!`, {
+        description: "💡 With Auto-Sync, this happens automatically every hour"
+      });
       
       // Trigger AI analysis for imported trades
       if (data.tradeIds && data.tradeIds.length > 0) {
@@ -260,6 +312,42 @@ const Integrations = () => {
           <p className="text-muted-foreground">Connect your MT5 account or upload trade reports for automatic journaling</p>
         </div>
 
+        {/* Upgrade Banner after 3+ uploads */}
+        {showUpgradeBanner && (
+          <Alert className="mb-6 border-primary/50 bg-gradient-to-r from-primary/10 to-amber-500/10">
+            <Crown className="h-5 w-5 text-primary" />
+            <AlertDescription className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="font-semibold text-foreground mb-1">
+                  ⏱️ You've manually uploaded {manualUploadCount}+ times
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Save hours with MT5 Auto-Sync - just $4.99/month. Your trades sync automatically every hour.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 ml-4">
+                <Button 
+                  size="sm" 
+                  onClick={() => navigate("/mt5-setup")}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  Upgrade to Auto-Sync
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="ghost"
+                  onClick={() => {
+                    setShowUpgradeBanner(false);
+                    localStorage.setItem("mt5-upgrade-banner-dismissed", "true");
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* MT5 Auto-Sync Section */}
         <MT5IntegrationCard />
 
@@ -280,9 +368,14 @@ const Integrations = () => {
               <Upload className="h-6 w-6 text-primary" />
               <div>
                 <CardTitle className="text-foreground">Manual Trade Import</CardTitle>
-                <CardDescription>Upload your MT5 trade report (.csv or .html) to import trades</CardDescription>
+                <CardDescription>
+                  Upload your MT5 trade report (.csv or .html) to import trades
+                </CardDescription>
               </div>
             </div>
+            <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
+              💡 <span>Pro tip: Upgrade to <Button variant="link" className="h-auto p-0 text-xs font-medium text-primary" onClick={() => navigate("/mt5-setup")}>MT5 Auto-Sync</Button> and never manually upload again</span>
+            </p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
