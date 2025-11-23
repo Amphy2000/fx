@@ -1,0 +1,140 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
+
+    const authHeader = req.headers.get('Authorization')!;
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+
+    if (!user) {
+      throw new Error('Unauthorized');
+    }
+
+    console.log('Creating test partner for user:', user.id);
+
+    // Check if test partner already exists
+    const { data: existingPartnership } = await supabaseAdmin
+      .from('accountability_partnerships')
+      .select('id')
+      .or(`user_id.eq.${user.id},partner_id.eq.${user.id}`)
+      .eq('status', 'active')
+      .limit(1)
+      .maybeSingle();
+
+    if (existingPartnership) {
+      return new Response(
+        JSON.stringify({ error: 'Active partnership already exists' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    // Generate unique email for test partner
+    const testEmail = `test.partner.${user.id.substring(0, 8)}@example.com`;
+
+    // Create test auth user using admin API
+    const { data: testUser, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
+      email: testEmail,
+      password: 'testpassword123',
+      email_confirm: true,
+      user_metadata: {
+        full_name: 'Test Partner',
+      },
+    });
+
+    if (createUserError) {
+      console.error('Error creating test user:', createUserError);
+      throw createUserError;
+    }
+
+    console.log('Test user created:', testUser.user.id);
+
+    // Create profile for test partner
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .insert({
+        id: testUser.user.id,
+        email: testEmail,
+        full_name: 'Test Partner',
+        subscription_tier: 'free',
+        subscription_status: 'active',
+        ai_credits: 50,
+      });
+
+    if (profileError) {
+      console.error('Error creating profile:', profileError);
+      throw profileError;
+    }
+
+    // Create accountability profile for test partner
+    const { error: accProfileError } = await supabaseAdmin
+      .from('accountability_profiles')
+      .insert({
+        user_id: testUser.user.id,
+        bio: 'Test partner for development and testing',
+        experience_level: 'intermediate',
+        goals: ['consistency', 'risk management', 'emotional control'],
+        trading_style: ['day trading', 'swing trading'],
+        is_seeking_partner: false,
+      });
+
+    if (accProfileError) {
+      console.error('Error creating accountability profile:', accProfileError);
+      throw accProfileError;
+    }
+
+    // Create active partnership
+    const { error: partnershipError } = await supabaseAdmin
+      .from('accountability_partnerships')
+      .insert({
+        user_id: user.id,
+        partner_id: testUser.user.id,
+        initiated_by: user.id,
+        status: 'active',
+        accepted_at: new Date().toISOString(),
+        request_message: 'Test partnership for development',
+      });
+
+    if (partnershipError) {
+      console.error('Error creating partnership:', partnershipError);
+      throw partnershipError;
+    }
+
+    console.log('Test partnership created successfully');
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        partnerId: testUser.user.id,
+        message: 'Test partner created successfully'
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Error in create-test-partner:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    return new Response(
+      JSON.stringify({ error: errorMessage }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+    );
+  }
+});
