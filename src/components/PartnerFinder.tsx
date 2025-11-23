@@ -74,7 +74,6 @@ export default function PartnerFinder() {
                   <SelectValue placeholder="Any level" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any level</SelectItem>
                   <SelectItem value="beginner">Beginner</SelectItem>
                   <SelectItem value="intermediate">Intermediate</SelectItem>
                   <SelectItem value="advanced">Advanced</SelectItem>
@@ -93,7 +92,6 @@ export default function PartnerFinder() {
                   <SelectValue placeholder="Any timezone" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any timezone</SelectItem>
                   <SelectItem value="EST">EST</SelectItem>
                   <SelectItem value="PST">PST</SelectItem>
                   <SelectItem value="GMT">GMT</SelectItem>
