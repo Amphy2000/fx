@@ -1,14 +1,72 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Zap, Crown, Sparkles } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Check, Zap, Crown, Sparkles, Tag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+
 const Pricing = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState<string | null>(null);
+  const [promoCode, setPromoCode] = useState(searchParams.get("ref") || "");
+  const [promoValidated, setPromoValidated] = useState(false);
+  const [promoDiscount, setPromoDiscount] = useState(0);
+
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref) {
+      trackPromoClick(ref);
+    }
+  }, [searchParams]);
+
+  const trackPromoClick = async (code: string) => {
+    try {
+      await supabase.functions.invoke("track-promo-click", {
+        body: { promoCode: code }
+      });
+    } catch (error) {
+      console.error("Error tracking promo click:", error);
+    }
+  };
+
+  const validatePromoCode = async () => {
+    if (!promoCode) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("affiliate_profiles")
+        .select("commission_rate, status")
+        .eq("promo_code", promoCode.toUpperCase())
+        .single();
+
+      if (error || !data) {
+        toast.error("Invalid promo code");
+        setPromoValidated(false);
+        setPromoDiscount(0);
+        return;
+      }
+
+      if (data.status !== "active") {
+        toast.error("This promo code is not active");
+        setPromoValidated(false);
+        setPromoDiscount(0);
+        return;
+      }
+
+      setPromoValidated(true);
+      setPromoDiscount(10);
+      toast.success(`Promo code applied! ${promoDiscount}% discount`);
+    } catch (error) {
+      console.error("Error validating promo:", error);
+      toast.error("Failed to validate promo code");
+    }
+  };
+
   const handleUpgrade = async (planType: 'pro' | 'lifetime') => {
     setLoading(planType);
     const {
@@ -16,15 +74,13 @@ const Pricing = () => {
         user
       }
     } = await supabase.auth.getUser();
+    
     if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to upgrade your plan.",
-        variant: "destructive"
-      });
+      toast.error("Please sign in to upgrade your plan.");
       navigate("/auth");
       return;
     }
+    
     try {
       const {
         data,
@@ -32,26 +88,29 @@ const Pricing = () => {
       } = await supabase.functions.invoke('initialize-payment', {
         body: {
           planType,
-          email: user.email
+          email: user.email,
+          promoCode: promoValidated ? promoCode.toUpperCase() : null,
         }
       });
+      
       if (error) throw error;
+      
       if (data?.authorization_url) {
-        // Redirect to Paystack with success callback
-        const successUrl = `${window.location.origin}/dashboard?payment=success`;
         window.location.href = data.authorization_url;
       }
     } catch (error) {
       console.error('Payment initialization error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to initialize payment. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Failed to initialize payment. Please try again.");
     } finally {
       setLoading(null);
     }
   };
+
+  const calculatePrice = (basePrice: number) => {
+    if (!promoValidated) return basePrice.toFixed(2);
+    return (basePrice * (1 - promoDiscount / 100)).toFixed(2);
+  };
+
   const plans = [{
     name: "Free Plan",
     price: "$0",
@@ -64,7 +123,8 @@ const Pricing = () => {
     onClick: () => navigate("/auth")
   }, {
     name: "Pro Plan",
-    price: "$4.99",
+    price: promoValidated ? `$${calculatePrice(4.99)}` : "$4.99",
+    originalPrice: promoValidated ? "$4.99" : null,
     period: "/month",
     description: "For serious traders",
     icon: <Zap className="h-6 w-6" />,
@@ -76,7 +136,8 @@ const Pricing = () => {
     planType: 'pro' as const
   }, {
     name: "Lifetime Access",
-    price: "$19.99",
+    price: promoValidated ? `$${calculatePrice(19.99)}` : "$19.99",
+    originalPrice: promoValidated ? "$19.99" : null,
     period: "one-time",
     description: "Limited beta offer",
     icon: <Crown className="h-6 w-6" />,
@@ -87,9 +148,10 @@ const Pricing = () => {
     onClick: () => handleUpgrade('lifetime'),
     planType: 'lifetime' as const
   }];
+
   return <Layout>
       <div className="container mx-auto px-4 py-12">
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <span className="inline-block px-4 py-1 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-4">
             🚀 Beta Launch Special
           </span>
@@ -98,6 +160,45 @@ const Pricing = () => {
             Start free and upgrade anytime. Lock in lifetime access during our beta phase.
           </p>
         </div>
+
+        <Card className="max-w-md mx-auto mb-12 bg-gradient-to-br from-primary/5 to-purple-500/5 border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Tag className="h-5 w-5" />
+              Have a Promo Code?
+            </CardTitle>
+            <CardDescription>Enter your referral or promo code to get a discount</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-2">
+              <div className="flex-1 space-y-2">
+                <Label htmlFor="promo">Promo Code</Label>
+                <Input
+                  id="promo"
+                  placeholder="Enter code"
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                  disabled={promoValidated}
+                />
+              </div>
+              {!promoValidated && (
+                <Button 
+                  onClick={validatePromoCode} 
+                  className="mt-8"
+                  disabled={!promoCode}
+                >
+                  Apply
+                </Button>
+              )}
+            </div>
+            {promoValidated && (
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <Check className="h-4 w-4" />
+                <span>Promo code applied! {promoDiscount}% off</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {plans.map(plan => <Card key={plan.name} className={`relative ${plan.highlight ? "border-primary shadow-lg scale-105" : ""}`}>
@@ -112,6 +213,9 @@ const Pricing = () => {
                 <CardDescription>{plan.description}</CardDescription>
                 <div className="mt-4">
                   <span className="text-4xl font-bold">{plan.price}</span>
+                  {plan.originalPrice && (
+                    <div className="text-lg text-muted-foreground line-through">{plan.originalPrice}</div>
+                  )}
                   <span className="text-muted-foreground ml-1">{plan.period}</span>
                 </div>
               </CardHeader>
@@ -140,4 +244,5 @@ const Pricing = () => {
       </div>
     </Layout>;
 };
+
 export default Pricing;

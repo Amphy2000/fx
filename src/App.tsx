@@ -39,6 +39,8 @@ import AbusePreventionAdmin from "./pages/AbusePreventionAdmin";
 import AIFeatures from "./pages/AIFeatures";
 import PsychologyGuide from "./pages/PsychologyGuide";
 import MentalStateCorrelation from "./pages/MentalStateCorrelation";
+import AffiliateApply from "./pages/AffiliateApply";
+import AffiliateDashboard from "./pages/AffiliateDashboard";
 import { FloatingActionMenu } from "./components/FloatingActionMenu";
 
 const queryClient = new QueryClient();
@@ -81,6 +83,8 @@ const AppContent = () => {
         <Route path="/onboarding-full" element={<Onboarding />} />
         <Route path="/achievements" element={<Achievements />} />
         <Route path="/accountability-partners" element={<AccountabilityPartners />} />
+        <Route path="/affiliate/apply" element={<AffiliateApply />} />
+        <Route path="/affiliate/dashboard" element={<AffiliateDashboard />} />
         <Route path="/install" element={<Install />} />
         <Route path="/psychology-guide" element={<PsychologyGuide />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
