@@ -11,15 +11,22 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Get the authorization header from the request
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      throw new Error('Missing authorization header');
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+      { global: { headers: { Authorization: authHeader } } }
     );
 
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) {
-      throw new Error('Unauthorized');
+      console.error('Auth error:', userError);
+      throw new Error('Unauthorized: ' + (userError?.message || 'No user found'));
     }
 
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
