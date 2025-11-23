@@ -22,13 +22,17 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Extract token from "Bearer <token>" format
+    const token = authHeader.replace('Bearer ', '');
+    console.log('Token extracted:', token.substring(0, 20) + '...');
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    // Get user using the extracted token
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     
     if (userError) {
       console.error('Auth error:', userError?.message);
@@ -47,6 +51,13 @@ Deno.serve(async (req) => {
     }
 
     console.log('User authenticated:', user.id);
+    
+    // Create an authenticated client for queries
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
 
     const { partnership_id, days = 30 } = await req.json();
 
@@ -56,7 +67,7 @@ Deno.serve(async (req) => {
     startDate.setDate(startDate.getDate() - days);
 
     // Get progress snapshots
-    const { data: snapshots, error: snapshotsError } = await supabaseClient
+    const { data: snapshots, error: snapshotsError } = await supabaseAdmin
       .from('partner_progress_snapshots')
       .select(`
         *,
@@ -69,7 +80,7 @@ Deno.serve(async (req) => {
     if (snapshotsError) throw snapshotsError;
 
     // Get streaks
-    const { data: streaks, error: streaksError } = await supabaseClient
+    const { data: streaks, error: streaksError } = await supabaseAdmin
       .from('partner_streaks')
       .select(`
         *,
@@ -80,7 +91,7 @@ Deno.serve(async (req) => {
     if (streaksError) throw streaksError;
 
     // Get achievements
-    const { data: achievements, error: achievementsError } = await supabaseClient
+    const { data: achievements, error: achievementsError } = await supabaseAdmin
       .from('partner_achievements')
       .select(`
         *,
@@ -93,7 +104,7 @@ Deno.serve(async (req) => {
     if (achievementsError) throw achievementsError;
 
     // Get partnership details
-    const { data: partnership, error: partnershipError } = await supabaseClient
+    const { data: partnership, error: partnershipError } = await supabaseAdmin
       .from('accountability_partnerships')
       .select(`
         *,
