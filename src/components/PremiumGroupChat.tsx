@@ -135,6 +135,13 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
       }, () => {
         loadMessages();
       })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'group_message_reactions'
+      }, () => {
+        loadMessages();
+      })
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState();
         const typing = new Set<string>();
@@ -160,31 +167,37 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
     if (currentUserId) {
       channel.track({
         user_id: currentUserId,
+        user_name: 'You',
         online_at: new Date().toISOString(),
+        typing: false
       });
     }
 
     return channel;
   };
 
-  const handleTyping = () => {
+  const handleTyping = async () => {
+    const channel = supabase.channel(`premium-group-${groupId}`);
+    
+    await channel.track({
+      user_id: currentUserId,
+      user_name: 'You',
+      online_at: new Date().toISOString(),
+      typing: true
+    });
+
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    const channel = supabase.channel(`premium-group-${groupId}`);
-    channel.track({
-      user_id: currentUserId,
-      user_name: 'User',
-      typing: true,
-    });
-
-    typingTimeoutRef.current = setTimeout(() => {
-      channel.track({
+    typingTimeoutRef.current = setTimeout(async () => {
+      await channel.track({
         user_id: currentUserId,
-        typing: false,
+        user_name: 'You',
+        online_at: new Date().toISOString(),
+        typing: false
       });
-    }, 2000);
+    }, 3000);
   };
 
   const handleSendMessage = async () => {
