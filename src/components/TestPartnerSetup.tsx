@@ -35,14 +35,18 @@ export default function TestPartnerSetup() {
         return;
       }
 
-      // Create test partner
-      const { data, error } = await supabase.rpc('create_test_partner_for_user', {
-        p_user_id: user.id
-      });
+      // Create test partner via edge function
+      const { data, error } = await supabase.functions.invoke('create-test-partner');
 
       if (error) {
         console.error('Error creating test partner:', error);
         toast.error("Failed to create test partner: " + error.message);
+        setLoading(false);
+        return;
+      }
+
+      if (data?.error) {
+        toast.error(data.error);
         setLoading(false);
         return;
       }
