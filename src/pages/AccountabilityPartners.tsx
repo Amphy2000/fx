@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Users, UserPlus, Settings, Target, TrendingUp, MessageSquare, UsersRound, Trophy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -195,43 +196,65 @@ export default function AccountabilityPartners() {
           <TabsContent value="chat" className="mt-6">
             {activePartnerships.length > 0 ? (
               <div className="space-y-4">
-                {activePartnerships.length > 1 && (
-                  <div className="flex gap-2 flex-wrap">
-                    {activePartnerships.map((partnership) => {
-                      const isInitiator = partnership.user_id === partnership.currentUserId;
-                      const partnerProfile = isInitiator ? partnership.partner_profile : partnership.user_profile;
-                      const partnerName = partnerProfile?.full_name || partnerProfile?.email || "Partner";
-                      
-                      return (
-                        <button
-                          key={partnership.id}
-                          onClick={() => setSelectedPartnershipId(partnership.id)}
-                          className={`px-4 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
-                            selectedPartnershipId === partnership.id
-                              ? 'bg-primary text-primary-foreground border-primary'
-                              : 'bg-background hover:bg-muted border-border'
-                          }`}
-                        >
-                          <MessageSquare className="h-4 w-4" />
-                          {partnerName}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+                <Card className="border-border/50">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5 text-primary" />
+                      Partner Chat
+                    </CardTitle>
+                    <CardDescription>
+                      {activePartnerships.length === 1
+                        ? "1-on-1 conversation with your accountability partner"
+                        : `Select a partner to chat with (${activePartnerships.length} partners)`}
+                    </CardDescription>
+                  </CardHeader>
+                  {activePartnerships.length > 1 && (
+                    <CardContent>
+                      <div className="flex gap-2 flex-wrap">
+                        {activePartnerships.map((partnership) => {
+                          const isInitiator = partnership.user_id === partnership.currentUserId;
+                          const partnerProfile = isInitiator ? partnership.partner_profile : partnership.user_profile;
+                          const partnerName = partnerProfile?.full_name || partnerProfile?.email || "Partner";
+                          
+                          return (
+                            <button
+                              key={partnership.id}
+                              onClick={() => setSelectedPartnershipId(partnership.id)}
+                              className={`px-4 py-2.5 rounded-lg border transition-all flex items-center gap-2 font-medium ${
+                                selectedPartnershipId === partnership.id
+                                  ? 'bg-primary text-primary-foreground border-primary shadow-sm scale-105'
+                                  : 'bg-background hover:bg-muted border-border hover:scale-105'
+                              }`}
+                            >
+                              <div className={`w-2 h-2 rounded-full ${selectedPartnershipId === partnership.id ? 'bg-primary-foreground' : 'bg-primary'}`} />
+                              {partnerName}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  )}
+                </Card>
                 {selectedPartnershipId && (
                   <PartnerChat partnershipId={selectedPartnershipId} />
                 )}
               </div>
             ) : isAdmin ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <p className="mb-4">⚡ Admin Mode: Normally requires an active partnership</p>
-                <p className="text-sm">Create a partnership in the Find tab to use chat feature</p>
-              </div>
+              <Card className="border-border/50">
+                <CardContent className="py-12 text-center">
+                  <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <p className="text-muted-foreground mb-2">⚡ Admin Mode: Normally requires an active partnership</p>
+                  <p className="text-sm text-muted-foreground">Create a partnership to access this feature</p>
+                </CardContent>
+              </Card>
             ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                Connect with a partner to start chatting
-              </div>
+              <Card className="border-border/50">
+                <CardContent className="py-12 text-center">
+                  <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <p className="text-muted-foreground">You need an active partnership to access chat.</p>
+                  <p className="text-sm text-muted-foreground mt-2">Find a partner in the "Find Partners" tab!</p>
+                </CardContent>
+              </Card>
             )}
           </TabsContent>
 

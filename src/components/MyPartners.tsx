@@ -156,7 +156,11 @@ export default function MyPartners() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <Button variant="outline" className="w-full">
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => window.location.href = '/weekly-summary'}
+                    >
                       View Shared Summary
                     </Button>
                   </CardContent>
