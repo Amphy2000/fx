@@ -14,7 +14,7 @@ const testimonials = [
     name: "Sarah L.",
     role: "Day Trader",
     avatar: "SL",
-    rating: 5,
+    rating: 4.5,
     text: "I was skeptical about 'psychology-first' until I saw the mental state correlation dashboard. My win rate is 73% when I sleep 7+ hours vs 42% with less sleep. Data doesn't lie."
   },
   {
@@ -28,7 +28,7 @@ const testimonials = [
     name: "Elena R.",
     role: "Swing Trader",
     avatar: "ER",
-    rating: 5,
+    rating: 4.5,
     text: "The AI coach identified that I overtrade on Mondays after losing weekends. 85% of my losses were from this pattern I never noticed. Changed my entire approach."
   },
   {
@@ -42,7 +42,7 @@ const testimonials = [
     name: "Priya S.",
     role: "Options Trader",
     avatar: "PS",
-    rating: 5,
+    rating: 4.5,
     text: "Most journals focus on technical analysis. This focuses on what actually matters - me. My emotional patterns, my triggers, my behavioral loops. Finally making real progress."
   }
 ];
@@ -66,9 +66,17 @@ export const Testimonials = () => {
               <Card key={index} className="border-border/50 hover:border-primary/30 transition-colors">
                 <CardContent className="p-6 space-y-4">
                   <div className="flex items-center gap-1">
-                    {[...Array(testimonial.rating)].map((_, i) => (
+                    {[...Array(Math.floor(testimonial.rating))].map((_, i) => (
                       <Star key={i} className="h-4 w-4 fill-yellow-500 text-yellow-500" />
                     ))}
+                    {testimonial.rating % 1 !== 0 && (
+                      <div className="relative">
+                        <Star className="h-4 w-4 text-yellow-500" />
+                        <div className="absolute inset-0 overflow-hidden" style={{ width: '50%' }}>
+                          <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   <p className="text-sm text-foreground leading-relaxed">

@@ -1,5 +1,5 @@
 import { LayoutDashboard, MessageSquare, Calendar, Settings, Brain, LogOut, Target, Calculator, CreditCard, Trophy, GraduationCap, Plug, Heart, ClipboardCheck, Lightbulb, BarChart3, Flame, Award, BookOpen, Zap, Notebook, Sparkles, TrendingUp, FileText, Activity, Users, Crown } from "lucide-react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
@@ -142,7 +142,8 @@ export function AppSidebar() {
     toast.success("Signed out successfully");
     navigate("/");
   };
-  const handleNavClick = () => {
+  const handleNavClick = (path: string) => {
+    navigate(path);
     // Close mobile sidebar when a link is clicked
     if (state === "expanded") {
       setOpenMobile(false);
@@ -150,10 +151,10 @@ export function AppSidebar() {
   };
   const isActive = (path: string) => location.pathname === path;
   return <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
-      <SidebarHeader className="border-b border-sidebar-border p-4">
-        <div className="flex items-center gap-2">
-          <Brain className="h-6 w-6 text-sidebar-primary" />
-          <span className="font-bold text-lg text-sidebar-foreground">Amphy AI</span>
+      <SidebarHeader className="border-b border-sidebar-border p-4 overflow-hidden">
+        <div className="flex items-center gap-2 min-w-0">
+          <TrendingUp className="h-6 w-6 text-sidebar-primary shrink-0" />
+          <span className="font-bold text-lg text-sidebar-foreground truncate">Amphy AI</span>
         </div>
       </SidebarHeader>
 
@@ -163,11 +164,9 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {tradingNavItems.map(item => <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} onClick={handleNavClick}>
-                    <NavLink to={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
+                  <SidebarMenuButton isActive={isActive(item.url)} onClick={() => handleNavClick(item.url)}>
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>)}
             </SidebarMenu>
@@ -179,11 +178,9 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {aiNavItems.map(item => <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} onClick={handleNavClick}>
-                    <NavLink to={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
+                  <SidebarMenuButton isActive={isActive(item.url)} onClick={() => handleNavClick(item.url)}>
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>)}
             </SidebarMenu>
@@ -195,11 +192,9 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {journalNavItems.map(item => <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} onClick={handleNavClick}>
-                    <NavLink to={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
+                  <SidebarMenuButton isActive={isActive(item.url)} onClick={() => handleNavClick(item.url)}>
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>)}
             </SidebarMenu>
@@ -211,11 +206,9 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {performanceNavItems.map(item => <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} onClick={handleNavClick}>
-                    <NavLink to={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
+                  <SidebarMenuButton isActive={isActive(item.url)} onClick={() => handleNavClick(item.url)}>
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>)}
             </SidebarMenu>
@@ -227,11 +220,9 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {toolsNavItems.map(item => <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} onClick={handleNavClick}>
-                    <NavLink to={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
+                  <SidebarMenuButton isActive={isActive(item.url)} onClick={() => handleNavClick(item.url)}>
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>)}
             </SidebarMenu>
@@ -243,11 +234,9 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {systemNavItems.map(item => <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} onClick={handleNavClick}>
-                    <NavLink to={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </NavLink>
+                  <SidebarMenuButton isActive={isActive(item.url)} onClick={() => handleNavClick(item.url)}>
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>)}
             </SidebarMenu>
