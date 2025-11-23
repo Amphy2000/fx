@@ -11,11 +11,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Get the JWT token from the authorization header
-    const authHeader = req.headers.get('authorization');
+    // Get the JWT token - try both lowercase and capitalized versions
+    const authHeader = req.headers.get('Authorization') || req.headers.get('authorization');
     console.log('Authorization header present:', !!authHeader);
+    console.log('Authorization header value:', authHeader?.substring(0, 20) + '...');
     
     if (!authHeader) {
+      console.error('No authorization header found');
       throw new Error('Missing authorization header');
     }
 
@@ -39,13 +41,22 @@ Deno.serve(async (req) => {
     );
 
     // Verify the user by getting their info from the JWT
-    console.log('Attempting to verify user...');
+    console.log('Attempting to verify user with JWT...');
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     
-    console.log('User verification result:', { user: !!user, error: userError?.message });
+    console.log('User verification result:', { 
+      hasUser: !!user, 
+      userId: user?.id,
+      errorName: userError?.name,
+      errorMessage: userError?.message,
+      errorStatus: userError?.status
+    });
     
     if (userError || !user) {
-      console.error('Auth verification failed:', userError);
+      console.error('Auth verification failed:', {
+        error: userError,
+        authHeader: authHeader?.substring(0, 30) + '...'
+      });
       throw new Error('Unauthorized: ' + (userError?.message || 'Invalid token'));
     }
 
