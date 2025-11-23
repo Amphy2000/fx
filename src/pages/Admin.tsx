@@ -22,6 +22,7 @@ import { EmailListManager } from "@/components/EmailListManager";
 import { EmailPersonalizationManager } from "@/components/EmailPersonalizationManager";
 import { EmailWarmUpManager } from "@/components/EmailWarmUpManager";
 import { AdminCreditManager } from "@/components/AdminCreditManager";
+import { WeeklySummaryEmailManager } from "@/components/WeeklySummaryEmailManager";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -224,6 +225,10 @@ const Admin = () => {
               <TabsTrigger value="personalization">Personalization</TabsTrigger>
               <TabsTrigger value="warmup">Warm-Up</TabsTrigger>
               <TabsTrigger value="email-analytics">Analytics</TabsTrigger>
+              <TabsTrigger value="weekly-summaries">
+                <Mail className="h-4 w-4 mr-2" />
+                Weekly Summaries
+              </TabsTrigger>
             </TabsList>
           </ScrollArea>
 
@@ -407,6 +412,10 @@ const Admin = () => {
 
           <TabsContent value="email-analytics">
             <EmailAnalyticsDashboard />
+          </TabsContent>
+
+          <TabsContent value="weekly-summaries">
+            <WeeklySummaryEmailManager />
           </TabsContent>
         </Tabs>
 
