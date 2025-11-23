@@ -57,31 +57,36 @@ export default function PartnerComparisonChart({
   return (
     <div className="space-y-6">
       {/* Comparison Summary */}
-      <Card>
+      <Card className="shadow-lg border-primary/10 bg-gradient-to-br from-background via-primary/5 to-background">
         <CardHeader>
-          <CardTitle>Performance Comparison</CardTitle>
+          <CardTitle className="text-xl">Performance Comparison</CardTitle>
           <CardDescription>
             How you stack up against your accountability partner
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-2">Your Average</p>
-              <p className="text-3xl font-bold">{userAvg.toFixed(1)}%</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center p-4 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
+              <p className="text-sm font-medium text-muted-foreground mb-3">Your Average</p>
+              <p className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                {userAvg.toFixed(1)}%
+              </p>
             </div>
-            <div className="flex items-center justify-center">
-              <div className="flex items-center gap-2">
-                <TrendIcon className={`h-6 w-6 ${
+            <div className="flex items-center justify-center p-4">
+              <div className="flex flex-col items-center gap-3">
+                <TrendIcon className={`h-8 w-8 ${
                   difference > 5 ? 'text-green-500' : 
                   difference < -5 ? 'text-red-500' : 
                   'text-muted-foreground'
                 }`} />
-                <Badge variant={
-                  difference > 5 ? 'default' : 
-                  difference < -5 ? 'destructive' : 
-                  'secondary'
-                }>
+                <Badge 
+                  variant={
+                    difference > 5 ? 'default' : 
+                    difference < -5 ? 'destructive' : 
+                    'secondary'
+                  }
+                  className="text-sm font-semibold px-4 py-1"
+                >
                   {Math.abs(difference).toFixed(1)}% {
                     difference > 0 ? 'ahead' : 
                     difference < 0 ? 'behind' : 
@@ -90,65 +95,105 @@ export default function PartnerComparisonChart({
                 </Badge>
               </div>
             </div>
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-2">Partner Average</p>
-              <p className="text-3xl font-bold">{partnerAvg.toFixed(1)}%</p>
+            <div className="text-center p-4 rounded-xl bg-gradient-to-br from-secondary/10 to-secondary/5 border border-secondary/20">
+              <p className="text-sm font-medium text-muted-foreground mb-3">Partner Average</p>
+              <p className="text-4xl font-bold bg-gradient-to-r from-secondary to-secondary/70 bg-clip-text text-transparent">
+                {partnerAvg.toFixed(1)}%
+              </p>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Completion Rate Trend */}
-      <Card>
+      <Card className="shadow-lg border-primary/10">
         <CardHeader>
           <CardTitle>Completion Rate Over Time</CardTitle>
           <CardDescription>Track your progress together</CardDescription>
         </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="You_rate"
-                stroke="hsl(var(--primary))"
-                strokeWidth={2}
-                name="You"
-              />
-              <Line
-                type="monotone"
-                dataKey="Partner_rate"
-                stroke="hsl(var(--secondary))"
-                strokeWidth={2}
-                name="Partner"
-              />
-            </LineChart>
-          </ResponsiveContainer>
+        <CardContent className="pt-4">
+          {chartData.length === 0 ? (
+            <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+              <p>No data available for the selected period</p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }} 
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="You_rate"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={3}
+                  name="You"
+                  dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Partner_rate"
+                  stroke="hsl(var(--secondary))"
+                  strokeWidth={3}
+                  name="Partner"
+                  dot={{ fill: 'hsl(var(--secondary))', r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </CardContent>
       </Card>
 
       {/* Goals Completed Comparison */}
-      <Card>
+      <Card className="shadow-lg border-primary/10">
         <CardHeader>
           <CardTitle>Goals Completed</CardTitle>
           <CardDescription>Daily goal completion comparison</CardDescription>
         </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="You_completed" fill="hsl(var(--primary))" name="You" />
-              <Bar dataKey="Partner_completed" fill="hsl(var(--secondary))" name="Partner" />
-            </BarChart>
-          </ResponsiveContainer>
+        <CardContent className="pt-4">
+          {chartData.length === 0 ? (
+            <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+              <p>No data available for the selected period</p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }} 
+                />
+                <Legend />
+                <Bar 
+                  dataKey="You_completed" 
+                  fill="hsl(var(--primary))" 
+                  name="You" 
+                  radius={[8, 8, 0, 0]}
+                />
+                <Bar 
+                  dataKey="Partner_completed" 
+                  fill="hsl(var(--secondary))" 
+                  name="Partner" 
+                  radius={[8, 8, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </CardContent>
       </Card>
     </div>
