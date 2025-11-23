@@ -16,6 +16,7 @@ import PartnerChat from "@/components/PartnerChat";
 import AccountabilityGroups from "@/components/AccountabilityGroups";
 import AccountabilityChallenges from "@/components/AccountabilityChallenges";
 import PartnershipLeaderboard from "@/components/PartnershipLeaderboard";
+import AdminRoleManager from "@/components/AdminRoleManager";
 
 export default function AccountabilityPartners() {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ export default function AccountabilityPartners() {
   const [hasProfile, setHasProfile] = useState(false);
   const [activeTab, setActiveTab] = useState("partners");
   const [activePartnerships, setActivePartnerships] = useState<any[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -41,6 +43,16 @@ export default function AccountabilityPartners() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      // Check if user is admin
+      const { data: adminRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+      
+      setIsAdmin(!!adminRole);
 
       const { data: profile } = await supabase
         .from('accountability_profiles')
@@ -107,7 +119,7 @@ export default function AccountabilityPartners() {
               <UsersRound className="h-4 w-4 mr-2" />
               Groups
             </TabsTrigger>
-            <TabsTrigger value="goals" disabled={!hasProfile || activePartnerships.length === 0} title={!hasProfile ? "Create a profile first" : activePartnerships.length === 0 ? "Connect with a partner first" : ""}>
+            <TabsTrigger value="goals" disabled={!hasProfile || (activePartnerships.length === 0 && !isAdmin)} title={!hasProfile ? "Create a profile first" : (activePartnerships.length === 0 && !isAdmin) ? "Connect with a partner first (or get admin access)" : ""}>
               <Target className="h-4 w-4 mr-2" />
               Goals
             </TabsTrigger>
@@ -115,7 +127,7 @@ export default function AccountabilityPartners() {
               <Trophy className="h-4 w-4 mr-2" />
               Challenges
             </TabsTrigger>
-            <TabsTrigger value="chat" disabled={!hasProfile || activePartnerships.length === 0} title={!hasProfile ? "Create a profile first" : activePartnerships.length === 0 ? "Connect with a partner first" : ""}>
+            <TabsTrigger value="chat" disabled={!hasProfile || (activePartnerships.length === 0 && !isAdmin)} title={!hasProfile ? "Create a profile first" : (activePartnerships.length === 0 && !isAdmin) ? "Connect with a partner first (or get admin access)" : ""}>
               <MessageSquare className="h-4 w-4 mr-2" />
               Chat
             </TabsTrigger>
@@ -127,7 +139,7 @@ export default function AccountabilityPartners() {
               <Trophy className="h-4 w-4 mr-2" />
               Leaderboard
             </TabsTrigger>
-            <TabsTrigger value="analytics" disabled={!hasProfile || activePartnerships.length === 0} title={!hasProfile ? "Create a profile first" : activePartnerships.length === 0 ? "Connect with a partner first" : ""}>
+            <TabsTrigger value="analytics" disabled={!hasProfile || (activePartnerships.length === 0 && !isAdmin)} title={!hasProfile ? "Create a profile first" : (activePartnerships.length === 0 && !isAdmin) ? "Connect with a partner first (or get admin access)" : ""}>
               <TrendingUp className="h-4 w-4 mr-2" />
               Analytics
             </TabsTrigger>
@@ -151,6 +163,11 @@ export default function AccountabilityPartners() {
           <TabsContent value="goals" className="mt-6">
             {activePartnerships.length > 0 ? (
               <WeeklyCommitments partnershipId={activePartnerships[0].id} />
+            ) : isAdmin ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="mb-4">⚡ Admin Mode: Normally requires an active partnership</p>
+                <p className="text-sm">Create a partnership in the Find tab to use goals feature</p>
+              </div>
             ) : (
               <div className="text-center py-12 text-muted-foreground">
                 You need an active partnership to create goals
@@ -161,6 +178,11 @@ export default function AccountabilityPartners() {
           <TabsContent value="chat" className="mt-6">
             {activePartnerships.length > 0 ? (
               <PartnerChat partnershipId={activePartnerships[0].id} />
+            ) : isAdmin ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="mb-4">⚡ Admin Mode: Normally requires an active partnership</p>
+                <p className="text-sm">Create a partnership in the Find tab to use chat feature</p>
+              </div>
             ) : (
               <div className="text-center py-12 text-muted-foreground">
                 Connect with a partner to start chatting
@@ -187,6 +209,11 @@ export default function AccountabilityPartners() {
           <TabsContent value="analytics" className="space-y-6">
             {activePartnerships.length > 0 ? (
               <AccountabilityAnalytics partnershipId={activePartnerships[0].id} />
+            ) : isAdmin ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="mb-4">⚡ Admin Mode: Normally requires an active partnership</p>
+                <p className="text-sm">Create a partnership in the Find tab to view analytics</p>
+              </div>
             ) : (
               <div className="text-center py-12 text-muted-foreground">
                 Connect with a partner to view analytics
@@ -199,7 +226,8 @@ export default function AccountabilityPartners() {
               <div className="lg:col-span-2">
                 <AccountabilityProfileSetup onProfileCreated={handleProfileCreated} />
               </div>
-              <div>
+              <div className="space-y-6">
+                <AdminRoleManager />
                 <AccountabilityDebug />
               </div>
             </div>
