@@ -3639,6 +3639,10 @@ export type Database = {
         Args: { check_domain: string; email_count?: number }
         Returns: boolean
       }
+      can_view_group: {
+        Args: { p_group_id: string; p_user_id: string }
+        Returns: boolean
+      }
       check_rate_limit: {
         Args: {
           p_function_name: string
@@ -3667,6 +3671,14 @@ export type Database = {
       }
       increment_warmup_limits: { Args: never; Returns: undefined }
       is_email_suppressed: { Args: { check_email: string }; Returns: boolean }
+      is_group_admin: {
+        Args: { p_group_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_group_member: {
+        Args: { p_group_id: string; p_user_id: string }
+        Returns: boolean
+      }
       record_email_send: {
         Args: { send_count?: number; send_domain: string }
         Returns: undefined
