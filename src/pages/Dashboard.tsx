@@ -222,11 +222,11 @@ const Dashboard = () => {
   }, [user]);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   return <Layout>
-      <div className="space-y-4 p-3 md:p-4 lg:p-0 md:py-0 md:px-0 md:mx-[10px] w-full max-w-full">
+      <div className="safe-container space-y-4 p-3 md:p-4 lg:p-6">
         <div className="flex flex-col gap-3 md:gap-4">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
             <div>
-              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold">Trading Dashboard</h1>
+              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gradient-premium">Trading Dashboard</h1>
               <p className="text-xs md:text-sm lg:text-base text-muted-foreground">
                 AI-Powered Analytics {mt5Accounts.length > 0 ? '• MT5 Synced' : ''}
                 {selectedAccountId && mt5Accounts.length > 1 && ' • Filtered View'}
@@ -257,12 +257,12 @@ const Dashboard = () => {
           )}
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3 w-full">
-          <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3 w-full max-w-full">
+          <Card className="premium-card bg-gradient-to-br from-primary/10 to-primary/5 border-primary/30">
             <CardContent className="p-2 md:p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase">Trades</p>
+                  <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">Trades</p>
                   <p className="text-base md:text-lg lg:text-xl font-bold">{stats.totalTrades}</p>
                 </div>
                 <Activity className="h-4 w-4 md:h-5 md:w-5 text-primary opacity-50" />
@@ -270,64 +270,64 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className={`bg-gradient-to-br ${stats.totalPnL >= 0 ? 'from-green-500/10 border-green-500/20' : 'from-red-500/10 border-red-500/20'}`}>
+          <Card className={`premium-card bg-gradient-to-br ${stats.totalPnL >= 0 ? 'from-success/10 border-success/30' : 'from-destructive/10 border-destructive/30'}`}>
             <CardContent className="p-2 md:p-3">
               <div className="flex items-center justify-between gap-1">
                 <div className="min-w-0 flex-1">
-                  <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase">P/L</p>
-                  <p className={`text-xs md:text-base lg:text-lg font-bold ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'} break-all`}>
+                  <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">P/L</p>
+                  <p className={`text-xs md:text-base lg:text-lg font-bold ${stats.totalPnL >= 0 ? 'text-gradient-success' : 'text-destructive'} break-all`}>
                     ${stats.totalPnL >= 0 ? '+' : ''}{stats.totalPnL.toLocaleString()}
                   </p>
                 </div>
-                {stats.totalPnL >= 0 ? <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-green-600 opacity-50 flex-shrink-0" /> : <TrendingDown className="h-4 w-4 md:h-5 md:w-5 text-red-600 opacity-50 flex-shrink-0" />}
+                {stats.totalPnL >= 0 ? <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-success opacity-50 flex-shrink-0" /> : <TrendingDown className="h-4 w-4 md:h-5 md:w-5 text-destructive opacity-50 flex-shrink-0" />}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-blue-500/10 border-blue-500/20">
+          <Card className="premium-card bg-gradient-to-br from-blue-500/10 border-blue-500/30">
             <CardContent className="p-2 md:p-3">
               <div>
-                <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase">Win Rate</p>
+                <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">Win Rate</p>
                 <p className="text-base md:text-lg lg:text-xl font-bold">{stats.winRate}%</p>
                 <Progress value={stats.winRate} className="h-1 mt-1" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-500/10 border-purple-500/20">
+          <Card className="premium-card bg-gradient-to-br from-accent/10 border-accent/30">
             <CardContent className="p-2 md:p-3">
               <div>
-                <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase">Profit Factor</p>
+                <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">Profit Factor</p>
                 <p className="text-base md:text-lg lg:text-xl font-bold">{stats.profitFactor}</p>
                 <p className="text-[9px] md:text-[10px] text-muted-foreground">{stats.wins}W/{stats.losses}L</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-500/10 border-green-500/20">
+          <Card className="premium-card bg-gradient-to-br from-success/10 border-success/30">
             <CardContent className="p-2 md:p-3">
               <div className="flex items-center justify-between gap-1">
                 <div className="min-w-0 flex-1">
-                  <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase">Best</p>
-                  <p className="text-xs md:text-base lg:text-lg font-bold text-green-600 break-all">
+                  <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">Best</p>
+                  <p className="text-xs md:text-base lg:text-lg font-bold text-gradient-success break-all">
                     +${stats.bestTrade.toLocaleString()}
                   </p>
                 </div>
-                <Target className="h-4 w-4 md:h-5 md:w-5 text-green-600 opacity-50 flex-shrink-0" />
+                <Target className="h-4 w-4 md:h-5 md:w-5 text-success opacity-50 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-red-500/10 border-red-500/20">
+          <Card className="premium-card bg-gradient-to-br from-destructive/10 border-destructive/30">
             <CardContent className="p-2 md:p-3">
               <div className="flex items-center justify-between gap-1">
                 <div className="min-w-0 flex-1">
-                  <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase">Worst</p>
-                  <p className="text-xs md:text-base lg:text-lg font-bold text-red-600 break-all">
+                  <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">Worst</p>
+                  <p className="text-xs md:text-base lg:text-lg font-bold text-destructive break-all">
                     ${stats.worstTrade.toLocaleString()}
                   </p>
                 </div>
-                <TrendingDown className="h-4 w-4 md:h-5 md:w-5 text-red-600 opacity-50 flex-shrink-0" />
+                <TrendingDown className="h-4 w-4 md:h-5 md:w-5 text-destructive opacity-50 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
