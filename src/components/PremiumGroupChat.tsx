@@ -14,6 +14,7 @@ import {
 import { VoiceRecorder } from "./VoiceRecorder";
 import { VoiceMessagePlayer } from "./VoiceMessagePlayer";
 import { formatDistanceToNow, format } from "date-fns";
+import { compressImage } from "@/utils/imageCompression";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,6 +42,7 @@ interface Message {
   attachment_url?: string;
   attachment_type?: string;
   attachment_name?: string;
+  hidden_for?: string[];
   reactions?: Array<{
     id: string;
     user_id: string;
@@ -117,10 +119,37 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setMessages(data || []);
+      
+      // Filter out messages hidden for current user
+      const visibleMessages = (data || []).filter((msg: any) => 
+        !msg.hidden_for || !msg.hidden_for.includes(currentUserId)
+      );
+      
+      setMessages(visibleMessages);
     } catch (error: any) {
       console.error('Error loading messages:', error);
       toast.error("Failed to load messages");
+    }
+  };
+
+  const handleClearChat = async () => {
+    try {
+      // Update each message to add current user to hidden_for array
+      for (const message of messages) {
+        const hiddenFor = message.hidden_for || [];
+        if (!hiddenFor.includes(currentUserId)) {
+          await supabase
+            .from('group_messages')
+            .update({ hidden_for: [...hiddenFor, currentUserId] })
+            .eq('id', message.id);
+        }
+      }
+      
+      setMessages([]);
+      toast.success("Chat cleared");
+    } catch (error) {
+      console.error('Error clearing chat:', error);
+      toast.error("Failed to clear chat");
     }
   };
 

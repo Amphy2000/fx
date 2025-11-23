@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { 
   ArrowLeft, Send, Smile, Trash2, Edit2, Reply, Check, CheckCheck,
-  MoreVertical, Search, X, Paperclip 
+  MoreVertical, Search, X, Paperclip
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ import { VoiceRecorder } from "./VoiceRecorder";
 import { VoiceMessagePlayer } from "./VoiceMessagePlayer";
 import { AvatarImage, getDisplayName } from "./AvatarImage";
 import { format } from "date-fns";
+import { compressImage } from "@/utils/imageCompression";
 import {
   DropdownMenu,
   DropdownMenuContent,
