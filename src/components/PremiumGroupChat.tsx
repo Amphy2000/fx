@@ -250,6 +250,15 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
     const messageContent = newMessage.trim();
     setNewMessage("");
 
+    // Clear typing indicator immediately
+    const channel = supabase.channel(`premium-group-${groupId}`);
+    await channel.track({
+      user_id: currentUserId,
+      user_name: 'You',
+      online_at: new Date().toISOString(),
+      typing: false
+    });
+
     try {
       const messageData: any = {
         group_id: groupId,
@@ -674,6 +683,33 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
               
               <VoiceRecorder
                 onRecordingComplete={async (audioBlob: Blob, duration: number) => {
+                  const tempId = `temp-voice-${Date.now()}`;
+                  const tempUrl = URL.createObjectURL(audioBlob);
+                  
+                  // Optimistically add voice message
+                  const optimisticMessage: any = {
+                    id: tempId,
+                    group_id: groupId,
+                    sender_id: currentUserId,
+                    content: `Voice message (${duration}s)`,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                    voice_url: tempUrl,
+                    voice_duration: duration,
+                    sender: { id: currentUserId, display_name: 'You', full_name: 'You' },
+                    reactions: []
+                  };
+                  setMessages(prev => [...prev, optimisticMessage]);
+
+                  // Clear typing indicator
+                  const channel = supabase.channel(`premium-group-${groupId}`);
+                  await channel.track({
+                    user_id: currentUserId,
+                    user_name: 'You',
+                    online_at: new Date().toISOString(),
+                    typing: false
+                  });
+
                   try {
                     const fileName = `${currentUserId}/${groupId}/${Date.now()}.webm`;
                     
@@ -700,9 +736,15 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
                       });
 
                     if (insertError) throw insertError;
+                    
+                    // Cleanup temp URL
+                    URL.revokeObjectURL(tempUrl);
                   } catch (error) {
                     console.error('Error sending voice message:', error);
                     toast.error("Failed to send voice message");
+                    // Remove optimistic message on error
+                    setMessages(prev => prev.filter(m => m.id !== tempId));
+                    URL.revokeObjectURL(tempUrl);
                   }
                 }}
                 onCancel={() => {}}
@@ -746,12 +788,47 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
             const file = e.target.files?.[0];
             if (!file) return;
 
+            const tempId = `temp-file-${Date.now()}`;
+            const tempUrl = URL.createObjectURL(file);
+
+            // Optimistically add file message
+            const optimisticMessage: any = {
+              id: tempId,
+              group_id: groupId,
+              sender_id: currentUserId,
+              content: file.name,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              attachment_url: tempUrl,
+              attachment_type: file.type,
+              attachment_name: file.name,
+              sender: { id: currentUserId, display_name: 'You', full_name: 'You' },
+              reactions: []
+            };
+            setMessages(prev => [...prev, optimisticMessage]);
+
+            // Clear typing indicator
+            const channel = supabase.channel(`premium-group-${groupId}`);
+            await channel.track({
+              user_id: currentUserId,
+              user_name: 'You',
+              online_at: new Date().toISOString(),
+              typing: false
+            });
+
             try {
+              let fileToUpload = file;
+
+              // Compress images
+              if (file.type.startsWith('image/')) {
+                fileToUpload = await compressImage(file);
+              }
+
               const fileName = `${currentUserId}/${groupId}/${Date.now()}_${file.name}`;
               
               const { error: uploadError } = await supabase.storage
                 .from('chat-attachments')
-                .upload(fileName, file);
+                .upload(fileName, fileToUpload);
 
               if (uploadError) throw uploadError;
 
@@ -774,9 +851,13 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
               
               toast.success("File uploaded successfully");
               e.target.value = ''; // Reset input
+              URL.revokeObjectURL(tempUrl);
             } catch (error) {
               console.error('Error uploading file:', error);
               toast.error("Failed to upload file");
+              // Remove optimistic message on error
+              setMessages(prev => prev.filter(m => m.id !== tempId));
+              URL.revokeObjectURL(tempUrl);
             }
           }}
         />
