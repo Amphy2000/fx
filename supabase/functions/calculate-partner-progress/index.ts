@@ -26,6 +26,41 @@ Deno.serve(async (req) => {
 
     console.log('Calculating progress for partnership:', partnership_id);
 
+    // Get partnership details
+    const { data: partnership, error: partnershipError } = await supabaseClient
+      .from('accountability_partnerships')
+      .select('user_id, partner_id')
+      .eq('id', partnership_id)
+      .single();
+
+    if (partnershipError) throw partnershipError;
+
+    // Calculate trading stats for both users
+    const calculateUserStats = async (userId: string) => {
+      const { data: trades } = await supabaseClient
+        .from('trades')
+        .select('profit_loss, result')
+        .eq('user_id', userId)
+        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+
+      const totalTrades = trades?.length || 0;
+      const winningTrades = trades?.filter(t => t.result === 'win').length || 0;
+      const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
+      
+      const totalProfit = trades?.filter(t => t.profit_loss > 0)
+        .reduce((sum, t) => sum + t.profit_loss, 0) || 0;
+      const totalLoss = Math.abs(trades?.filter(t => t.profit_loss < 0)
+        .reduce((sum, t) => sum + t.profit_loss, 0) || 0);
+      const profitFactor = totalLoss > 0 ? totalProfit / totalLoss : 0;
+
+      return { totalTrades, winRate, profitFactor };
+    };
+
+    const [user1Stats, user2Stats] = await Promise.all([
+      calculateUserStats(partnership.user_id),
+      calculateUserStats(partnership.partner_id),
+    ]);
+
     // Get all active goals for this partnership
     const { data: goals, error: goalsError } = await supabaseClient
       .from('partner_goals')
@@ -65,8 +100,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Store progress snapshots
+    // Store progress snapshots and calculate engagement score
     const snapshots = [];
+    let totalEngagement = 0;
+    
     for (const [user_id, progress] of progressByUser.entries()) {
       const completionRate = progress.total > 0
         ? ((progress.completed / progress.total) * 100).toFixed(2)
@@ -81,6 +118,8 @@ Deno.serve(async (req) => {
         .eq('streak_type', 'check_in')
         .single();
 
+      totalEngagement += progress.total + (streak?.current_streak || 0);
+
       snapshots.push({
         user_id,
         partnership_id,
@@ -92,6 +131,33 @@ Deno.serve(async (req) => {
         streak_count: streak?.current_streak || 0,
       });
     }
+
+    // Store partnership analytics
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+
+    const totalGoals = Array.from(progressByUser.values()).reduce((sum, p) => sum + p.total, 0);
+    const completedGoals = Array.from(progressByUser.values()).reduce((sum, p) => sum + p.completed, 0);
+    const avgCompletionRate = totalGoals > 0 ? (completedGoals / totalGoals) * 100 : 0;
+
+    await supabaseClient
+      .from('partnership_analytics')
+      .upsert({
+        partnership_id,
+        week_start: weekStart.toISOString().split('T')[0],
+        week_end: weekEnd.toISOString().split('T')[0],
+        combined_win_rate: (user1Stats.winRate + user2Stats.winRate) / 2,
+        combined_profit_factor: (user1Stats.profitFactor + user2Stats.profitFactor) / 2,
+        total_goals_completed: completedGoals,
+        total_goals_set: totalGoals,
+        completion_rate: avgCompletionRate,
+        engagement_score: totalEngagement + user1Stats.totalTrades + user2Stats.totalTrades,
+        calculated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'partnership_id,week_start',
+      });
 
     // Upsert snapshots
     for (const snapshot of snapshots) {

@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PartnerAchievementTracker from "./PartnerAchievementTracker";
 import PartnerComparisonChart from "./PartnerComparisonChart";
+import PartnerTradingStats from "./PartnerTradingStats";
+import AutomatedReminders from "./AutomatedReminders";
 
 interface AccountabilityAnalyticsProps {
   partnershipId: string;
@@ -102,9 +104,11 @@ export default function AccountabilityAnalytics({ partnershipId }: Accountabilit
       </div>
 
       <Tabs defaultValue="achievements" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="achievements">Achievements & Streaks</TabsTrigger>
-          <TabsTrigger value="comparison">Partner Comparison</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="achievements">Achievements</TabsTrigger>
+          <TabsTrigger value="comparison">Comparison</TabsTrigger>
+          <TabsTrigger value="trading">Trading Stats</TabsTrigger>
+          <TabsTrigger value="automation">Automation</TabsTrigger>
         </TabsList>
 
         <TabsContent value="achievements" className="mt-6">
@@ -121,6 +125,14 @@ export default function AccountabilityAnalytics({ partnershipId }: Accountabilit
             partnership={analytics.partnership}
             currentUserId={currentUserId}
           />
+        </TabsContent>
+
+        <TabsContent value="trading" className="mt-6">
+          <PartnerTradingStats partnershipId={partnershipId} />
+        </TabsContent>
+
+        <TabsContent value="automation" className="mt-6">
+          <AutomatedReminders partnershipId={partnershipId} />
         </TabsContent>
       </Tabs>
     </div>
