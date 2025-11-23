@@ -215,8 +215,7 @@ export default function AccountabilityPartners() {
                         {activePartnerships.map((partnership) => {
                           const isInitiator = partnership.user_id === partnership.currentUserId;
                           const partnerProfile = isInitiator ? partnership.partner_profile : partnership.user_profile;
-                          const partnerName = partnerProfile?.full_name || partnerProfile?.email || "Partner";
-                          const partnerEmail = partnerProfile?.email || "";
+                          const partnerName = partnerProfile?.full_name || partnerProfile?.email?.split('@')[0] || "Partner";
                           const initials = partnerName
                             .split(' ')
                             .map(n => n[0])
@@ -239,14 +238,7 @@ export default function AccountabilityPartners() {
                                   {initials}
                                 </AvatarFallback>
                               </Avatar>
-                              <div className="text-left">
-                                <div className="font-semibold">{partnerName}</div>
-                                {partnerEmail && (
-                                  <div className={`text-xs ${selectedPartnershipId === partnership.id ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
-                                    {partnerEmail}
-                                  </div>
-                                )}
-                              </div>
+                              <div className="font-semibold">{partnerName}</div>
                             </button>
                           );
                         })}
