@@ -3,8 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Bell, Clock, Target, MessageSquare } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Bell, Clock, Target, MessageSquare, Info } from "lucide-react";
 import { toast } from "sonner";
+import NotificationTimesDialog from "./NotificationTimesDialog";
 
 interface Props {
   partnershipId: string;
@@ -17,6 +19,7 @@ export default function AutomatedReminders({ partnershipId }: Props) {
     inactivityAlerts: true,
     progressUpdates: true,
   });
+  const [showTimesDialog, setShowTimesDialog] = useState(false);
 
   const handleToggle = (key: keyof typeof settings) => {
     setSettings(prev => ({ ...prev, [key]: !prev[key] }));
@@ -24,18 +27,28 @@ export default function AutomatedReminders({ partnershipId }: Props) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Bell className="h-5 w-5 text-primary" />
-          Automated Reminders
-        </CardTitle>
-        <CardDescription>
-          Configure automatic notifications to stay on track
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+    <>
+      <Card className="shadow-lg border-primary/10">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 to-primary/20">
+              <Bell className="h-5 w-5 text-primary" />
+            </div>
+            Automated Reminders
+          </CardTitle>
+          <CardDescription>
+            Configure automatic notifications to stay on track
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert className="mb-6 bg-gradient-to-r from-primary/5 to-blue-500/5 border-primary/20">
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Reminders are sent as <strong>in-app messages</strong> to your partner chat. Make sure to check your messages regularly!
+            </AlertDescription>
+          </Alert>
+
+          <div className="space-y-4">
           <div className="flex items-center justify-between p-3 rounded-lg bg-accent/50">
             <div className="flex items-start gap-3">
               <Target className="h-5 w-5 text-primary mt-0.5" />
@@ -112,17 +125,40 @@ export default function AutomatedReminders({ partnershipId }: Props) {
             />
           </div>
 
-          <div className="pt-4 border-t">
-            <p className="text-sm text-muted-foreground mb-4">
-              Reminders are sent automatically based on your activity patterns
-            </p>
-            <Button variant="outline" className="w-full">
-              <Clock className="h-4 w-4 mr-2" />
-              Configure Notification Times
-            </Button>
+          <div className="pt-6 border-t">
+            <div className="space-y-4">
+              <div className="flex items-start gap-3 p-4 rounded-xl bg-gradient-to-br from-muted/50 to-muted/30 border">
+                <Info className="h-5 w-5 text-primary mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium mb-2">How Reminders Work</p>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Sent automatically based on your activity patterns</li>
+                    <li>• Appear as system messages in your partner chat</li>
+                    <li>• Help maintain accountability and engagement</li>
+                    <li>• Can be customized to your preferred times</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <Button 
+                variant="outline" 
+                className="w-full hover:bg-primary/5 hover:border-primary/30 transition-colors"
+                onClick={() => setShowTimesDialog(true)}
+              >
+                <Clock className="h-4 w-4 mr-2" />
+                Configure Notification Times
+              </Button>
+            </div>
           </div>
         </div>
       </CardContent>
     </Card>
+
+    <NotificationTimesDialog
+      open={showTimesDialog}
+      onOpenChange={setShowTimesDialog}
+      partnershipId={partnershipId}
+    />
+    </>
   );
 }
