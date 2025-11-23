@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, MessageSquare, Target, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import GroupChat from "./GroupChat";
+import PremiumGroupChat from "./PremiumGroupChat";
 import GroupGoals from "./GroupGoals";
 
 interface GroupDetailsProps {
@@ -122,7 +122,7 @@ export default function GroupDetails({ groupId, onBack }: GroupDetailsProps) {
         </TabsList>
 
         <TabsContent value="chat">
-          <GroupChat groupId={groupId} />
+          <PremiumGroupChat groupId={groupId} />
         </TabsContent>
 
         <TabsContent value="goals">

@@ -36,6 +36,65 @@ Deno.serve(async (req) => {
 
     let remindersSent = 0;
 
+    // Helper function to send notifications via multiple channels
+    const sendNotification = async (userId: string, message: string, metadata: any) => {
+      // Get user notification preferences
+      const { data: profile } = await supabase
+        .from('accountability_profiles')
+        .select('notification_preferences')
+        .eq('user_id', userId)
+        .single();
+
+      const prefs = (profile?.notification_preferences as any) || {};
+
+      // Send email if enabled
+      if (prefs.enable_email && prefs.email_address) {
+        try {
+          const resendKey = Deno.env.get('RESEND_API_KEY');
+          if (resendKey) {
+            await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${resendKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                from: 'Accountability Partner <notifications@amphyjournal.com>',
+                to: [prefs.email_address],
+                subject: 'Accountability Reminder',
+                html: `
+                  <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #333;">Accountability Reminder</h2>
+                    <p style="font-size: 16px; color: #555;">${message}</p>
+                    <p style="color: #999; font-size: 14px; margin-top: 24px;">
+                      This is an automated reminder from your accountability partnership.
+                    </p>
+                  </div>
+                `,
+              }),
+            });
+            console.log(`Email sent to ${prefs.email_address}`);
+          }
+        } catch (error) {
+          console.error('Error sending email:', error);
+        }
+      }
+
+      // Send Telegram if enabled
+      if (prefs.enable_telegram && prefs.telegram_username) {
+        try {
+          const telegramBotToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
+          if (telegramBotToken) {
+            // Log telegram notification attempt
+            console.log(`Telegram notification queued for ${prefs.telegram_username}: ${message}`);
+            // Note: Full Telegram implementation would require chat_id lookup
+          }
+        } catch (error) {
+          console.error('Error sending Telegram:', error);
+        }
+      }
+    };
+
     for (const partnership of partnerships) {
       // Check for pending goals that need check-ins
       const { data: pendingGoals } = await supabase
@@ -55,17 +114,25 @@ Deno.serve(async (req) => {
           .single();
 
         if (!checkIn) {
-          // Send reminder notification
+          const reminderMessage = `⏰ Reminder: Time to check in on your goal "${goal.goal_text}"`;
+          
+          // Send in-app notification
           await supabase.from('partner_messages').insert({
             partnership_id: partnership.id,
             sender_id: partnership.user_id === goal.user_id ? partnership.partner_id : partnership.user_id,
             message_type: 'system',
             is_system: true,
-            content: `⏰ Reminder: Time to check in on your goal "${goal.goal_text}"`,
+            content: reminderMessage,
             metadata: {
               type: 'goal_reminder',
               goal_id: goal.id,
             },
+          });
+
+          // Send via other channels
+          await sendNotification(goal.user_id, reminderMessage, {
+            type: 'goal_reminder',
+            goal_id: goal.id,
           });
 
           remindersSent++;
@@ -81,14 +148,16 @@ Deno.serve(async (req) => {
         .gte('created_at', threeDaysAgo);
 
       if (count === 0) {
-        // Send engagement reminder to both users
+        const engagementMessage = `👋 Hey! Your accountability partner might need some encouragement. Send them a message!`;
+        
+        // Send in-app notifications to both users
         await Promise.all([
           supabase.from('partner_messages').insert({
             partnership_id: partnership.id,
             sender_id: partnership.partner_id,
             message_type: 'system',
             is_system: true,
-            content: `👋 Hey! Your accountability partner might need some encouragement. Send them a message!`,
+            content: engagementMessage,
             metadata: { type: 'engagement_reminder' },
           }),
           supabase.from('partner_messages').insert({
@@ -96,9 +165,11 @@ Deno.serve(async (req) => {
             sender_id: partnership.user_id,
             message_type: 'system',
             is_system: true,
-            content: `👋 Hey! Your accountability partner might need some encouragement. Send them a message!`,
+            content: engagementMessage,
             metadata: { type: 'engagement_reminder' },
           }),
+          sendNotification(partnership.user_id, engagementMessage, { type: 'engagement_reminder' }),
+          sendNotification(partnership.partner_id, engagementMessage, { type: 'engagement_reminder' }),
         ]);
 
         remindersSent += 2;
@@ -113,16 +184,23 @@ Deno.serve(async (req) => {
         .lt('target_date', now.toISOString());
 
       for (const goal of overdueGoals || []) {
+        const overdueMessage = `⚠️ Goal overdue: "${goal.goal_text}" - Time to update the status!`;
+        
         await supabase.from('partner_messages').insert({
           partnership_id: partnership.id,
           sender_id: partnership.user_id === goal.user_id ? partnership.partner_id : partnership.user_id,
           message_type: 'system',
           is_system: true,
-          content: `⚠️ Goal overdue: "${goal.goal_text}" - Time to update the status!`,
+          content: overdueMessage,
           metadata: {
             type: 'overdue_goal',
             goal_id: goal.id,
           },
+        });
+
+        await sendNotification(goal.user_id, overdueMessage, {
+          type: 'overdue_goal',
+          goal_id: goal.id,
         });
 
         remindersSent++;
