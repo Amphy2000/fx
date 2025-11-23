@@ -15,13 +15,18 @@ export default defineConfig(() => {
     react(),
     componentTagger(),
     VitePWA({
-      registerType: "autoUpdate",
-      injectRegister: 'auto',
+      registerType: "prompt",
+      injectRegister: false,
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,woff2}"],
         maximumFileSizeToCacheInBytes: 5000000,
         // CRITICAL: Import push notification handlers into the service worker
         importScripts: ['sw-push-handlers.js'],
+        // Clean up old caches
+        cleanupOutdatedCaches: true,
+        // Check for updates more frequently
+        clientsClaim: true,
+        skipWaiting: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -34,6 +39,19 @@ export default defineConfig(() => {
               },
               cacheableResponse: {
                 statuses: [0, 200]
+              }
+            }
+          },
+          {
+            // App shell - use NetworkFirst for immediate updates
+            urlPattern: /^https?:\/\/[^/]+\/(index\.html)?$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'app-shell',
+              networkTimeoutSeconds: 3,
+              expiration: {
+                maxEntries: 5,
+                maxAgeSeconds: 60 * 60 // 1 hour
               }
             }
           }
