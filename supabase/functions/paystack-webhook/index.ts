@@ -104,6 +104,32 @@ serve(async (req) => {
         throw profileError;
       }
 
+      // Handle coaching session payments
+      if (planType === 'coaching_session' && metadata?.coach_id) {
+        await supabase.from('coaching_sessions').insert({
+          coach_id: metadata.coach_id,
+          client_id: userId,
+          amount_paid: amount / 100,
+          payment_reference: reference,
+          status: 'confirmed'
+        });
+      }
+
+      // Handle group premium payments
+      if (planType === 'group_premium' && metadata?.group_id) {
+        const expiresAt = new Date();
+        expiresAt.setMonth(expiresAt.getMonth() + 1);
+
+        await supabase.from('group_premium_subscriptions').upsert({
+          group_id: metadata.group_id,
+          tier: metadata.tier || 'pro',
+          amount_paid: amount / 100,
+          payment_reference: reference,
+          status: 'active',
+          expires_at: expiresAt
+        });
+      }
+
       console.log(`Successfully processed payment for user ${userId}, plan: ${planType}`);
     }
 

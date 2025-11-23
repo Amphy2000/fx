@@ -443,6 +443,107 @@ export type Database = {
           },
         ]
       }
+      coaches: {
+        Row: {
+          availability: Json | null
+          bio: string
+          created_at: string
+          hourly_rate: number
+          id: string
+          is_active: boolean
+          is_verified: boolean
+          rating: number
+          specialties: string[]
+          total_sessions: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          availability?: Json | null
+          bio: string
+          created_at?: string
+          hourly_rate: number
+          id?: string
+          is_active?: boolean
+          is_verified?: boolean
+          rating?: number
+          specialties?: string[]
+          total_sessions?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          availability?: Json | null
+          bio?: string
+          created_at?: string
+          hourly_rate?: number
+          id?: string
+          is_active?: boolean
+          is_verified?: boolean
+          rating?: number
+          specialties?: string[]
+          total_sessions?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      coaching_sessions: {
+        Row: {
+          amount_paid: number
+          client_id: string
+          coach_id: string
+          created_at: string
+          duration_minutes: number
+          feedback: string | null
+          id: string
+          payment_reference: string | null
+          rating: number | null
+          scheduled_at: string
+          session_notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_paid: number
+          client_id: string
+          coach_id: string
+          created_at?: string
+          duration_minutes?: number
+          feedback?: string | null
+          id?: string
+          payment_reference?: string | null
+          rating?: number | null
+          scheduled_at: string
+          session_notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_paid?: number
+          client_id?: string
+          coach_id?: string
+          created_at?: string
+          duration_minutes?: number
+          feedback?: string | null
+          id?: string
+          payment_reference?: string | null
+          rating?: number | null
+          scheduled_at?: string
+          session_notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coaching_sessions_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       copilot_feedback: {
         Row: {
           analysis_result: string
@@ -1650,6 +1751,50 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_premium_subscriptions: {
+        Row: {
+          amount_paid: number | null
+          created_at: string
+          expires_at: string | null
+          group_id: string
+          id: string
+          payment_reference: string | null
+          status: string
+          tier: string
+          updated_at: string
+        }
+        Insert: {
+          amount_paid?: number | null
+          created_at?: string
+          expires_at?: string | null
+          group_id: string
+          id?: string
+          payment_reference?: string | null
+          status?: string
+          tier?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_paid?: number | null
+          created_at?: string
+          expires_at?: string | null
+          group_id?: string
+          id?: string
+          payment_reference?: string | null
+          status?: string
+          tier?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_premium_subscriptions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: true
+            referencedRelation: "accountability_groups"
             referencedColumns: ["id"]
           },
         ]

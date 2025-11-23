@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Star, Clock, DollarSign, Users, Lock } from "lucide-react";
+import { Star, DollarSign, Users, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -19,9 +19,8 @@ interface Coach {
   is_verified: boolean;
   availability: any;
   profile: {
-    full_name: string;
-    avatar_url: string;
-  };
+    full_name: string | null;
+  } | null;
 }
 
 interface CoachingMarketplaceProps {
@@ -40,17 +39,31 @@ export const CoachingMarketplace = ({ userTier }: CoachingMarketplaceProps) => {
 
   const fetchCoaches = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: coachesData, error } = await supabase
         .from('coaches')
-        .select(`
-          *,
-          profile:profiles(full_name, avatar_url)
-        `)
+        .select('*')
         .eq('is_active', true)
         .order('rating', { ascending: false });
 
       if (error) throw error;
-      setCoaches(data || []);
+
+      // Fetch profiles separately
+      const coachesWithProfiles = await Promise.all(
+        (coachesData || []).map(async (coach) => {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', coach.user_id)
+            .single();
+
+          return {
+            ...coach,
+            profile: profileData
+          };
+        })
+      );
+
+      setCoaches(coachesWithProfiles);
     } catch (error) {
       console.error('Error fetching coaches:', error);
       toast.error('Failed to load coaches');
@@ -80,7 +93,7 @@ export const CoachingMarketplace = ({ userTier }: CoachingMarketplaceProps) => {
         body: {
           planType: 'coaching_session',
           email: profile?.email,
-          amount: hourlyRate,
+          amount: hourlyRate * 100,
           metadata: {
             coach_id: coachId,
             session_type: 'one_on_one'
@@ -126,7 +139,6 @@ export const CoachingMarketplace = ({ userTier }: CoachingMarketplaceProps) => {
             <CardHeader>
               <div className="flex items-start gap-3">
                 <Avatar className="h-12 w-12">
-                  <AvatarImage src={coach.profile?.avatar_url} />
                   <AvatarFallback>
                     {coach.profile?.full_name?.charAt(0) || 'C'}
                   </AvatarFallback>
