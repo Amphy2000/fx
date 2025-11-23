@@ -1754,6 +1754,7 @@ export type Database = {
           group_id: string
           hidden_for: string[] | null
           id: string
+          is_edited: boolean | null
           sender_id: string
           updated_at: string
           voice_duration: number | null
@@ -1768,6 +1769,7 @@ export type Database = {
           group_id: string
           hidden_for?: string[] | null
           id?: string
+          is_edited?: boolean | null
           sender_id: string
           updated_at?: string
           voice_duration?: number | null
@@ -1782,6 +1784,7 @@ export type Database = {
           group_id?: string
           hidden_for?: string[] | null
           id?: string
+          is_edited?: boolean | null
           sender_id?: string
           updated_at?: string
           voice_duration?: number | null
@@ -2366,6 +2369,7 @@ export type Database = {
           created_at: string | null
           hidden_for: string[] | null
           id: string
+          is_edited: boolean | null
           is_system: boolean | null
           message_type: string
           metadata: Json | null
@@ -2384,6 +2388,7 @@ export type Database = {
           created_at?: string | null
           hidden_for?: string[] | null
           id?: string
+          is_edited?: boolean | null
           is_system?: boolean | null
           message_type?: string
           metadata?: Json | null
@@ -2402,6 +2407,7 @@ export type Database = {
           created_at?: string | null
           hidden_for?: string[] | null
           id?: string
+          is_edited?: boolean | null
           is_system?: boolean | null
           message_type?: string
           metadata?: Json | null
