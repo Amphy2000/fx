@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Loader2, Crown, Zap, Mail } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { AvatarUpload } from "@/components/AvatarUpload";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -343,6 +345,57 @@ const Settings = () => {
         <h1 className="text-4xl font-bold mb-8 text-foreground">Settings</h1>
 
         <div className="space-y-6">
+          {/* Profile */}
+          <Card className="border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground">Profile</CardTitle>
+              <CardDescription>Manage your profile picture and display name</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <Label className="text-foreground mb-4 block">Avatar</Label>
+                <AvatarUpload
+                  userId={profile?.id || ""}
+                  currentAvatarUrl={profile?.avatar_url}
+                  onUploadComplete={(url) => {
+                    setProfile({ ...profile, avatar_url: url });
+                  }}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="display_name" className="text-foreground">Display Name</Label>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Choose how you want to be identified by your accountability partners
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    id="display_name"
+                    value={profile?.display_name || ""}
+                    onChange={(e) => setProfile({ ...profile, display_name: e.target.value })}
+                    placeholder="Your display name"
+                  />
+                  <Button
+                    onClick={async () => {
+                      try {
+                        const { error } = await supabase
+                          .from('profiles')
+                          .update({ display_name: profile?.display_name })
+                          .eq('id', profile?.id);
+                        if (error) throw error;
+                        toast.success("Display name updated");
+                      } catch (error: any) {
+                        toast.error("Failed to update display name");
+                      }
+                    }}
+                  >
+                    Save
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Subscription Status */}
           <Card className="border-border">
             <CardHeader>

@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Check, X, Users, Clock, Calendar } from "lucide-react";
 import { format } from "date-fns";
+import { AvatarImage, getDisplayName } from "@/components/AvatarImage";
 
 export default function MyPartners() {
   const [loading, setLoading] = useState(true);
@@ -30,8 +30,8 @@ export default function MyPartners() {
         .from('accountability_partnerships')
         .select(`
           *,
-          partner_profile:profiles!accountability_partnerships_partner_id_fkey(full_name, email),
-          user_profile:profiles!accountability_partnerships_user_id_fkey(full_name, email)
+          partner_profile:profiles!accountability_partnerships_partner_id_fkey(full_name, email, display_name, avatar_url),
+          user_profile:profiles!accountability_partnerships_user_id_fkey(full_name, email, display_name, avatar_url)
         `)
         .or(`user_id.eq.${user.id},partner_id.eq.${user.id}`)
         .eq('status', 'active');
@@ -45,7 +45,7 @@ export default function MyPartners() {
         .from('accountability_partnerships')
         .select(`
           *,
-          user_profile:profiles!accountability_partnerships_user_id_fkey(full_name, email)
+          user_profile:profiles!accountability_partnerships_user_id_fkey(full_name, email, display_name, avatar_url)
         `)
         .eq('partner_id', user.id)
         .eq('status', 'pending');
@@ -57,7 +57,7 @@ export default function MyPartners() {
         .from('accountability_partnerships')
         .select(`
           *,
-          partner_profile:profiles!accountability_partnerships_partner_id_fkey(full_name, email)
+          partner_profile:profiles!accountability_partnerships_partner_id_fkey(full_name, email, display_name, avatar_url)
         `)
         .eq('user_id', user.id)
         .eq('status', 'pending');
@@ -91,11 +91,6 @@ export default function MyPartners() {
     const isInitiator = partnership.user_id === partnership.currentUserId;
     const partnerProfile = isInitiator ? partnership.partner_profile : partnership.user_profile;
     return partnerProfile;
-  };
-
-  const getInitials = (profile: any) => {
-    const name = profile?.full_name || profile?.email || "?";
-    return name.substring(0, 2).toUpperCase();
   };
 
   if (loading) {
@@ -139,14 +134,14 @@ export default function MyPartners() {
                 <Card key={partnership.id}>
                   <CardHeader>
                     <div className="flex items-start gap-4">
-                      <Avatar className="h-12 w-12">
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          {getInitials(partnerInfo)}
-                        </AvatarFallback>
-                      </Avatar>
+                      <AvatarImage
+                        avatarUrl={partnerInfo?.avatar_url}
+                        fallbackText={getDisplayName(partnerInfo)}
+                        className="h-12 w-12"
+                      />
                       <div className="flex-1">
                         <CardTitle className="text-lg">
-                          {partnerInfo?.full_name || "Anonymous Trader"}
+                          {getDisplayName(partnerInfo)}
                         </CardTitle>
                         <CardDescription className="flex items-center gap-2 mt-1">
                           <Calendar className="h-3 w-3" />
@@ -188,14 +183,14 @@ export default function MyPartners() {
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-4">
-                        <Avatar className="h-12 w-12">
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            {getInitials(requesterInfo)}
-                          </AvatarFallback>
-                        </Avatar>
+                        <AvatarImage
+                          avatarUrl={requesterInfo?.avatar_url}
+                          fallbackText={getDisplayName(requesterInfo)}
+                          className="h-12 w-12"
+                        />
                         <div>
                           <CardTitle className="text-lg">
-                            {requesterInfo?.full_name || "Anonymous Trader"}
+                            {getDisplayName(requesterInfo)}
                           </CardTitle>
                           <CardDescription>
                             Sent {format(new Date(request.created_at), "MMM d")}
@@ -254,14 +249,14 @@ export default function MyPartners() {
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-4">
-                        <Avatar className="h-12 w-12">
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            {getInitials(partnerInfo)}
-                          </AvatarFallback>
-                        </Avatar>
+                        <AvatarImage
+                          avatarUrl={partnerInfo?.avatar_url}
+                          fallbackText={getDisplayName(partnerInfo)}
+                          className="h-12 w-12"
+                        />
                         <div>
                           <CardTitle className="text-lg">
-                            {partnerInfo?.full_name || "Anonymous Trader"}
+                            {getDisplayName(partnerInfo)}
                           </CardTitle>
                           <CardDescription>
                             Sent {format(new Date(request.created_at), "MMM d")}
