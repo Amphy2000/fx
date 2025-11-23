@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, UserPlus, Settings, Target } from "lucide-react";
+import { Users, UserPlus, Settings, Target, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import AccountabilityProfileSetup from "@/components/AccountabilityProfileSetup"
 import WeeklyCommitments from "@/components/WeeklyCommitments";
 import PartnerActivityFeed from "@/components/PartnerActivityFeed";
 import AccountabilityDebug from "@/components/AccountabilityDebug";
+import AccountabilityAnalytics from "@/components/AccountabilityAnalytics";
 
 export default function AccountabilityPartners() {
   const navigate = useNavigate();
@@ -93,7 +94,7 @@ export default function AccountabilityPartners() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="partners" disabled={!hasProfile}>
               <Users className="h-4 w-4 mr-2" />
               My Partners
@@ -104,11 +105,15 @@ export default function AccountabilityPartners() {
             </TabsTrigger>
             <TabsTrigger value="find" disabled={!hasProfile}>
               <UserPlus className="h-4 w-4 mr-2" />
-              Find Partners
+              Find
+            </TabsTrigger>
+            <TabsTrigger value="analytics" disabled={!hasProfile || activePartnerships.length === 0}>
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Analytics
             </TabsTrigger>
             <TabsTrigger value="setup">
               <Settings className="h-4 w-4 mr-2" />
-              Profile Setup
+              Setup
             </TabsTrigger>
           </TabsList>
 
@@ -135,6 +140,16 @@ export default function AccountabilityPartners() {
 
           <TabsContent value="find" className="mt-6">
             <PartnerFinder />
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6">
+            {activePartnerships.length > 0 ? (
+              <AccountabilityAnalytics partnershipId={activePartnerships[0].id} />
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                Connect with a partner to view analytics
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="setup" className="mt-6">
