@@ -8,6 +8,26 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
+const getAvatarColor = (userId: string) => {
+  const colors = [
+    'bg-red-500',
+    'bg-blue-500',
+    'bg-green-500',
+    'bg-yellow-500',
+    'bg-purple-500',
+    'bg-pink-500',
+    'bg-indigo-500',
+    'bg-orange-500',
+    'bg-teal-500',
+    'bg-cyan-500',
+  ];
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
+
 interface GroupChatProps {
   groupId: string;
 }
@@ -122,10 +142,11 @@ export default function GroupChat({ groupId }: GroupChatProps) {
             ) : (
               messages.map((message) => {
                 const isOwn = message.sender_id === userId;
+                const avatarColor = getAvatarColor(message.sender_id);
                 return (
                   <div key={message.id} className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}>
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>
+                    <Avatar className={`h-8 w-8 ${avatarColor}`}>
+                      <AvatarFallback className="text-white bg-transparent">
                         {message.sender?.full_name?.[0] || 'U'}
                       </AvatarFallback>
                     </Avatar>
