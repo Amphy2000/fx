@@ -4,12 +4,13 @@ import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
-import { TrendingUp, DollarSign, Target, AlertTriangle, Calendar, Sparkles } from "lucide-react";
+import { TrendingUp, DollarSign, Target, AlertTriangle, Calendar, Sparkles, Lock, BarChart3 } from "lucide-react";
 import { ModernGaugeChart } from '@/components/ModernGaugeChart';
 import { ModernDonutChart } from '@/components/ModernDonutChart';
 import { ModernRadarChart } from '@/components/ModernRadarChart';
-import { CreditsGuard } from "@/components/CreditsGuard";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
@@ -18,16 +19,46 @@ const AdvancedAnalytics = () => {
   const [trades, setTrades] = useState<any[]>([]);
   const [checkIns, setCheckIns] = useState<any[]>([]);
   const [insights, setInsights] = useState<any>({});
+  const [isPaidUser, setIsPaidUser] = useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     checkAuth();
-    fetchAllData();
   }, []);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       navigate("/auth");
+      return;
+    }
+    
+    await checkSubscription();
+    await fetchAllData();
+  };
+
+  const checkSubscription = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        setIsPaidUser(false);
+        setIsLoading(false);
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_tier')
+        .eq('id', user.id)
+        .single();
+
+      setIsPaidUser(profile?.subscription_tier !== 'free');
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      setIsPaidUser(false);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -173,20 +204,112 @@ const AdvancedAnalytics = () => {
     });
   };
 
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto p-6 space-y-6">
+          <Skeleton className="h-12 w-3/4" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!isPaidUser) {
+    return (
+      <Layout>
+        <div className="container mx-auto p-6 space-y-6">
+          <Card className="border-2 border-primary/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5 text-primary" />
+                Advanced Analytics - Premium Feature
+              </CardTitle>
+              <CardDescription>
+                Unlock deep insights into your trading psychology and performance patterns
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="flex items-start gap-3">
+                  <BarChart3 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-sm">Day of Week Analysis</p>
+                    <p className="text-xs text-muted-foreground">Discover which days you perform best and worst</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Target className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-sm">R-Multiple Distribution</p>
+                    <p className="text-xs text-muted-foreground">Visualize your risk/reward outcomes across all trades</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <TrendingUp className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-sm">Pair Performance Ranking</p>
+                    <p className="text-xs text-muted-foreground">Identify your most and least profitable currency pairs</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <DollarSign className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-sm">Emotional Correlation</p>
+                    <p className="text-xs text-muted-foreground">See how your emotions impact your win rate</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-sm">Behavioral Alerts</p>
+                    <p className="text-xs text-muted-foreground">Get warned about overtrading and revenge trading patterns</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Sparkles className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-sm">AI-Powered Insights</p>
+                    <p className="text-xs text-muted-foreground">Advanced pattern recognition you won't find elsewhere</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                <p className="text-sm font-semibold mb-2">Why Professional Traders Love Advanced Analytics</p>
+                <p className="text-xs text-muted-foreground">
+                  Go beyond basic win rates and profit charts. Advanced Analytics helps you understand the <strong>why</strong> behind your results—revealing hidden patterns in your trading psychology, optimal trading times, and emotional triggers that impact your performance.
+                </p>
+              </div>
+
+              <Button 
+                onClick={() => navigate('/pricing')}
+                className="w-full"
+                size="lg"
+              >
+                <Lock className="h-4 w-4 mr-2" />
+                Upgrade to Pro to Unlock Advanced Analytics
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
-      <CreditsGuard requiredCredits={0} featureName="Advanced Analytics">
-        <div className="container mx-auto p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold">Advanced Analytics</h1>
-              <p className="text-muted-foreground">Deep insights into your trading performance</p>
-            </div>
-            <Badge variant="default" className="gap-1">
-              <Sparkles className="h-3 w-3" />
-              Premium Feature
-            </Badge>
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Advanced Analytics</h1>
+            <p className="text-muted-foreground">Deep insights into your trading performance</p>
           </div>
+          <Badge variant="default" className="gap-1">
+            <Sparkles className="h-3 w-3" />
+            Premium Feature
+          </Badge>
+        </div>
 
         {insights.alerts && insights.alerts.length > 0 && (
           <Card className="border-yellow-500/50 bg-yellow-500/5">
@@ -385,7 +508,6 @@ const AdvancedAnalytics = () => {
           </Card>
         </div>
       </div>
-      </CreditsGuard>
     </Layout>
   );
 };

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -10,11 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Download, Table } from "lucide-react";
+import { CalendarIcon, Download, Table, Lock, FileText, BarChart } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ExportDialogProps {
   open: boolean;
@@ -22,11 +24,41 @@ interface ExportDialogProps {
 }
 
 export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
+  const navigate = useNavigate();
   const [startDate, setStartDate] = useState<Date>(
     new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
   );
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [isExporting, setIsExporting] = useState(false);
+  const [isPaidUser, setIsPaidUser] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      checkSubscription();
+    }
+  }, [open]);
+
+  const checkSubscription = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        setIsPaidUser(false);
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_tier')
+        .eq('id', user.id)
+        .single();
+
+      setIsPaidUser(profile?.subscription_tier !== 'free');
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      setIsPaidUser(false);
+    }
+  };
 
   const handleExportCSV = async (type: 'trades' | 'analytics') => {
     setIsExporting(true);
@@ -72,6 +104,64 @@ export const ExportDialog = ({ open, onOpenChange }: ExportDialogProps) => {
       setIsExporting(false);
     }
   };
+
+  if (isPaidUser === false) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5 text-primary" />
+              Export Data - Premium Feature
+            </DialogTitle>
+            <DialogDescription>
+              Professional traders need professional tools
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <Alert className="bg-primary/5 border-primary/20">
+              <FileText className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-sm">
+                <strong>Why Export Matters:</strong> Professional traders use exports to analyze their data in Excel, share reports with mentors, maintain offline records, and integrate with tax software.
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                <Table className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold text-sm">Trade History CSV</p>
+                  <p className="text-xs text-muted-foreground">Export all your trades with complete details—pair, direction, profit/loss, times, emotions, and notes</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                <BarChart className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold text-sm">Analytics CSV</p>
+                  <p className="text-xs text-muted-foreground">Export performance metrics, win rates, profit factors, and detailed statistics for any date range</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <Button 
+                onClick={() => {
+                  onOpenChange(false);
+                  navigate('/pricing');
+                }}
+                className="w-full"
+                size="lg"
+              >
+                <Lock className="h-4 w-4 mr-2" />
+                Upgrade to Pro to Unlock Exports
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
