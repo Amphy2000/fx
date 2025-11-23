@@ -1,38 +1,71 @@
-import { useEffect } from 'react';
-import { useRegisterSW } from 'virtual:pwa-register/react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { RefreshCw } from 'lucide-react';
 
 export const PWAUpdatePrompt = () => {
-  const {
-    needRefresh: [needRefresh, setNeedRefresh],
-    updateServiceWorker,
-  } = useRegisterSW({
-    onRegistered(registration) {
-      if (registration) {
-        console.log('Service Worker registered successfully');
-        // Check for updates every 30 seconds
-        setInterval(() => {
-          console.log('Checking for app updates...');
-          registration.update();
-        }, 30000);
-      }
-    },
-    onRegisterError(error) {
-      console.error('SW registration error:', error);
-    },
-  });
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      // Register service worker
+      navigator.serviceWorker.register('/sw.js')
+        .then((reg) => {
+          console.log('Service Worker registered');
+          setRegistration(reg);
+
+          // Check for updates every 30 seconds
+          const intervalId = setInterval(() => {
+            console.log('Checking for updates...');
+            reg.update().catch(err => console.error('Update check failed:', err));
+          }, 30000);
+
+          // Listen for updates
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            if (!newWorker) return;
+
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                console.log('New version available!');
+                setShowPrompt(true);
+              }
+            });
+          });
+
+          return () => clearInterval(intervalId);
+        })
+        .catch((error) => {
+          console.error('SW registration failed:', error);
+        });
+
+      // Listen for controller changes
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
+      });
+    }
+  }, []);
 
   const handleUpdate = () => {
-    updateServiceWorker(true);
+    setShowPrompt(false);
+    
+    if (registration?.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    } else {
+      window.location.reload();
+    }
   };
 
   const handleDismiss = () => {
-    setNeedRefresh(false);
+    setShowPrompt(false);
   };
 
-  if (!needRefresh) return null;
+  if (!showPrompt) return null;
 
   return (
     <Alert className="fixed bottom-4 right-4 w-auto max-w-md shadow-lg z-50 border-primary">
