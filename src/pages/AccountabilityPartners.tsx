@@ -3,7 +3,8 @@ import { Layout } from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, UserPlus, Settings, Target, TrendingUp, MessageSquare, UsersRound, Trophy } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Users, UserPlus, Settings, Target, TrendingUp, MessageSquare, UsersRound, Trophy, Lock, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -34,6 +35,8 @@ export default function AccountabilityPartners() {
   const [selectedPartnershipId, setSelectedPartnershipId] = useState<string | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isPaidUser, setIsPaidUser] = useState(false);
+  const [userTier, setUserTier] = useState<string>('free');
   
   const { unreadCounts, totalUnread } = useUnreadMessages(currentUserId);
 
@@ -56,6 +59,17 @@ export default function AccountabilityPartners() {
       if (!user) return;
       
       setCurrentUserId(user.id);
+
+      // Check subscription tier
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('subscription_tier')
+        .eq('id', user.id)
+        .single();
+      
+      const tier = userProfile?.subscription_tier || 'free';
+      setUserTier(tier);
+      setIsPaidUser(tier !== 'free');
 
       // Check if user is admin
       const { data: adminRole } = await supabase
@@ -131,6 +145,78 @@ export default function AccountabilityPartners() {
       <Layout>
         <div className="container mx-auto p-6 flex items-center justify-center">
           <div className="text-muted-foreground">Loading...</div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show upgrade prompt for free users
+  if (!isPaidUser) {
+    return (
+      <Layout>
+        <div className="safe-container mx-auto p-6 max-w-4xl">
+          <Card className="premium-card border-2 border-primary/20">
+            <CardContent className="pt-12 pb-12 text-center space-y-6">
+              <div className="mx-auto h-24 w-24 rounded-full bg-gradient-premium flex items-center justify-center glow-primary">
+                <Lock className="h-12 w-12 text-white" />
+              </div>
+              
+              <div className="space-y-3">
+                <h2 className="text-3xl font-bold text-gradient-premium">
+                  Premium Feature
+                </h2>
+                <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                  Accountability Partners is an exclusive feature for premium subscribers. 
+                  Connect with partners, share goals, track progress together, and stay accountable.
+                </p>
+              </div>
+
+              <div className="bg-muted/50 backdrop-blur-sm rounded-xl p-6 max-w-md mx-auto space-y-4 border border-border/50">
+                <div className="flex items-center gap-3">
+                  <Sparkles className="h-5 w-5 text-primary shrink-0" />
+                  <p className="text-left">1-on-1 partner chat with voice notes</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Sparkles className="h-5 w-5 text-primary shrink-0" />
+                  <p className="text-left">Group accountability with unlimited members</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Sparkles className="h-5 w-5 text-primary shrink-0" />
+                  <p className="text-left">Shared goals and progress tracking</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Sparkles className="h-5 w-5 text-primary shrink-0" />
+                  <p className="text-left">Weekly summaries and analytics</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Sparkles className="h-5 w-5 text-primary shrink-0" />
+                  <p className="text-left">Multi-channel notifications (Email, Telegram)</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+                <Button
+                  size="lg"
+                  onClick={() => navigate('/pricing')}
+                  className="bg-gradient-premium hover:opacity-90 transition-all glow-primary text-white font-semibold"
+                >
+                  <Sparkles className="h-5 w-5 mr-2" />
+                  Upgrade to Premium
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => navigate('/dashboard')}
+                >
+                  Back to Dashboard
+                </Button>
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                Current Plan: <span className="font-semibold capitalize">{userTier}</span>
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </Layout>
     );
