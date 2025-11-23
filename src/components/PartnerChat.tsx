@@ -522,17 +522,17 @@ export default function PartnerChat({ partnershipId, onBack }: PartnerChatProps)
   };
 
   return (
-    <Card className="border-border/50 shadow-lg">
+    <Card className="border-border/50 shadow-2xl bg-gradient-to-br from-background via-background to-primary/5">
       {/* Header */}
-      <div className="border-b p-4 flex items-center justify-between bg-muted/30">
+      <div className="border-b p-4 flex items-center justify-between bg-gradient-to-r from-primary/10 via-primary/5 to-transparent backdrop-blur-sm">
         <div className="flex items-center gap-3">
           {onBack && (
-            <Button variant="ghost" size="sm" onClick={onBack} className="mr-2">
+            <Button variant="ghost" size="sm" onClick={onBack} className="mr-2 hover:bg-primary/10">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           )}
           <div>
-            <h3 className="font-semibold">Partner Chat</h3>
+            <h3 className="font-semibold text-lg bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Partner Chat</h3>
             <p className="text-xs text-muted-foreground">
               {messages.length} messages
             </p>
@@ -542,6 +542,7 @@ export default function PartnerChat({ partnershipId, onBack }: PartnerChatProps)
           variant="ghost"
           size="sm"
           onClick={() => setShowSearch(!showSearch)}
+          className="hover:bg-primary/10"
         >
           <Search className="h-4 w-4" />
         </Button>
