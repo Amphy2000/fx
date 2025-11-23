@@ -52,7 +52,7 @@ export default function PartnerGoalsCard({ goal, onCheckIn, onReload }: PartnerG
   const [showComments, setShowComments] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     getCurrentUser();
@@ -63,16 +63,21 @@ export default function PartnerGoalsCard({ goal, onCheckIn, onReload }: PartnerG
     if (user) setCurrentUserId(user.id);
   };
 
-  const isMyGoal = currentUserId === goal.user_id;
+  // Check if this is the current user's goal
+  const isMyGoal = currentUserId && goal.user_id && currentUserId === goal.user_id;
   const avatarColor = getAvatarColor(goal.user_id);
 
   const handleDeleteGoal = async () => {
+    if (!currentUserId) {
+      toast.error("Unable to verify user");
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('partner_goals')
         .delete()
-        .eq('id', goal.id)
-        .eq('user_id', currentUserId);
+        .eq('id', goal.id);
 
       if (error) throw error;
       toast.success("Goal deleted");
@@ -85,6 +90,11 @@ export default function PartnerGoalsCard({ goal, onCheckIn, onReload }: PartnerG
   };
 
   const handleEditGoal = async (goalData: any) => {
+    if (!currentUserId) {
+      toast.error("Unable to verify user");
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('partner_goals')
@@ -94,8 +104,7 @@ export default function PartnerGoalsCard({ goal, onCheckIn, onReload }: PartnerG
           target_date: goalData.target_date || null,
           description: goalData.description || null,
         })
-        .eq('id', goal.id)
-        .eq('user_id', currentUserId);
+        .eq('id', goal.id);
 
       if (error) throw error;
       toast.success("Goal updated");
@@ -190,13 +199,14 @@ export default function PartnerGoalsCard({ goal, onCheckIn, onReload }: PartnerG
             <Badge variant={goal.status === 'active' ? 'default' : 'secondary'}>
               {goal.status}
             </Badge>
-            {isMyGoal && (
+            {currentUserId && isMyGoal && (
               <>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
                   onClick={() => setShowEditDialog(true)}
+                  title="Edit goal"
                 >
                   <Edit2 className="h-4 w-4" />
                 </Button>
@@ -205,6 +215,7 @@ export default function PartnerGoalsCard({ goal, onCheckIn, onReload }: PartnerG
                   size="icon"
                   className="h-8 w-8"
                   onClick={() => setShowDeleteDialog(true)}
+                  title="Delete goal"
                 >
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
