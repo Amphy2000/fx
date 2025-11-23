@@ -213,6 +213,10 @@ const Admin = () => {
           <ScrollArea className="w-full">
             <TabsList className="inline-flex mb-6">
               <TabsTrigger value="users">Users</TabsTrigger>
+              <TabsTrigger value="weekly-summaries">
+                <Mail className="h-4 w-4 mr-2" />
+                Weekly Summaries
+              </TabsTrigger>
               <TabsTrigger value="abuse-prevention">
                 <Shield className="h-4 w-4 mr-2" />
                 Abuse Prevention
@@ -225,10 +229,6 @@ const Admin = () => {
               <TabsTrigger value="personalization">Personalization</TabsTrigger>
               <TabsTrigger value="warmup">Warm-Up</TabsTrigger>
               <TabsTrigger value="email-analytics">Analytics</TabsTrigger>
-              <TabsTrigger value="weekly-summaries">
-                <Mail className="h-4 w-4 mr-2" />
-                Weekly Summaries
-              </TabsTrigger>
             </TabsList>
           </ScrollArea>
 
