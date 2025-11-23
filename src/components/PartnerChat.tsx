@@ -84,11 +84,6 @@ export default function PartnerChat({ partnershipId, onBack }: PartnerChatProps)
             display_name,
             avatar_url
           ),
-          reply_to:partner_messages!partner_messages_reply_to_id_fkey(
-            id,
-            content,
-            sender_id
-          ),
           reactions:partner_message_reactions(
             id,
             user_id,
@@ -166,24 +161,28 @@ export default function PartnerChat({ partnershipId, onBack }: PartnerChatProps)
     return channel;
   };
 
-  const handleTyping = () => {
+  const handleTyping = async () => {
+    const channel = supabase.channel(`partner-chat-${partnershipId}`);
+    
+    await channel.track({
+      user_id: currentUserId,
+      user_name: 'You',
+      online_at: new Date().toISOString(),
+      typing: true
+    });
+
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    const channel = supabase.channel(`partner-chat-${partnershipId}`);
-    channel.track({
-      user_id: currentUserId,
-      user_name: 'User',
-      typing: true,
-    });
-
-    typingTimeoutRef.current = setTimeout(() => {
-      channel.track({
+    typingTimeoutRef.current = setTimeout(async () => {
+      await channel.track({
         user_id: currentUserId,
-        typing: false,
+        user_name: 'You',
+        online_at: new Date().toISOString(),
+        typing: false
       });
-    }, 2000);
+    }, 3000);
   };
 
   const handleSendMessage = async () => {
