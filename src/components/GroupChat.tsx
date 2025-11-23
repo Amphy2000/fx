@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { AvatarImage, getDisplayName } from "@/components/AvatarImage";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Send, MessageSquare, MoreVertical, Edit2, Trash2, Smile } from "lucide-react";
@@ -13,26 +13,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-const getAvatarColor = (userId: string) => {
-  const colors = [
-    'bg-red-500',
-    'bg-blue-500',
-    'bg-green-500',
-    'bg-yellow-500',
-    'bg-purple-500',
-    'bg-pink-500',
-    'bg-indigo-500',
-    'bg-orange-500',
-    'bg-teal-500',
-    'bg-cyan-500',
-  ];
-  let hash = 0;
-  for (let i = 0; i < userId.length; i++) {
-    hash = userId.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return colors[Math.abs(hash) % colors.length];
-};
 
 interface GroupChatProps {
   groupId: string;
@@ -82,7 +62,9 @@ export default function GroupChat({ groupId }: GroupChatProps) {
           sender:profiles!group_messages_sender_id_fkey(
             id,
             full_name,
-            email
+            email,
+            display_name,
+            avatar_url
           )
         `)
         .eq('group_id', groupId)
@@ -215,19 +197,20 @@ export default function GroupChat({ groupId }: GroupChatProps) {
   const MessageItem = ({ message }: { message: any }) => {
     const isOwnMessage = message.sender_id === currentUserId;
     const isEditing = editingMessageId === message.id;
+    const senderName = getDisplayName(message.sender);
 
     return (
       <div className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
-        <Avatar className="h-8 w-8">
-          <AvatarFallback className={getAvatarColor(message.sender_id)}>
-            {message.sender?.full_name?.[0] || message.sender?.email?.[0] || "?"}
-          </AvatarFallback>
-        </Avatar>
+        <AvatarImage 
+          avatarUrl={message.sender?.avatar_url}
+          fallbackText={senderName}
+          className="h-8 w-8"
+        />
 
         <div className={`flex-1 space-y-1 ${isOwnMessage ? 'items-end' : 'items-start'} flex flex-col max-w-[70%]`}>
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">
-              {message.sender?.full_name || message.sender?.email || "Unknown"}
+              {senderName}
             </span>
             <span className="text-xs text-muted-foreground">
               {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}

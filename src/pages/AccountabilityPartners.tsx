@@ -3,10 +3,10 @@ import { Layout } from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Users, UserPlus, Settings, Target, TrendingUp, MessageSquare, UsersRound, Trophy } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { AvatarImage, getDisplayName } from "@/components/AvatarImage";
 import PartnerFinder from "@/components/PartnerFinder";
 import MyPartners from "@/components/MyPartners";
 import AccountabilityProfileSetup from "@/components/AccountabilityProfileSetup";
@@ -74,8 +74,8 @@ export default function AccountabilityPartners() {
         .from('accountability_partnerships')
         .select(`
           *,
-          partner_profile:profiles!accountability_partnerships_partner_id_fkey(full_name, email),
-          user_profile:profiles!accountability_partnerships_user_id_fkey(full_name, email)
+          partner_profile:profiles!accountability_partnerships_partner_id_fkey(full_name, email, display_name, avatar_url),
+          user_profile:profiles!accountability_partnerships_user_id_fkey(full_name, email, display_name, avatar_url)
         `)
         .or(`user_id.eq.${user.id},partner_id.eq.${user.id}`)
         .eq('status', 'active');
@@ -215,13 +215,7 @@ export default function AccountabilityPartners() {
                         {activePartnerships.map((partnership) => {
                           const isInitiator = partnership.user_id === partnership.currentUserId;
                           const partnerProfile = isInitiator ? partnership.partner_profile : partnership.user_profile;
-                          const partnerName = partnerProfile?.full_name || partnerProfile?.email?.split('@')[0] || "Partner";
-                          const initials = partnerName
-                            .split(' ')
-                            .map(n => n[0])
-                            .join('')
-                            .toUpperCase()
-                            .slice(0, 2);
+                          const partnerName = getDisplayName(partnerProfile);
                           
                           return (
                             <button
@@ -233,11 +227,11 @@ export default function AccountabilityPartners() {
                                   : 'bg-card hover:bg-accent border-border'
                               }`}
                             >
-                              <Avatar className="h-8 w-8">
-                                <AvatarFallback className={selectedPartnershipId === partnership.id ? 'bg-primary-foreground text-primary' : 'bg-primary text-primary-foreground'}>
-                                  {initials}
-                                </AvatarFallback>
-                              </Avatar>
+                              <AvatarImage 
+                                avatarUrl={partnerProfile?.avatar_url}
+                                fallbackText={partnerName}
+                                className="h-8 w-8"
+                              />
                               <div className="font-semibold">{partnerName}</div>
                             </button>
                           );
