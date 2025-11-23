@@ -5,6 +5,7 @@ import { Plus, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import GoalCheckInDialog from "./GoalCheckInDialog";
+import GoalCreationDialog from "./GoalCreationDialog";
 import PartnerGoalsCard from "./PartnerGoalsCard";
 
 interface WeeklyCommitmentsProps {
@@ -15,6 +16,7 @@ export default function WeeklyCommitments({ partnershipId }: WeeklyCommitmentsPr
   const [loading, setLoading] = useState(true);
   const [goals, setGoals] = useState<any[]>([]);
   const [showCheckIn, setShowCheckIn] = useState(false);
+  const [showCreateGoal, setShowCreateGoal] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<any>(null);
 
   useEffect(() => {
@@ -90,7 +92,7 @@ export default function WeeklyCommitments({ partnershipId }: WeeklyCommitmentsPr
                   Set goals and track progress with your accountability partner
                 </CardDescription>
               </div>
-              <Button onClick={() => handleCreateGoal({ goal_text: "New Goal", goal_type: "weekly" })}>
+              <Button onClick={() => setShowCreateGoal(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 New Goal
               </Button>
@@ -127,6 +129,12 @@ export default function WeeklyCommitments({ partnershipId }: WeeklyCommitmentsPr
           </div>
         )}
       </div>
+
+      <GoalCreationDialog
+        open={showCreateGoal}
+        onOpenChange={setShowCreateGoal}
+        onSubmit={handleCreateGoal}
+      />
 
       {selectedGoal && (
         <GoalCheckInDialog
