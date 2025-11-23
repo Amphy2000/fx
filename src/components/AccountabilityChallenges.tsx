@@ -216,14 +216,14 @@ export default function AccountabilityChallenges() {
               Create Challenge
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle>Create New Challenge</DialogTitle>
               <DialogDescription>
                 Create a challenge to motivate yourself and others
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-y-auto pr-2 flex-1">
               <div>
                 <Label htmlFor="title">Challenge Title</Label>
                 <Input
@@ -304,7 +304,7 @@ export default function AccountabilityChallenges() {
                   placeholder="e.g., Bragging rights!"
                 />
               </div>
-              <Button onClick={createChallenge} className="w-full">Create Challenge</Button>
+              <Button onClick={createChallenge} className="w-full mt-2">Create Challenge</Button>
             </div>
           </DialogContent>
         </Dialog>
