@@ -107,7 +107,7 @@ export default function AccountabilityPartners() {
               <UsersRound className="h-4 w-4 mr-2" />
               Groups
             </TabsTrigger>
-            <TabsTrigger value="goals" disabled={!hasProfile || activePartnerships.length === 0}>
+            <TabsTrigger value="goals" disabled={!hasProfile || activePartnerships.length === 0} title={!hasProfile ? "Create a profile first" : activePartnerships.length === 0 ? "Connect with a partner first" : ""}>
               <Target className="h-4 w-4 mr-2" />
               Goals
             </TabsTrigger>
@@ -115,7 +115,7 @@ export default function AccountabilityPartners() {
               <Trophy className="h-4 w-4 mr-2" />
               Challenges
             </TabsTrigger>
-            <TabsTrigger value="chat" disabled={!hasProfile || activePartnerships.length === 0}>
+            <TabsTrigger value="chat" disabled={!hasProfile || activePartnerships.length === 0} title={!hasProfile ? "Create a profile first" : activePartnerships.length === 0 ? "Connect with a partner first" : ""}>
               <MessageSquare className="h-4 w-4 mr-2" />
               Chat
             </TabsTrigger>
@@ -127,7 +127,7 @@ export default function AccountabilityPartners() {
               <Trophy className="h-4 w-4 mr-2" />
               Leaderboard
             </TabsTrigger>
-            <TabsTrigger value="analytics" disabled={!hasProfile || activePartnerships.length === 0}>
+            <TabsTrigger value="analytics" disabled={!hasProfile || activePartnerships.length === 0} title={!hasProfile ? "Create a profile first" : activePartnerships.length === 0 ? "Connect with a partner first" : ""}>
               <TrendingUp className="h-4 w-4 mr-2" />
               Analytics
             </TabsTrigger>
