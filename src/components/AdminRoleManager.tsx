@@ -58,8 +58,5 @@ export default function AdminRoleManager() {
     }
   };
   if (loading) return null;
-  return <Card>
-      
-      
-    </Card>;
+  return;
 }
