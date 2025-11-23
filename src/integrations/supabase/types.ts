@@ -1771,6 +1771,51 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_achievements: {
+        Row: {
+          achievement_data: Json | null
+          achievement_type: string
+          created_at: string | null
+          earned_at: string | null
+          id: string
+          partnership_id: string | null
+          user_id: string
+        }
+        Insert: {
+          achievement_data?: Json | null
+          achievement_type: string
+          created_at?: string | null
+          earned_at?: string | null
+          id?: string
+          partnership_id?: string | null
+          user_id: string
+        }
+        Update: {
+          achievement_data?: Json | null
+          achievement_type?: string
+          created_at?: string | null
+          earned_at?: string | null
+          id?: string
+          partnership_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_achievements_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "accountability_partnerships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_achievements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_goals: {
         Row: {
           created_at: string
@@ -1822,6 +1867,60 @@ export type Database = {
           },
         ]
       }
+      partner_progress_snapshots: {
+        Row: {
+          completion_rate: number | null
+          created_at: string | null
+          goals_completed: number | null
+          goals_missed: number | null
+          goals_partial: number | null
+          id: string
+          partnership_id: string
+          snapshot_date: string
+          streak_count: number | null
+          user_id: string
+        }
+        Insert: {
+          completion_rate?: number | null
+          created_at?: string | null
+          goals_completed?: number | null
+          goals_missed?: number | null
+          goals_partial?: number | null
+          id?: string
+          partnership_id: string
+          snapshot_date?: string
+          streak_count?: number | null
+          user_id: string
+        }
+        Update: {
+          completion_rate?: number | null
+          created_at?: string | null
+          goals_completed?: number | null
+          goals_missed?: number | null
+          goals_partial?: number | null
+          id?: string
+          partnership_id?: string
+          snapshot_date?: string
+          streak_count?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_progress_snapshots_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "accountability_partnerships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_progress_snapshots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_reactions: {
         Row: {
           check_in_id: string
@@ -1858,6 +1957,57 @@ export type Database = {
           {
             foreignKeyName: "partner_reactions_reactor_id_fkey"
             columns: ["reactor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_streaks: {
+        Row: {
+          created_at: string | null
+          current_streak: number | null
+          id: string
+          last_activity_date: string | null
+          longest_streak: number | null
+          partnership_id: string
+          streak_type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_streak?: number | null
+          id?: string
+          last_activity_date?: string | null
+          longest_streak?: number | null
+          partnership_id: string
+          streak_type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_streak?: number | null
+          id?: string
+          last_activity_date?: string | null
+          longest_streak?: number | null
+          partnership_id?: string
+          streak_type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_streaks_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "accountability_partnerships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_streaks_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -3064,6 +3214,14 @@ export type Database = {
         Returns: undefined
       }
       reset_monthly_credits: { Args: never; Returns: undefined }
+      update_partner_streak: {
+        Args: {
+          p_partnership_id: string
+          p_streak_type: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
