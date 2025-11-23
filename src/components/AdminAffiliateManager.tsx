@@ -345,6 +345,56 @@ export default function AdminAffiliateManager() {
                 </div>
               )}
 
+              {selectedProfile.payment_info && (
+                <div>
+                  <Label>Payment Information</Label>
+                  <div className="space-y-2 text-sm mt-2 bg-muted p-3 rounded">
+                    <div>
+                      <span className="font-medium">Method:</span>{" "}
+                      <Badge variant="outline" className="capitalize">
+                        {selectedProfile.payment_info.method}
+                      </Badge>
+                    </div>
+                    {selectedProfile.payment_info.method === "paypal" && (
+                      <div>
+                        <span className="font-medium">PayPal Email:</span>{" "}
+                        {selectedProfile.payment_info.paypalEmail}
+                      </div>
+                    )}
+                    {selectedProfile.payment_info.method === "bank" && (
+                      <div className="space-y-1">
+                        <div>
+                          <span className="font-medium">Bank Name:</span>{" "}
+                          {selectedProfile.payment_info.bankName}
+                        </div>
+                        <div>
+                          <span className="font-medium">Account Holder:</span>{" "}
+                          {selectedProfile.payment_info.accountHolderName}
+                        </div>
+                        <div>
+                          <span className="font-medium">Account Number:</span>{" "}
+                          {selectedProfile.payment_info.accountNumber}
+                        </div>
+                      </div>
+                    )}
+                    {selectedProfile.payment_info.method === "crypto" && (
+                      <div className="space-y-1">
+                        <div>
+                          <span className="font-medium">Type:</span>{" "}
+                          {selectedProfile.payment_info.cryptoType}
+                        </div>
+                        <div>
+                          <span className="font-medium">Wallet Address:</span>
+                          <p className="font-mono text-xs break-all mt-1 bg-background p-2 rounded">
+                            {selectedProfile.payment_info.walletAddress}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={newStatus} onValueChange={setNewStatus}>
