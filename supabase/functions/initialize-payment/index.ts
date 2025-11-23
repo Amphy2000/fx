@@ -49,39 +49,23 @@ serve(async (req) => {
       throw new Error('PAYSTACK_SECRET_KEY not configured');
     }
 
-    const { amount: customAmount, metadata } = await req.json();
     let amount: number;
     let planName: string;
 
-    // Handle custom amounts (e.g., coaching sessions, group premiums)
-    if (customAmount) {
-      amount = customAmount;
-      planName = metadata?.plan_name || 'Custom Payment';
-    } else {
-      // Standard subscription plans
-      switch (planType) {
-        case 'pro':
-          amount = 750000; // ₦7,500 in kobo
-          planName = 'Pro Plan';
-          break;
-        case 'lifetime':
-          amount = 3000000; // ₦30,000 in kobo
-          planName = 'Lifetime Access';
-          break;
-        case 'coaching_session':
-          amount = customAmount || 0;
-          planName = 'Coaching Session';
-          break;
-        case 'group_premium':
-          amount = customAmount || 0;
-          planName = 'Group Premium';
-          break;
-        default:
-          return new Response(
-            JSON.stringify({ error: 'Invalid plan type' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-      }
+    switch (planType) {
+      case 'pro':
+        amount = 750000; // ₦7,500 in kobo
+        planName = 'Pro Plan';
+        break;
+      case 'lifetime':
+        amount = 3000000; // ₦30,000 in kobo
+        planName = 'Lifetime Access';
+        break;
+      default:
+        return new Response(
+          JSON.stringify({ error: 'Invalid plan type' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
     }
 
     const callbackUrl = `${req.headers.get('origin')}/dashboard?payment=success`;

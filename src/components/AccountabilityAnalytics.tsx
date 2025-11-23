@@ -9,9 +9,6 @@ import PartnerAchievementTracker from "./PartnerAchievementTracker";
 import PartnerComparisonChart from "./PartnerComparisonChart";
 import PartnerTradingStats from "./PartnerTradingStats";
 import AutomatedReminders from "./AutomatedReminders";
-import { PremiumFeaturesCard } from "./PremiumFeaturesCard";
-import { CoachingMarketplace } from "./CoachingMarketplace";
-import { PremiumGroupTiers } from "./PremiumGroupTiers";
 
 interface AccountabilityAnalyticsProps {
   partnershipId: string;
@@ -22,36 +19,15 @@ export default function AccountabilityAnalytics({ partnershipId }: Accountabilit
   const [refreshing, setRefreshing] = useState(false);
   const [analytics, setAnalytics] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string>("");
-  const [userTier, setUserTier] = useState<string>('free');
 
   useEffect(() => {
     loadAnalytics();
     getCurrentUser();
-    fetchUserTier();
   }, [partnershipId]);
 
   const getCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) setCurrentUserId(user.id);
-  };
-
-  const fetchUserTier = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data } = await supabase
-        .from('profiles')
-        .select('subscription_tier')
-        .eq('id', user.id)
-        .single();
-
-      if (data) {
-        setUserTier(data.subscription_tier || 'free');
-      }
-    } catch (error) {
-      console.error('Error fetching user tier:', error);
-    }
   };
 
   const loadAnalytics = async () => {
@@ -128,13 +104,11 @@ export default function AccountabilityAnalytics({ partnershipId }: Accountabilit
       </div>
 
       <Tabs defaultValue="achievements" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="achievements">Achievements</TabsTrigger>
           <TabsTrigger value="comparison">Comparison</TabsTrigger>
           <TabsTrigger value="trading">Trading Stats</TabsTrigger>
           <TabsTrigger value="automation">Automation</TabsTrigger>
-          <TabsTrigger value="premium">Premium</TabsTrigger>
-          <TabsTrigger value="coaching">Coaching</TabsTrigger>
         </TabsList>
 
         <TabsContent value="achievements" className="mt-6">
@@ -159,15 +133,6 @@ export default function AccountabilityAnalytics({ partnershipId }: Accountabilit
 
         <TabsContent value="automation" className="mt-6">
           <AutomatedReminders partnershipId={partnershipId} />
-        </TabsContent>
-
-        <TabsContent value="premium" className="space-y-6">
-          <PremiumFeaturesCard currentTier={userTier} />
-          <PremiumGroupTiers currentTier={userTier} />
-        </TabsContent>
-
-        <TabsContent value="coaching" className="mt-6">
-          <CoachingMarketplace userTier={userTier} />
         </TabsContent>
       </Tabs>
     </div>
