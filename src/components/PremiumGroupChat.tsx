@@ -7,10 +7,12 @@ import { AvatarImage, getDisplayName } from "@/components/AvatarImage";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
-  Send, Smile, Paperclip, Mic, Search, MoreVertical, 
-  Edit2, Trash2, Reply, Check, CheckCheck, Image as ImageIcon,
+  Send, Smile, Search, MoreVertical, 
+  Edit2, Trash2, Reply, Check, CheckCheck,
   X 
 } from "lucide-react";
+import { VoiceRecorder } from "./VoiceRecorder";
+import { VoiceMessagePlayer } from "./VoiceMessagePlayer";
 import { formatDistanceToNow, format } from "date-fns";
 import {
   DropdownMenu,
@@ -361,7 +363,14 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
                     : 'bg-muted'
                 }`}
               >
-                <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                {(message.metadata as any)?.type === 'voice' ? (
+                  <VoiceMessagePlayer 
+                    audioUrl={(message.metadata as any)?.voice_url} 
+                    duration={(message.metadata as any)?.voice_duration}
+                  />
+                ) : (
+                  <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                )}
                 
                 {isOwnMessage && (
                   <div className="absolute -bottom-1 right-2 flex items-center gap-0.5">
@@ -545,18 +554,40 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
         {/* Input */}
         <div className="p-4 border-t bg-background">
           <div className="flex gap-2 items-end">
-            <div className="flex gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Paperclip className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <ImageIcon className="h-4 w-4" />
-              </Button>
-            </div>
+            <VoiceRecorder
+              onRecordingComplete={async (audioBlob: Blob, duration: number) => {
+                try {
+                  const fileName = `${groupId}/${Date.now()}.webm`;
+                  
+                  const { error: uploadError } = await supabase.storage
+                    .from('voice-messages')
+                    .upload(fileName, audioBlob, {
+                      contentType: 'audio/webm',
+                    });
+
+                  if (uploadError) throw uploadError;
+
+                  const { data: { publicUrl } } = supabase.storage
+                    .from('voice-messages')
+                    .getPublicUrl(fileName);
+
+                  const { error: insertError } = await supabase
+                    .from('group_messages')
+                    .insert({
+                      group_id: groupId,
+                      sender_id: currentUserId,
+                      content: `Voice message (${duration}s)`,
+                      metadata: { voice_url: publicUrl, voice_duration: duration, type: 'voice' }
+                    });
+
+                  if (insertError) throw insertError;
+                } catch (error) {
+                  console.error('Error sending voice message:', error);
+                  toast.error("Failed to send voice message");
+                }
+              }}
+              onCancel={() => {}}
+            />
             
             <Textarea
               value={newMessage}
