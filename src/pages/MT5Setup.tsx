@@ -3,15 +3,120 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Download, Settings, Play, CheckCircle, FolderOpen, Upload, Link2, TestTube, Zap, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MT5SetupWizard } from "@/components/MT5SetupWizard";
+import { supabase } from "@/integrations/supabase/client";
+import { UpgradePrompt } from "@/components/UpgradePrompt";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function MT5Setup() {
   const [videoUrl, setVideoUrl] = useState("");
+  const [isPaidUser, setIsPaidUser] = useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    checkSubscription();
+  }, []);
+
+  const checkSubscription = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        setIsPaidUser(false);
+        setIsLoading(false);
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_tier')
+        .eq('id', user.id)
+        .single();
+
+      setIsPaidUser(profile?.subscription_tier !== 'free');
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      setIsPaidUser(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container mx-auto py-8 space-y-8">
+          <Skeleton className="h-12 w-3/4" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!isPaidUser) {
+    return (
+      <Layout>
+        <div className="container mx-auto py-8">
+          <UpgradePrompt
+            title="MT5 Auto-Sync: Automate Your Trading Journal"
+            description="Say goodbye to manual trade logging. MT5 Auto-Sync automatically imports all your trades in real-time, saving you hours every week. Focus on trading while we handle the data entry."
+            featureName="MT5 Auto-Sync"
+          />
+          
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle>Why Professional Traders Love MT5 Auto-Sync</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-start gap-3">
+                    <Zap className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <p className="font-semibold">Zero Manual Entry</p>
+                      <p className="text-sm text-muted-foreground">Every trade automatically logged the moment you close it</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <p className="font-semibold">100% Accurate</p>
+                      <p className="text-sm text-muted-foreground">Direct MT5 connection ensures perfect data accuracy</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <p className="font-semibold">Real-Time Analytics</p>
+                      <p className="text-sm text-muted-foreground">Instant insights on your performance as you trade</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-start gap-3">
+                    <Settings className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <p className="font-semibold">5-Minute Setup</p>
+                      <p className="text-sm text-muted-foreground">One-time configuration, lifetime of automation</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

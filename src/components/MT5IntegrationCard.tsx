@@ -5,14 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle2, XCircle, RefreshCw, Mail, Server, Copy, ExternalLink, Download, TrendingUp, AlertTriangle, Trash2 } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, RefreshCw, Mail, Server, Copy, ExternalLink, Download, TrendingUp, AlertTriangle, Trash2, Lock, Zap } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 
 export const MT5IntegrationCard = () => {
   const { toast: toastHook } = useToast();
+  const navigate = useNavigate();
   const [accountNumber, setAccountNumber] = useState("");
   const [brokerName, setBrokerName] = useState("");
   const [serverName, setServerName] = useState("");
@@ -20,6 +22,7 @@ export const MT5IntegrationCard = () => {
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [syncing, setSyncing] = useState<string | null>(null);
+  const [isPaidUser, setIsPaidUser] = useState<boolean | null>(null);
 
   const { data: session } = useQuery({
     queryKey: ['session'],
@@ -33,6 +36,7 @@ export const MT5IntegrationCard = () => {
   const userEmailAddress = user?.email ? `user_${user.id}@yvclpmdgrwugayrvjtqg.supabase.co` : '';
 
   useEffect(() => {
+    checkSubscription();
     fetchAccounts();
     
     // Listen for account sync updates via realtime
@@ -74,6 +78,28 @@ export const MT5IntegrationCard = () => {
       supabase.removeChannel(channel);
     };
   }, [accounts]);
+
+  const checkSubscription = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        setIsPaidUser(false);
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_tier')
+        .eq('id', user.id)
+        .single();
+
+      setIsPaidUser(profile?.subscription_tier !== 'free');
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      setIsPaidUser(false);
+    }
+  };
 
   const fetchAccounts = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -230,6 +256,82 @@ export const MT5IntegrationCard = () => {
   };
 
   const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mt5-sync`;
+
+  if (isPaidUser === null) {
+    return (
+      <Card>
+        <CardContent className="py-8">
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!isPaidUser) {
+    return (
+      <Card className="border-2 border-primary/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Lock className="h-5 w-5 text-primary" />
+            MT5 Auto-Sync - Premium Feature
+          </CardTitle>
+          <CardDescription>
+            Automatically import your trades every 15 minutes with zero manual effort
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="flex items-start gap-3">
+              <Zap className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-sm">Zero Manual Entry</p>
+                <p className="text-xs text-muted-foreground">Every trade automatically logged the moment you close it</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-sm">100% Accurate</p>
+                <p className="text-xs text-muted-foreground">Direct MT5 connection ensures perfect data accuracy</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <TrendingUp className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-sm">Real-Time Analytics</p>
+                <p className="text-xs text-muted-foreground">Instant insights on your performance as you trade</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <RefreshCw className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-sm">Cloud-Based Sync</p>
+                <p className="text-xs text-muted-foreground">Works 24/7 even when your computer is off</p>
+              </div>
+            </div>
+          </div>
+
+          <Alert className="bg-primary/5 border-primary/20">
+            <Zap className="h-4 w-4 text-primary" />
+            <AlertDescription className="text-sm">
+              <strong>Save 10+ hours per month</strong> - Professional traders love MT5 Auto-Sync because it eliminates the tedious task of manual trade logging. Set it up once in 5 minutes, then let it run automatically forever.
+            </AlertDescription>
+          </Alert>
+
+          <Button 
+            onClick={() => navigate('/pricing')}
+            className="w-full"
+            size="lg"
+          >
+            <Lock className="h-4 w-4 mr-2" />
+            Upgrade to Pro to Unlock MT5 Auto-Sync
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
