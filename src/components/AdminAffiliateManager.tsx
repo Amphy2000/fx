@@ -28,27 +28,42 @@ export default function AdminAffiliateManager() {
 
   const loadData = async () => {
     try {
-      const { data: profilesData, error } = await supabase
+      // Fetch affiliate profiles
+      const { data: affiliateData, error: affiliateError } = await supabase
         .from("affiliate_profiles")
-        .select(`
-          *,
-          profiles!user_id(email, full_name)
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error loading affiliate profiles:", error);
+      if (affiliateError) {
+        console.error("Error loading affiliate profiles:", affiliateError);
         toast.error("Failed to load affiliate profiles");
         return;
       }
 
-      setProfiles(profilesData || []);
+      // Fetch user profiles for the affiliates
+      const userIds = affiliateData?.map(a => a.user_id) || [];
+      const { data: userData, error: userError } = await supabase
+        .from("profiles")
+        .select("id, email, full_name")
+        .in("id", userIds);
+
+      if (userError) {
+        console.error("Error loading user profiles:", userError);
+      }
+
+      // Merge the data
+      const mergedData = affiliateData?.map(affiliate => ({
+        ...affiliate,
+        profiles: userData?.find(u => u.id === affiliate.user_id)
+      })) || [];
+
+      setProfiles(mergedData);
 
       // Calculate stats
-      const total = profilesData?.length || 0;
-      const active = profilesData?.filter(p => p.status === 'active').length || 0;
-      const pending = profilesData?.filter(p => p.status === 'pending').length || 0;
-      const totalEarnings = profilesData?.reduce((sum, p) => sum + (p.total_earnings || 0), 0) || 0;
+      const total = mergedData?.length || 0;
+      const active = mergedData?.filter(p => p.status === 'active').length || 0;
+      const pending = mergedData?.filter(p => p.status === 'pending').length || 0;
+      const totalEarnings = mergedData?.reduce((sum, p) => sum + (p.total_earnings || 0), 0) || 0;
 
       setStats({ total, active, pending, totalEarnings });
     } catch (error) {
