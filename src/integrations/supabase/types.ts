@@ -3653,6 +3653,10 @@ export type Database = {
         Returns: boolean
       }
       clean_old_typing_indicators: { Args: never; Returns: undefined }
+      create_test_partner_for_user: {
+        Args: { p_user_id: string }
+        Returns: string
+      }
       delete_all_user_data: { Args: { p_user_id: string }; Returns: undefined }
       has_role: {
         Args: {
