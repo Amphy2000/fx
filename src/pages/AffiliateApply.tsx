@@ -28,8 +28,7 @@ export default function AffiliateApply() {
     bankName: "",
     accountHolderName: "",
     accountNumber: "",
-    cryptoWalletAddress: "",
-    cryptoType: "",
+    usdtTrc20Address: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -91,8 +90,8 @@ export default function AffiliateApply() {
               accountNumber: formData.accountNumber,
             }),
             ...(formData.paymentMethod === "crypto" && {
-              cryptoWalletAddress: formData.cryptoWalletAddress,
-              cryptoType: formData.cryptoType,
+              cryptoType: "USDT TRC20",
+              walletAddress: formData.usdtTrc20Address,
             }),
           },
           status: "pending",
@@ -306,35 +305,18 @@ export default function AffiliateApply() {
                 )}
 
                 {formData.paymentMethod === "crypto" && (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="cryptoType">Cryptocurrency Type</Label>
-                      <Select
-                        value={formData.cryptoType}
-                        onValueChange={(value) => setFormData({ ...formData, cryptoType: value })}
-                        required
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select crypto" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="bitcoin">Bitcoin (BTC)</SelectItem>
-                          <SelectItem value="ethereum">Ethereum (ETH)</SelectItem>
-                          <SelectItem value="usdt">Tether (USDT)</SelectItem>
-                          <SelectItem value="usdc">USD Coin (USDC)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cryptoWalletAddress">Wallet Address</Label>
-                      <Input
-                        id="cryptoWalletAddress"
-                        placeholder="Enter your wallet address"
-                        value={formData.cryptoWalletAddress}
-                        onChange={(e) => setFormData({ ...formData, cryptoWalletAddress: e.target.value })}
-                        required
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="usdtTrc20Address">USDT TRC20 Wallet Address</Label>
+                    <Input
+                      id="usdtTrc20Address"
+                      placeholder="Enter your USDT TRC20 wallet address"
+                      value={formData.usdtTrc20Address}
+                      onChange={(e) => setFormData({ ...formData, usdtTrc20Address: e.target.value })}
+                      required
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Only USDT TRC20 payments are supported
+                    </p>
                   </div>
                 )}
               </div>
