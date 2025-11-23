@@ -3,6 +3,7 @@ import { Layout } from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Users, UserPlus, Settings, Target, TrendingUp, MessageSquare, UsersRound, Trophy } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -210,24 +211,42 @@ export default function AccountabilityPartners() {
                   </CardHeader>
                   {activePartnerships.length > 1 && (
                     <CardContent>
-                      <div className="flex gap-2 flex-wrap">
+                      <div className="flex gap-3 flex-wrap">
                         {activePartnerships.map((partnership) => {
                           const isInitiator = partnership.user_id === partnership.currentUserId;
                           const partnerProfile = isInitiator ? partnership.partner_profile : partnership.user_profile;
                           const partnerName = partnerProfile?.full_name || partnerProfile?.email || "Partner";
+                          const partnerEmail = partnerProfile?.email || "";
+                          const initials = partnerName
+                            .split(' ')
+                            .map(n => n[0])
+                            .join('')
+                            .toUpperCase()
+                            .slice(0, 2);
                           
                           return (
                             <button
                               key={partnership.id}
                               onClick={() => setSelectedPartnershipId(partnership.id)}
-                              className={`px-4 py-2.5 rounded-lg border transition-all flex items-center gap-2 font-medium ${
+                              className={`px-4 py-3 rounded-xl border transition-all flex items-center gap-3 font-medium hover:shadow-md ${
                                 selectedPartnershipId === partnership.id
-                                  ? 'bg-primary text-primary-foreground border-primary shadow-sm scale-105'
-                                  : 'bg-background hover:bg-muted border-border hover:scale-105'
+                                  ? 'bg-primary text-primary-foreground border-primary shadow-lg scale-105'
+                                  : 'bg-card hover:bg-accent border-border'
                               }`}
                             >
-                              <div className={`w-2 h-2 rounded-full ${selectedPartnershipId === partnership.id ? 'bg-primary-foreground' : 'bg-primary'}`} />
-                              {partnerName}
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback className={selectedPartnershipId === partnership.id ? 'bg-primary-foreground text-primary' : 'bg-primary text-primary-foreground'}>
+                                  {initials}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="text-left">
+                                <div className="font-semibold">{partnerName}</div>
+                                {partnerEmail && (
+                                  <div className={`text-xs ${selectedPartnershipId === partnership.id ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+                                    {partnerEmail}
+                                  </div>
+                                )}
+                              </div>
                             </button>
                           );
                         })}
