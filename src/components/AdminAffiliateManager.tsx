@@ -28,13 +28,19 @@ export default function AdminAffiliateManager() {
 
   const loadData = async () => {
     try {
-      const { data: profilesData } = await supabase
+      const { data: profilesData, error } = await supabase
         .from("affiliate_profiles")
         .select(`
           *,
-          profiles!affiliate_profiles_user_id_fkey(email, full_name)
+          profiles!user_id(email, full_name)
         `)
         .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error loading affiliate profiles:", error);
+        toast.error("Failed to load affiliate profiles");
+        return;
+      }
 
       setProfiles(profilesData || []);
 
