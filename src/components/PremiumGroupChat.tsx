@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { 
   Send, Smile, Search, MoreVertical, 
   Edit2, Trash2, Reply, Check, CheckCheck,
-  X 
+  X, Paperclip 
 } from "lucide-react";
 import { VoiceRecorder } from "./VoiceRecorder";
 import { VoiceMessagePlayer } from "./VoiceMessagePlayer";
@@ -39,6 +39,12 @@ interface Message {
   metadata?: any;
   attachment_url?: string;
   attachment_type?: string;
+  attachment_name?: string;
+  reactions?: Array<{
+    id: string;
+    user_id: string;
+    emoji: string;
+  }>;
 }
 
 interface PremiumGroupChatProps {
@@ -99,6 +105,11 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
             email,
             display_name,
             avatar_url
+          ),
+          reactions:group_message_reactions(
+            id,
+            user_id,
+            emoji
           )
         `)
         .eq('group_id', groupId)
@@ -211,40 +222,32 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
       const message = messages.find(m => m.id === messageId);
       if (!message) return;
 
-      const reactions = (message.metadata as any)?.reactions || [];
-      const existingReaction = reactions.find((r: any) => r.emoji === emoji);
+      // Check if user already reacted with this emoji
+      const existingReaction = message.reactions?.find(
+        (r: any) => r.user_id === currentUserId && r.emoji === emoji
+      );
 
-      let updatedReactions;
       if (existingReaction) {
-        if (existingReaction.user_ids.includes(currentUserId!)) {
-          // Remove reaction
-          existingReaction.user_ids = existingReaction.user_ids.filter((id: string) => id !== currentUserId);
-          if (existingReaction.user_ids.length === 0) {
-            updatedReactions = reactions.filter((r: any) => r.emoji !== emoji);
-          } else {
-            updatedReactions = reactions;
-          }
-        } else {
-          // Add user to existing reaction
-          existingReaction.user_ids.push(currentUserId!);
-          updatedReactions = reactions;
-        }
+        // Remove reaction
+        const { error } = await supabase
+          .from('group_message_reactions')
+          .delete()
+          .eq('id', existingReaction.id);
+
+        if (error) throw error;
       } else {
-        // Add new reaction
-        updatedReactions = [...reactions, { emoji, user_ids: [currentUserId!] }];
+        // Add reaction
+        const { error } = await supabase
+          .from('group_message_reactions')
+          .insert({
+            message_id: messageId,
+            user_id: currentUserId!,
+            emoji: emoji
+          });
+
+        if (error) throw error;
       }
-
-      const { error } = await supabase
-        .from('group_messages')
-        .update({ 
-          metadata: { 
-            ...((message.metadata as any) || {}),
-            reactions: updatedReactions 
-          }
-        } as any)
-        .eq('id', messageId);
-
-      if (error) throw error;
+      
       loadMessages();
     } catch (error) {
       console.error('Error adding reaction:', error);
@@ -299,9 +302,18 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
     const isOwnMessage = message.sender_id === currentUserId;
     const isEditing = editingMessageId === message.id;
     const senderName = getDisplayName(message.sender);
-    const reactions = (message.metadata as any)?.reactions || [];
-    const readBy = (message.metadata as any)?.read_by || [];
-    const isRead = readBy.includes(currentUserId!);
+    
+    // Group reactions by emoji
+    const groupedReactions = (message.reactions || []).reduce((acc: any, reaction: any) => {
+      if (!acc[reaction.emoji]) {
+        acc[reaction.emoji] = { emoji: reaction.emoji, user_ids: [], count: 0 };
+      }
+      acc[reaction.emoji].user_ids.push(reaction.user_id);
+      acc[reaction.emoji].count++;
+      return acc;
+    }, {});
+    
+    const reactions = Object.values(groupedReactions);
 
     return (
       <div className={`flex gap-2 group hover:bg-muted/30 -mx-2 px-2 py-1 rounded-lg transition-colors ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
@@ -374,11 +386,7 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
                 
                 {isOwnMessage && (
                   <div className="absolute -bottom-1 right-2 flex items-center gap-0.5">
-                    {isRead ? (
-                      <CheckCheck className="h-3 w-3 text-primary-foreground/70" />
-                    ) : (
-                      <Check className="h-3 w-3 text-primary-foreground/70" />
-                    )}
+                    <Check className="h-3 w-3 text-primary-foreground/70" />
                   </div>
                 )}
               </div>
@@ -397,9 +405,32 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
                       }`}
                     >
                       <span>{reaction.emoji}</span>
-                      <span className="text-xs">{reaction.user_ids.length}</span>
+                      <span className="text-xs">{reaction.count}</span>
                     </button>
                   ))}
+                </div>
+              )}
+              
+              {/* Attachment preview */}
+              {message.attachment_url && message.attachment_type && (
+                <div className="mt-2">
+                  {message.attachment_type.startsWith('image/') ? (
+                    <img 
+                      src={message.attachment_url} 
+                      alt={message.attachment_name || 'Attachment'}
+                      className="max-w-sm rounded-lg cursor-pointer"
+                      onClick={() => window.open(message.attachment_url, '_blank')}
+                    />
+                  ) : (
+                    <a 
+                      href={message.attachment_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 p-2 bg-muted rounded-lg hover:bg-muted/80"
+                    >
+                      <div className="text-xs">📎 {message.attachment_name || 'File'}</div>
+                    </a>
+                  )}
                 </div>
               )}
             </div>
@@ -554,40 +585,51 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
         {/* Input */}
         <div className="p-4 border-t bg-background">
           <div className="flex gap-2 items-end">
-            <VoiceRecorder
-              onRecordingComplete={async (audioBlob: Blob, duration: number) => {
-                try {
-                  const fileName = `${groupId}/${Date.now()}.webm`;
-                  
-                  const { error: uploadError } = await supabase.storage
-                    .from('voice-messages')
-                    .upload(fileName, audioBlob, {
-                      contentType: 'audio/webm',
-                    });
+            <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                className="h-11 w-11 p-0"
+              >
+                <Paperclip className="h-4 w-4" />
+              </Button>
+              
+              <VoiceRecorder
+                onRecordingComplete={async (audioBlob: Blob, duration: number) => {
+                  try {
+                    const fileName = `${currentUserId}/${groupId}/${Date.now()}.webm`;
+                    
+                    const { error: uploadError } = await supabase.storage
+                      .from('voice-messages')
+                      .upload(fileName, audioBlob, {
+                        contentType: 'audio/webm',
+                      });
 
-                  if (uploadError) throw uploadError;
+                    if (uploadError) throw uploadError;
 
-                  const { data: { publicUrl } } = supabase.storage
-                    .from('voice-messages')
-                    .getPublicUrl(fileName);
+                    const { data: { publicUrl } } = supabase.storage
+                      .from('voice-messages')
+                      .getPublicUrl(fileName);
 
-                  const { error: insertError } = await supabase
-                    .from('group_messages')
-                    .insert({
-                      group_id: groupId,
-                      sender_id: currentUserId,
-                      content: `Voice message (${duration}s)`,
-                      metadata: { voice_url: publicUrl, voice_duration: duration, type: 'voice' }
-                    });
+                    const { error: insertError } = await supabase
+                      .from('group_messages')
+                      .insert({
+                        group_id: groupId,
+                        sender_id: currentUserId,
+                        content: `Voice message (${duration}s)`,
+                        metadata: { voice_url: publicUrl, voice_duration: duration, type: 'voice' }
+                      });
 
-                  if (insertError) throw insertError;
-                } catch (error) {
-                  console.error('Error sending voice message:', error);
-                  toast.error("Failed to send voice message");
-                }
-              }}
-              onCancel={() => {}}
-            />
+                    if (insertError) throw insertError;
+                  } catch (error) {
+                    console.error('Error sending voice message:', error);
+                    toast.error("Failed to send voice message");
+                  }
+                }}
+                onCancel={() => {}}
+              />
+            </div>
             
             <Textarea
               value={newMessage}
@@ -621,7 +663,44 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
           ref={fileInputRef}
           type="file"
           className="hidden"
-          accept="image/*,application/pdf"
+          accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+
+            try {
+              const fileName = `${currentUserId}/${groupId}/${Date.now()}_${file.name}`;
+              
+              const { error: uploadError } = await supabase.storage
+                .from('chat-attachments')
+                .upload(fileName, file);
+
+              if (uploadError) throw uploadError;
+
+              const { data: { publicUrl } } = supabase.storage
+                .from('chat-attachments')
+                .getPublicUrl(fileName);
+
+              const { error: insertError } = await supabase
+                .from('group_messages')
+                .insert({
+                  group_id: groupId,
+                  sender_id: currentUserId,
+                  content: file.name,
+                  attachment_url: publicUrl,
+                  attachment_type: file.type,
+                  attachment_name: file.name
+                });
+
+              if (insertError) throw insertError;
+              
+              toast.success("File uploaded successfully");
+              e.target.value = ''; // Reset input
+            } catch (error) {
+              console.error('Error uploading file:', error);
+              toast.error("Failed to upload file");
+            }
+          }}
         />
       </CardContent>
     </Card>

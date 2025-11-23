@@ -139,14 +139,20 @@ export default function AccountabilityPartners() {
   return (
     <Layout>
       <div className="container mx-auto p-6 max-w-6xl">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold flex items-center gap-3">
-            <Users className="h-10 w-10 text-primary" />
-            Accountability Partners
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Connect with traders who share your goals and keep each other accountable
-          </p>
+        <div className="mb-8 space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+              <Users className="h-8 w-8 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                Accountability Partners
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Premium collaboration features for serious traders
+              </p>
+            </div>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
