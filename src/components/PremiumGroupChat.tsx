@@ -36,7 +36,8 @@ interface Message {
   is_edited?: boolean;
   reply_to_id?: string;
   reply_to?: Message;
-  metadata?: any;
+  voice_url?: string;
+  voice_duration?: number;
   attachment_url?: string;
   attachment_type?: string;
   attachment_name?: string;
@@ -375,10 +376,10 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
                     : 'bg-muted'
                 }`}
               >
-                {(message.metadata as any)?.type === 'voice' ? (
+                {message.voice_url ? (
                   <VoiceMessagePlayer 
-                    audioUrl={(message.metadata as any)?.voice_url} 
-                    duration={(message.metadata as any)?.voice_duration}
+                    audioUrl={message.voice_url} 
+                    duration={message.voice_duration}
                   />
                 ) : (
                   <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
@@ -500,11 +501,11 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
   };
 
   return (
-    <Card className="border-border/50 shadow-lg">
+    <Card className="border-border/50 shadow-2xl bg-gradient-to-br from-background via-background to-primary/5">
       {/* Header */}
-      <div className="border-b p-4 flex items-center justify-between bg-muted/30">
+      <div className="border-b p-4 flex items-center justify-between bg-gradient-to-r from-primary/10 via-primary/5 to-transparent backdrop-blur-sm">
         <div>
-          <h3 className="font-semibold">Group Chat</h3>
+          <h3 className="font-semibold text-lg bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Group Chat</h3>
           <p className="text-xs text-muted-foreground">
             {onlineUsers.size} online • {messages.length} messages
           </p>
@@ -513,6 +514,7 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
           variant="ghost"
           size="sm"
           onClick={() => setShowSearch(!showSearch)}
+          className="hover:bg-primary/10"
         >
           <Search className="h-4 w-4" />
         </Button>
@@ -618,7 +620,8 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
                         group_id: groupId,
                         sender_id: currentUserId,
                         content: `Voice message (${duration}s)`,
-                        metadata: { voice_url: publicUrl, voice_duration: duration, type: 'voice' }
+                        voice_url: publicUrl,
+                        voice_duration: duration
                       });
 
                     if (insertError) throw insertError;
