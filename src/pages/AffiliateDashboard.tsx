@@ -6,8 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Copy, DollarSign, Users, MousePointer, TrendingUp, Download, ExternalLink } from "lucide-react";
+import { Copy, DollarSign, Users, MousePointer, TrendingUp, Download, ExternalLink, Edit } from "lucide-react";
 import { format } from "date-fns";
 
 export default function AffiliateDashboard() {
@@ -17,6 +21,15 @@ export default function AffiliateDashboard() {
   const [referrals, setReferrals] = useState<any[]>([]);
   const [clicks, setClicks] = useState<any[]>([]);
   const [payouts, setPayouts] = useState<any[]>([]);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [paymentDetails, setPaymentDetails] = useState({
+    paypalEmail: "",
+    bankName: "",
+    accountHolderName: "",
+    accountNumber: "",
+    usdtTrc20Address: "",
+  });
 
   useEffect(() => {
     loadData();
@@ -46,6 +59,24 @@ export default function AffiliateDashboard() {
       }
 
       setProfile(profileData);
+
+      // Set payment info if available
+      if (profileData.payment_info) {
+        const paymentInfo = profileData.payment_info as any;
+        setPaymentMethod(paymentInfo.method || "");
+        if (paymentInfo.method === "paypal") {
+          setPaymentDetails(prev => ({ ...prev, paypalEmail: paymentInfo.paypalEmail || "" }));
+        } else if (paymentInfo.method === "bank") {
+          setPaymentDetails(prev => ({
+            ...prev,
+            bankName: paymentInfo.bankName || "",
+            accountHolderName: paymentInfo.accountHolderName || "",
+            accountNumber: paymentInfo.accountNumber || "",
+          }));
+        } else if (paymentInfo.method === "crypto") {
+          setPaymentDetails(prev => ({ ...prev, usdtTrc20Address: paymentInfo.walletAddress || "" }));
+        }
+      }
 
       // Load referrals
       const { data: referralsData } = await supabase
@@ -98,9 +129,66 @@ export default function AffiliateDashboard() {
     }
   };
 
+  const updatePaymentDetails = async () => {
+    if (!paymentMethod) {
+      toast.error("Please select a payment method");
+      return;
+    }
+
+    try {
+      let payment_info: any = { method: paymentMethod };
+
+      if (paymentMethod === "paypal") {
+        if (!paymentDetails.paypalEmail) {
+          toast.error("Please enter PayPal email");
+          return;
+        }
+        payment_info.paypalEmail = paymentDetails.paypalEmail;
+      } else if (paymentMethod === "bank") {
+        if (!paymentDetails.bankName || !paymentDetails.accountHolderName || !paymentDetails.accountNumber) {
+          toast.error("Please fill in all bank details");
+          return;
+        }
+        payment_info = {
+          ...payment_info,
+          bankName: paymentDetails.bankName,
+          accountHolderName: paymentDetails.accountHolderName,
+          accountNumber: paymentDetails.accountNumber,
+        };
+      } else if (paymentMethod === "crypto") {
+        if (!paymentDetails.usdtTrc20Address) {
+          toast.error("Please enter USDT TRC20 wallet address");
+          return;
+        }
+        payment_info.walletAddress = paymentDetails.usdtTrc20Address;
+        payment_info.cryptoType = "USDT TRC20";
+      }
+
+      const { error } = await supabase
+        .from("affiliate_profiles")
+        .update({ payment_info })
+        .eq("id", profile.id);
+
+      if (error) throw error;
+
+      toast.success("Payment details updated successfully");
+      setShowPaymentDialog(false);
+      loadData();
+    } catch (error) {
+      console.error("Error updating payment details:", error);
+      toast.error("Failed to update payment details");
+    }
+  };
+
   const requestPayout = async () => {
     if (!profile || profile.pending_earnings < 50) {
       toast.error("Minimum payout amount is $50");
+      return;
+    }
+
+    if (!profile.payment_info || !profile.payment_info.method) {
+      toast.error("Please update your payment details before requesting a payout");
+      setShowPaymentDialog(true);
       return;
     }
 
@@ -109,6 +197,8 @@ export default function AffiliateDashboard() {
         affiliate_id: profile.id,
         amount: profile.pending_earnings,
         status: "pending",
+        payment_method: profile.payment_info.method,
+        payment_details: profile.payment_info,
       });
 
       if (error) throw error;
@@ -248,6 +338,55 @@ export default function AffiliateDashboard() {
               </CardContent>
             </Card>
 
+            <Card className="mb-8">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Payment Details</CardTitle>
+                  <CardDescription>Manage your payout information</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setShowPaymentDialog(true)}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Update
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {profile.payment_info && profile.payment_info.method ? (
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="font-medium">Method:</span>{" "}
+                      <Badge variant="outline" className="capitalize">
+                        {profile.payment_info.method}
+                      </Badge>
+                    </div>
+                    {profile.payment_info.method === "paypal" && (
+                      <div>
+                        <span className="font-medium">PayPal Email:</span> {profile.payment_info.paypalEmail}
+                      </div>
+                    )}
+                    {profile.payment_info.method === "bank" && (
+                      <div className="space-y-1">
+                        <div><span className="font-medium">Bank Name:</span> {profile.payment_info.bankName}</div>
+                        <div><span className="font-medium">Account Holder:</span> {profile.payment_info.accountHolderName}</div>
+                        <div><span className="font-medium">Account Number:</span> {profile.payment_info.accountNumber}</div>
+                      </div>
+                    )}
+                    {profile.payment_info.method === "crypto" && (
+                      <div>
+                        <span className="font-medium">USDT TRC20 Address:</span>
+                        <p className="font-mono text-xs break-all mt-1 bg-muted p-2 rounded">
+                          {profile.payment_info.walletAddress}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No payment details set. Please update your payment information to request payouts.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
             <div className="grid gap-6 lg:grid-cols-2 mb-8">
               <Card>
                 <CardHeader>
@@ -334,6 +473,94 @@ export default function AffiliateDashboard() {
             </div>
           </>
         )}
+
+        <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Update Payment Details</DialogTitle>
+              <DialogDescription>Choose your preferred payment method</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="paymentMethod">Payment Method</Label>
+                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                  <SelectTrigger id="paymentMethod">
+                    <SelectValue placeholder="Select payment method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="paypal">PayPal</SelectItem>
+                    <SelectItem value="bank">Bank Transfer</SelectItem>
+                    <SelectItem value="crypto">Cryptocurrency (USDT TRC20)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {paymentMethod === "paypal" && (
+                <div className="space-y-2">
+                  <Label htmlFor="paypalEmail">PayPal Email</Label>
+                  <Input
+                    id="paypalEmail"
+                    type="email"
+                    value={paymentDetails.paypalEmail}
+                    onChange={(e) => setPaymentDetails({ ...paymentDetails, paypalEmail: e.target.value })}
+                    placeholder="your@email.com"
+                  />
+                </div>
+              )}
+
+              {paymentMethod === "bank" && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="bankName">Bank Name</Label>
+                    <Input
+                      id="bankName"
+                      value={paymentDetails.bankName}
+                      onChange={(e) => setPaymentDetails({ ...paymentDetails, bankName: e.target.value })}
+                      placeholder="e.g., Chase, Bank of America"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="accountHolderName">Account Holder Full Name</Label>
+                    <Input
+                      id="accountHolderName"
+                      value={paymentDetails.accountHolderName}
+                      onChange={(e) => setPaymentDetails({ ...paymentDetails, accountHolderName: e.target.value })}
+                      placeholder="John Doe"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="accountNumber">Account Number</Label>
+                    <Input
+                      id="accountNumber"
+                      value={paymentDetails.accountNumber}
+                      onChange={(e) => setPaymentDetails({ ...paymentDetails, accountNumber: e.target.value })}
+                      placeholder="1234567890"
+                    />
+                  </div>
+                </>
+              )}
+
+              {paymentMethod === "crypto" && (
+                <div className="space-y-2">
+                  <Label htmlFor="usdtAddress">USDT TRC20 Wallet Address</Label>
+                  <Input
+                    id="usdtAddress"
+                    value={paymentDetails.usdtTrc20Address}
+                    onChange={(e) => setPaymentDetails({ ...paymentDetails, usdtTrc20Address: e.target.value })}
+                    placeholder="TXxx..."
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Only USDT on TRC20 network is supported
+                  </p>
+                </div>
+              )}
+
+              <Button onClick={updatePaymentDetails} className="w-full">
+                Save Payment Details
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
