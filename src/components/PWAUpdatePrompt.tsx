@@ -1,88 +1,38 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { RefreshCw } from 'lucide-react';
 
-interface BeforeInstallPromptEvent extends Event {
-  readonly platforms: string[];
-  readonly userChoice: Promise<{
-    outcome: 'accepted' | 'dismissed';
-    platform: string;
-  }>;
-  prompt(): Promise<void>;
-}
-
-declare global {
-  interface WindowEventMap {
-    beforeinstallprompt: BeforeInstallPromptEvent;
-  }
-}
-
 export const PWAUpdatePrompt = () => {
-  const [showPrompt, setShowPrompt] = useState(false);
-  const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
-
-  useEffect(() => {
-    // Register service worker and check for updates
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js', { type: 'module' })
-        .then((reg) => {
-          console.log('Service Worker registered:', reg);
-          setRegistration(reg);
-
-          // Check for updates every 60 seconds
-          setInterval(() => {
-            console.log('Checking for app updates...');
-            reg.update();
-          }, 60000);
-
-          // Listen for updates
-          reg.addEventListener('updatefound', () => {
-            const newWorker = reg.installing;
-            if (!newWorker) return;
-
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log('New version available!');
-                setShowPrompt(true);
-              }
-            });
-          });
-        })
-        .catch((error) => {
-          console.error('SW registration error:', error);
-        });
-
-      // Listen for controlling service worker changes
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        console.log('Controller changed, reloading page...');
-        window.location.reload();
-      });
-    }
-  }, []);
+  const {
+    needRefresh: [needRefresh, setNeedRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegistered(registration) {
+      if (registration) {
+        console.log('Service Worker registered successfully');
+        // Check for updates every 30 seconds
+        setInterval(() => {
+          console.log('Checking for app updates...');
+          registration.update();
+        }, 30000);
+      }
+    },
+    onRegisterError(error) {
+      console.error('SW registration error:', error);
+    },
+  });
 
   const handleUpdate = () => {
-    setShowPrompt(false);
-    
-    if (registration?.waiting) {
-      // Tell the service worker to skip waiting
-      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      
-      // Force reload after a short delay to ensure SW activates
-      setTimeout(() => {
-        window.location.reload();
-      }, 100);
-    } else {
-      // Fallback: just reload immediately
-      window.location.reload();
-    }
+    updateServiceWorker(true);
   };
 
   const handleDismiss = () => {
-    setShowPrompt(false);
+    setNeedRefresh(false);
   };
 
-  if (!showPrompt) return null;
+  if (!needRefresh) return null;
 
   return (
     <Alert className="fixed bottom-4 right-4 w-auto max-w-md shadow-lg z-50 border-primary">
