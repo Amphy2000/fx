@@ -18,13 +18,12 @@ export function Layout({
     setTheme
   } = useTheme();
   return <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full max-w-full overflow-x-hidden">
         <AppSidebar />
         
-        <div className="flex-1 flex flex-col min-h-screen bg-background w-full">
+        <div className="flex-1 flex flex-col min-h-screen bg-background w-full max-w-full overflow-x-hidden">
           {/* Mobile Header with Hamburger */}
-          {/* Mobile Header with Hamburger */}
-          {isMobile && <div className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-border bg-background/95 backdrop-blur-sm px-4 py-3">
+          {isMobile && <div className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-border/60 bg-background/95 backdrop-blur-xl px-4 py-3 shadow-sm">
               <div className="flex items-center gap-3">
                 <SidebarTrigger>
                   <Menu className="h-5 w-5 text-foreground" />
@@ -42,14 +41,14 @@ export function Layout({
             </div>}
 
           {/* Desktop Navbar with Sidebar Toggle */}
-          {!isMobile && <div className="sticky top-0 z-40 flex items-center gap-3 border-b border-border bg-background/95 backdrop-blur-sm px-4 py-3">
-              <SidebarTrigger className="text-foreground hover:bg-muted" />
+          {!isMobile && <div className="sticky top-0 z-40 flex items-center gap-3 border-b border-border/60 bg-background/95 backdrop-blur-xl px-4 py-3 shadow-sm">
+              <SidebarTrigger className="text-foreground hover:bg-muted transition-smooth" />
               <Navbar />
             </div>}
           
           {/* Main Content */}
-          <main className="flex-1 w-full px-3 sm:px-4 md:px-6 py-4">
-            <div className="w-full mx-auto">
+          <main className="flex-1 w-full max-w-full overflow-x-hidden px-3 sm:px-4 md:px-6 py-4">
+            <div className="w-full max-w-full mx-auto">
               {children}
             </div>
           </main>
