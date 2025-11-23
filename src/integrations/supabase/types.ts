@@ -2810,8 +2810,10 @@ export type Database = {
           id: string
           last_credit_check: string | null
           last_login_ip: string | null
+          last_manual_upload_at: string | null
           last_trade_date: string | null
           longest_streak: number | null
+          manual_upload_count: number | null
           monthly_trade_limit: number | null
           onboarding_completed: boolean | null
           onboarding_step: number | null
@@ -2841,8 +2843,10 @@ export type Database = {
           id: string
           last_credit_check?: string | null
           last_login_ip?: string | null
+          last_manual_upload_at?: string | null
           last_trade_date?: string | null
           longest_streak?: number | null
+          manual_upload_count?: number | null
           monthly_trade_limit?: number | null
           onboarding_completed?: boolean | null
           onboarding_step?: number | null
@@ -2872,8 +2876,10 @@ export type Database = {
           id?: string
           last_credit_check?: string | null
           last_login_ip?: string | null
+          last_manual_upload_at?: string | null
           last_trade_date?: string | null
           longest_streak?: number | null
+          manual_upload_count?: number | null
           monthly_trade_limit?: number | null
           onboarding_completed?: boolean | null
           onboarding_step?: number | null
