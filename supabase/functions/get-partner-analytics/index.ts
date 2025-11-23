@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
       .from('partner_progress_snapshots')
       .select(`
         *,
-        user:profiles!partner_progress_snapshots_user_id_fkey(full_name, email)
+        user:profiles!partner_progress_snapshots_user_id_fkey(full_name)
       `)
       .eq('partnership_id', partnership_id)
       .gte('snapshot_date', startDate.toISOString().split('T')[0])
@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
       .from('partner_streaks')
       .select(`
         *,
-        user:profiles!partner_streaks_user_id_fkey(full_name, email)
+        user:profiles!partner_streaks_user_id_fkey(full_name)
       `)
       .eq('partnership_id', partnership_id);
 
@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
       .from('partner_achievements')
       .select(`
         *,
-        user:profiles!partner_achievements_user_id_fkey(full_name, email)
+        user:profiles!partner_achievements_user_id_fkey(full_name)
       `)
       .eq('partnership_id', partnership_id)
       .order('earned_at', { ascending: false })
@@ -108,13 +108,15 @@ Deno.serve(async (req) => {
       .from('accountability_partnerships')
       .select(`
         *,
-        user_profile:accountability_profiles!accountability_partnerships_user_id_fkey(
-          *,
-          profiles:user_id(full_name, email)
+        user_profile:profiles!accountability_partnerships_user_id_fkey(
+          full_name,
+          avatar_url,
+          accountability_profile:accountability_profiles(*)
         ),
-        partner_profile:accountability_profiles!accountability_partnerships_partner_id_fkey(
-          *,
-          profiles:user_id(full_name, email)
+        partner_profile:profiles!accountability_partnerships_partner_id_fkey(
+          full_name,
+          avatar_url,
+          accountability_profile:accountability_profiles(*)
         )
       `)
       .eq('id', partnership_id)
