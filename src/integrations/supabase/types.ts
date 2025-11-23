@@ -120,6 +120,7 @@ export type Database = {
           id: string
           is_seeking_partner: boolean | null
           max_partners: number | null
+          notification_preferences: Json | null
           timezone: string | null
           trading_style: string[] | null
           updated_at: string | null
@@ -133,6 +134,7 @@ export type Database = {
           id?: string
           is_seeking_partner?: boolean | null
           max_partners?: number | null
+          notification_preferences?: Json | null
           timezone?: string | null
           trading_style?: string[] | null
           updated_at?: string | null
@@ -146,6 +148,7 @@ export type Database = {
           id?: string
           is_seeking_partner?: boolean | null
           max_partners?: number | null
+          notification_preferences?: Json | null
           timezone?: string | null
           trading_style?: string[] | null
           updated_at?: string | null
@@ -1344,6 +1347,51 @@ export type Database = {
         }
         Relationships: []
       }
+      goal_check_ins: {
+        Row: {
+          check_in_date: string
+          created_at: string
+          goal_id: string
+          id: string
+          notes: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          check_in_date?: string
+          created_at?: string
+          goal_id: string
+          id?: string
+          notes?: string | null
+          status: string
+          user_id: string
+        }
+        Update: {
+          check_in_date?: string
+          created_at?: string
+          goal_id?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_check_ins_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "partner_goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goal_check_ins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journal_entries: {
         Row: {
           created_at: string
@@ -1722,6 +1770,99 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      partner_goals: {
+        Row: {
+          created_at: string
+          goal_text: string
+          goal_type: string
+          id: string
+          partnership_id: string
+          status: string
+          target_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          goal_text: string
+          goal_type: string
+          id?: string
+          partnership_id: string
+          status?: string
+          target_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          goal_text?: string
+          goal_type?: string
+          id?: string
+          partnership_id?: string
+          status?: string
+          target_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_goals_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "accountability_partnerships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_goals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_reactions: {
+        Row: {
+          check_in_id: string
+          created_at: string
+          id: string
+          message: string | null
+          reaction_type: string
+          reactor_id: string
+        }
+        Insert: {
+          check_in_id: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          reaction_type: string
+          reactor_id: string
+        }
+        Update: {
+          check_in_id?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          reaction_type?: string
+          reactor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_reactions_check_in_id_fkey"
+            columns: ["check_in_id"]
+            isOneToOne: false
+            referencedRelation: "goal_check_ins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_reactions_reactor_id_fkey"
+            columns: ["reactor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       partner_weekly_shares: {
         Row: {
