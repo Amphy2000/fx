@@ -61,8 +61,8 @@ const Pricing = () => {
       }
 
       setPromoValidated(true);
-      setPromoDiscount(10);
-      toast.success(`Promo code applied! 10% discount`);
+      setPromoDiscount(data.commission_rate || 0);
+      toast.success(`Promo code applied! ${data.commission_rate}% discount`);
     } catch (error) {
       console.error("Error validating promo:", error);
       toast.error("Failed to validate promo code");
