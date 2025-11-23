@@ -21,12 +21,13 @@ serve(async (req) => {
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get all active users with emails
+    // Get all active users with emails who want to receive notifications
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, email, full_name, subscription_tier")
+      .select("id, email, full_name, subscription_tier, email_notifications_enabled")
       .not("email", "is", null)
-      .eq("subscription_status", "active");
+      .eq("subscription_status", "active")
+      .eq("email_notifications_enabled", true);
 
     if (profilesError) {
       console.error("Error fetching profiles:", profilesError);

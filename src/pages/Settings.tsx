@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Crown, Zap } from "lucide-react";
+import { Loader2, Crown, Zap, Mail } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 const Settings = () => {
@@ -107,6 +107,25 @@ const Settings = () => {
     } catch (error) {
       console.error("Error updating notifications:", error);
       toast.error("Failed to update notifications");
+    }
+  };
+
+  const handleToggleEmailNotifications = async (enabled: boolean) => {
+    if (!profile) return;
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ email_notifications_enabled: enabled })
+        .eq("id", profile.id);
+
+      if (error) throw error;
+
+      setProfile({ ...profile, email_notifications_enabled: enabled });
+      toast.success(enabled ? "Email notifications enabled" : "Email notifications disabled");
+    } catch (error) {
+      console.error("Error updating email notifications:", error);
+      toast.error("Failed to update email notifications");
     }
   };
 
@@ -464,6 +483,49 @@ const Settings = () => {
                   )}
                 </Button>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Email Notifications */}
+          <Card className="border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                Email Notifications
+              </CardTitle>
+              <CardDescription>
+                Receive weekly trading summaries and insights via email
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="text-foreground">Weekly Summary Emails</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Get your weekly performance report every Sunday
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    checked={profile?.email_notifications_enabled ?? true}
+                    onCheckedChange={handleToggleEmailNotifications}
+                  />
+                  <Label className="text-muted-foreground">
+                    {profile?.email_notifications_enabled ?? true ? "Enabled" : "Disabled"}
+                  </Label>
+                </div>
+              </div>
+              
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                <p className="text-sm text-foreground/90 mb-2">📊 Your weekly email includes:</p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>• Total trades and win rate</li>
+                  <li>• Profit/Loss breakdown</li>
+                  <li>• Most traded pairs</li>
+                  <li>• Emotional state analysis</li>
+                  <li>• AI insights (Pro/Lifetime users)</li>
+                </ul>
+              </div>
             </CardContent>
           </Card>
 

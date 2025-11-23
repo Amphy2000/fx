@@ -1725,6 +1725,7 @@ export type Database = {
           current_streak: number | null
           data_collection_consent: boolean | null
           email: string | null
+          email_notifications_enabled: boolean | null
           full_name: string | null
           id: string
           last_credit_check: string | null
@@ -1753,6 +1754,7 @@ export type Database = {
           current_streak?: number | null
           data_collection_consent?: boolean | null
           email?: string | null
+          email_notifications_enabled?: boolean | null
           full_name?: string | null
           id: string
           last_credit_check?: string | null
@@ -1781,6 +1783,7 @@ export type Database = {
           current_streak?: number | null
           data_collection_consent?: boolean | null
           email?: string | null
+          email_notifications_enabled?: boolean | null
           full_name?: string | null
           id?: string
           last_credit_check?: string | null
