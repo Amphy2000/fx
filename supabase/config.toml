@@ -160,3 +160,18 @@ verify_jwt = true
 
 [functions.send-weekly-summaries]
 verify_jwt = false
+
+[functions.find-accountability-partners]
+verify_jwt = true
+
+[functions.send-partner-request]
+verify_jwt = true
+
+[functions.respond-partner-request]
+verify_jwt = true
+
+[functions.share-weekly-summary]
+verify_jwt = true
+
+[functions.send-test-weekly-summary]
+verify_jwt = true

@@ -50,6 +50,117 @@ export type Database = {
         }
         Relationships: []
       }
+      accountability_partnerships: {
+        Row: {
+          accepted_at: string | null
+          created_at: string | null
+          ended_at: string | null
+          id: string
+          initiated_by: string
+          partner_id: string
+          request_message: string | null
+          shared_data_permissions: Json | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          initiated_by: string
+          partner_id: string
+          request_message?: string | null
+          shared_data_permissions?: Json | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          initiated_by?: string
+          partner_id?: string
+          request_message?: string | null
+          shared_data_permissions?: Json | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accountability_partnerships_initiated_by_fkey"
+            columns: ["initiated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accountability_partnerships_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accountability_partnerships_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accountability_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string | null
+          experience_level: string | null
+          goals: string[] | null
+          id: string
+          is_seeking_partner: boolean | null
+          max_partners: number | null
+          timezone: string | null
+          trading_style: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string | null
+          experience_level?: string | null
+          goals?: string[] | null
+          id?: string
+          is_seeking_partner?: boolean | null
+          max_partners?: number | null
+          timezone?: string | null
+          trading_style?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string | null
+          experience_level?: string | null
+          goals?: string[] | null
+          id?: string
+          is_seeking_partner?: boolean | null
+          max_partners?: number | null
+          timezone?: string | null
+          trading_style?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accountability_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       achievements: {
         Row: {
           achievement_name: string
@@ -1611,6 +1722,54 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      partner_weekly_shares: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_visible: boolean | null
+          partnership_id: string
+          summary_data: Json
+          user_id: string
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_visible?: boolean | null
+          partnership_id: string
+          summary_data: Json
+          user_id: string
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_visible?: boolean | null
+          partnership_id?: string
+          summary_data?: Json
+          user_id?: string
+          week_end?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_weekly_shares_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "accountability_partnerships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_weekly_shares_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       performance_metrics: {
         Row: {
