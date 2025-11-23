@@ -51,6 +51,8 @@ serve(async (req) => {
 
       const userId = metadata?.user_id;
       const planType = metadata?.plan_type;
+      const affiliateId = metadata?.affiliate_id;
+      const promoCode = metadata?.promo_code;
 
       if (!userId || !planType) {
         console.error('Missing user_id or plan_type in metadata');
@@ -105,6 +107,32 @@ serve(async (req) => {
       }
 
       console.log(`Successfully processed payment for user ${userId}, plan: ${planType}`);
+
+      // Create affiliate referral if affiliate_id exists
+      if (affiliateId && promoCode) {
+        const commissionRate = planType === "pro" ? 30 : 35; // 30% for pro, 35% for lifetime
+        const commissionAmount = (amount / 100 * commissionRate) / 100;
+
+        const { error: referralError } = await supabase
+          .from("affiliate_referrals")
+          .insert({
+            affiliate_id: affiliateId,
+            referred_user_id: userId,
+            promo_code: promoCode,
+            subscription_id: null, // Will be linked if needed
+            plan_type: planType,
+            amount: amount / 100,
+            commission_amount: commissionAmount,
+            commission_rate: commissionRate,
+            status: "completed",
+          });
+
+        if (referralError) {
+          console.error("Error creating affiliate referral:", referralError);
+        } else {
+          console.log("Affiliate referral created successfully");
+        }
+      }
     }
 
     return new Response(JSON.stringify({ received: true }), {

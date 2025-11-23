@@ -23,6 +23,7 @@ import { EmailPersonalizationManager } from "@/components/EmailPersonalizationMa
 import { EmailWarmUpManager } from "@/components/EmailWarmUpManager";
 import { AdminCreditManager } from "@/components/AdminCreditManager";
 import { WeeklySummaryEmailManager } from "@/components/WeeklySummaryEmailManager";
+import AdminAffiliateManager from "@/components/AdminAffiliateManager";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -234,6 +235,7 @@ const Admin = () => {
                 <BarChart3 className="h-3 w-3 mr-1" />
                 Stats
               </TabsTrigger>
+              <TabsTrigger value="affiliates" className="text-xs px-2 py-1.5">Affiliates</TabsTrigger>
             </TabsList>
           </div>
 
@@ -423,6 +425,10 @@ const Admin = () => {
 
           <TabsContent value="weekly-summaries">
             <WeeklySummaryEmailManager />
+          </TabsContent>
+
+          <TabsContent value="affiliates">
+            <AdminAffiliateManager />
           </TabsContent>
         </Tabs>
 

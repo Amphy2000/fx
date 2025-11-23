@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { planType, email } = await req.json();
+    const { planType, email, promoCode } = await req.json();
 
     if (!planType || !email) {
       return new Response(
@@ -49,6 +49,25 @@ serve(async (req) => {
       throw new Error('PAYSTACK_SECRET_KEY not configured');
     }
 
+    // Validate promo code if provided
+    let affiliateId = null;
+    let discount = 0;
+    if (promoCode) {
+      const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const adminSupabase = createClient(supabaseUrl, serviceRoleKey);
+      
+      const { data: affiliate, error: affiliateError } = await adminSupabase
+        .from("affiliate_profiles")
+        .select("id, status")
+        .eq("promo_code", promoCode.toUpperCase())
+        .single();
+
+      if (affiliate && affiliate.status === "active") {
+        affiliateId = affiliate.id;
+        discount = 0.10; // 10% discount for using promo code
+      }
+    }
+
     let amount: number;
     let planName: string;
 
@@ -68,6 +87,11 @@ serve(async (req) => {
         );
     }
 
+    // Apply discount if promo code is valid
+    if (discount > 0) {
+      amount = Math.floor(amount * (1 - discount));
+    }
+
     const callbackUrl = `${req.headers.get('origin')}/dashboard?payment=success`;
 
     const paystackResponse = await fetch('https://api.paystack.co/transaction/initialize', {
@@ -85,6 +109,8 @@ serve(async (req) => {
           user_id: user.id,
           plan_type: planType,
           plan_name: planName,
+          affiliate_id: affiliateId,
+          promo_code: promoCode?.toUpperCase() || null,
         },
       }),
     });
