@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Mic, MicOff, Send, ThumbsUp, PartyPopper, Heart, Flame, MessageSquare, Trash2 } from "lucide-react";
+import { Send, ThumbsUp, PartyPopper, Heart, Flame, MessageSquare, Trash2, Check, CheckCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { formatDistanceToNow } from "date-fns";
-import { RealtimeChat } from "@/utils/RealtimeAudio";
+import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 import { AvatarImage, getDisplayName } from "@/components/AvatarImage";
+import { VoiceRecorder } from "@/components/VoiceRecorder";
+import { VoiceMessagePlayer } from "@/components/VoiceMessagePlayer";
 
 const getAvatarColor = (userId: string) => {
   const colors = [
@@ -41,11 +42,10 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
   const [newMessage, setNewMessage] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [sending, setSending] = useState(false);
-  const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
-  const realtimeChatRef = useRef<RealtimeChat | null>(null);
 
   useEffect(() => {
     loadMessages();
@@ -224,36 +224,56 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
     }
   };
 
-  const handleVoiceToggle = async () => {
-    if (isVoiceActive) {
-      realtimeChatRef.current?.disconnect();
-      realtimeChatRef.current = null;
-      setIsVoiceActive(false);
-      toast.success("Voice chat ended");
-    } else {
-      try {
-        // Check for microphone permission first
-        const permission = await navigator.permissions.query({ name: 'microphone' as PermissionName });
-        if (permission.state === 'denied') {
-          toast.error("Microphone access denied. Please enable it in your browser settings.");
-          return;
-        }
+  const handleVoiceRecordingComplete = async (audioBlob: Blob, duration: number) => {
+    setSending(true);
+    setIsRecordingVoice(false);
 
-        toast.info("Connecting to voice chat...");
-        realtimeChatRef.current = new RealtimeChat((event) => {
-          console.log('Voice event:', event);
-          // Handle voice events - could display transcripts, etc.
+    try {
+      // Upload voice note to Supabase storage
+      const fileName = `${currentUserId}/${Date.now()}.webm`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('trade-screenshots') // Using existing bucket
+        .upload(fileName, audioBlob, {
+          contentType: 'audio/webm',
+          upsert: false
         });
-        await realtimeChatRef.current.init();
-        setIsVoiceActive(true);
-        toast.success("Voice chat started - speak naturally!");
-      } catch (error: any) {
-        console.error('Error starting voice:', error);
-        const errorMessage = error?.message || "Failed to start voice chat";
-        toast.error(errorMessage);
-        realtimeChatRef.current = null;
-      }
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('trade-screenshots')
+        .getPublicUrl(fileName);
+
+      // Send voice message
+      const { error: messageError } = await supabase
+        .from('partner_messages')
+        .insert({
+          partnership_id: partnershipId,
+          sender_id: currentUserId,
+          message_type: 'voice',
+          content: 'Voice message',
+          voice_url: publicUrl,
+          voice_duration: duration,
+        });
+
+      if (messageError) throw messageError;
+      toast.success("Voice note sent!");
+    } catch (error: any) {
+      console.error('Error sending voice note:', error);
+      toast.error("Failed to send voice note");
+    } finally {
+      setSending(false);
     }
+  };
+
+  const formatMessageTime = (date: Date) => {
+    if (isToday(date)) {
+      return format(date, 'HH:mm');
+    } else if (isYesterday(date)) {
+      return `Yesterday ${format(date, 'HH:mm')}`;
+    }
+    return format(date, 'dd/MM/yyyy HH:mm');
   };
 
   const handleReaction = async (messageId: string, reactionType: string) => {
@@ -338,16 +358,17 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState(message.content);
     const avatarColor = getAvatarColor(message.sender_id);
+    const isVoice = message.message_type === 'voice';
 
     return (
-      <div className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}>
+      <div className={`flex gap-2 ${isOwn ? 'flex-row-reverse' : ''} mb-2`}>
         <AvatarImage
           avatarUrl={message.sender?.avatar_url}
           fallbackText={getDisplayName(message.sender)}
-          className="h-8 w-8"
+          className="h-8 w-8 flex-shrink-0"
         />
         
-        <div className={`flex-1 max-w-[70%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
+        <div className={`flex flex-col max-w-[70%] ${isOwn ? 'items-end' : 'items-start'}`}>
           {isEditing ? (
             <div className="flex gap-2 w-full">
               <Input
@@ -374,65 +395,91 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
             </div>
           ) : (
             <>
-              <div className={`rounded-lg p-3 ${isOwn ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                <p className="text-sm">{message.content}</p>
-                {message.updated_at !== message.created_at && (
-                  <span className="text-xs opacity-70">(edited)</span>
+              <div className={`rounded-2xl px-3 py-2 ${
+                isOwn 
+                  ? 'bg-primary text-primary-foreground rounded-br-sm' 
+                  : 'bg-muted rounded-bl-sm'
+              }`}>
+                {isVoice && message.voice_url ? (
+                  <VoiceMessagePlayer 
+                    audioUrl={message.voice_url} 
+                    duration={message.voice_duration || 0}
+                  />
+                ) : (
+                  <p className="text-sm break-words">{message.content}</p>
                 )}
+                
+                <div className={`flex items-center gap-1 mt-1 justify-end ${
+                  isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                }`}>
+                  <span className="text-[10px]">
+                    {formatMessageTime(new Date(message.created_at))}
+                  </span>
+                  {isOwn && (
+                    <>
+                      {message.read_at ? (
+                        <CheckCheck className="h-3 w-3 text-blue-500" />
+                      ) : (
+                        <Check className="h-3 w-3" />
+                      )}
+                    </>
+                  )}
+                  {message.updated_at !== message.created_at && !isVoice && (
+                    <span className="text-[10px]">(edited)</span>
+                  )}
+                </div>
               </div>
               
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-                </span>
-                
-                {!isOwn && (
-                  <div className="flex gap-1">
-                    {['heart', 'fire', 'thumbs_up'].map((type) => {
-                      const Icon = getReactionIcon(type);
-                      return (
-                        <button
-                          key={type}
-                          onClick={() => handleReaction(message.id, type)}
-                          className="p-1 hover:bg-muted rounded opacity-50 hover:opacity-100 transition-opacity"
-                        >
-                          <Icon className="h-3 w-3" />
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-                
-                {isOwn && (
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="p-1 hover:bg-muted rounded opacity-50 hover:opacity-100 transition-opacity"
-                    >
-                      <MessageSquare className="h-3 w-3" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteMessage(message.id)}
-                      className="p-1 hover:bg-muted rounded opacity-50 hover:opacity-100 transition-opacity"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
-                )}
-              </div>
-
               {message.reactions && message.reactions.length > 0 && (
-                <div className="flex gap-1 flex-wrap">
+                <div className="flex gap-1 flex-wrap mt-1">
                   {Array.from(new Set(message.reactions.map((r: any) => r.reaction_type))).map((type: any) => {
                     const Icon = getReactionIcon(type);
                     const count = message.reactions.filter((r: any) => r.reaction_type === type).length;
                     return (
-                      <Badge key={type} variant="secondary" className="text-xs">
-                        <Icon className="h-3 w-3 mr-1" />
+                      <Badge key={type} variant="secondary" className="text-xs h-5 px-1.5">
+                        <Icon className="h-2.5 w-2.5 mr-0.5" />
                         {count}
                       </Badge>
                     );
                   })}
+                </div>
+              )}
+
+              {!isVoice && (
+                <div className="flex items-center gap-1 mt-1">
+                  {!isOwn && (
+                    <div className="flex gap-0.5">
+                      {['heart', 'fire', 'thumbs_up'].map((type) => {
+                        const Icon = getReactionIcon(type);
+                        return (
+                          <button
+                            key={type}
+                            onClick={() => handleReaction(message.id, type)}
+                            className="p-1 hover:bg-muted rounded opacity-0 group-hover:opacity-50 hover:opacity-100 transition-opacity"
+                          >
+                            <Icon className="h-3 w-3" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  
+                  {isOwn && (
+                    <div className="flex gap-0.5">
+                      <button
+                        onClick={() => setIsEditing(true)}
+                        className="p-1 hover:bg-muted rounded opacity-0 group-hover:opacity-50 hover:opacity-100 transition-opacity"
+                      >
+                        <MessageSquare className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteMessage(message.id)}
+                        className="p-1 hover:bg-muted rounded opacity-0 group-hover:opacity-50 hover:opacity-100 transition-opacity"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -444,20 +491,13 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
 
   return (
     <Card className="flex flex-col h-[700px]">
-      <CardHeader className="border-b shrink-0">
-        <CardTitle className="flex items-center gap-2">
-          Partner Chat
-          {isVoiceActive && (
-            <Badge variant="default" className="animate-pulse">
-              Voice Active
-            </Badge>
-          )}
-        </CardTitle>
+      <CardHeader className="border-b shrink-0 py-3">
+        <CardTitle className="text-base">Partner Chat</CardTitle>
       </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col p-0 min-h-0">
+      <CardContent className="flex-1 flex flex-col p-0 min-h-0 bg-muted/20">
         <ScrollArea className="flex-1 p-4">
-          <div className="space-y-4">
+          <div className="space-y-1">
             {messages.length === 0 ? (
               <div className="flex items-center justify-center h-full text-center py-12">
                 <div>
@@ -469,17 +509,21 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
                 </div>
               </div>
             ) : (
-              messages.map((message) => (
-                <MessageItem key={message.id} message={message} />
-              ))
+              <div className="space-y-1">
+                {messages.map((message) => (
+                  <div key={message.id} className="group">
+                    <MessageItem message={message} />
+                  </div>
+                ))}
+              </div>
             )}
             
             {typingUsers.size > 0 && (
-              <div className="flex gap-3">
+              <div className="flex gap-2 mb-2">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback>...</AvatarFallback>
                 </Avatar>
-                <div className="bg-muted rounded-lg p-3">
+                <div className="bg-muted rounded-2xl rounded-bl-sm px-3 py-2">
                   <div className="flex gap-1">
                     <span className="w-2 h-2 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                     <span className="w-2 h-2 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -493,26 +537,38 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
           </div>
         </ScrollArea>
 
-        <div className="border-t p-4 shrink-0">
-          <form onSubmit={handleSendMessage} className="flex gap-2">
-            <Button
-              type="button"
-              variant={isVoiceActive ? "default" : "outline"}
-              size="icon"
-              onClick={handleVoiceToggle}
-            >
-              {isVoiceActive ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-            </Button>
-            <Input
-              value={newMessage}
-              onChange={handleInputChange}
-              placeholder="Type a message..."
-              disabled={sending || isVoiceActive}
+        <div className="border-t p-3 shrink-0 bg-background">
+          {isRecordingVoice ? (
+            <VoiceRecorder
+              onRecordingComplete={handleVoiceRecordingComplete}
+              onCancel={() => setIsRecordingVoice(false)}
             />
-            <Button type="submit" disabled={sending || !newMessage.trim() || isVoiceActive}>
-              <Send className="h-4 w-4" />
-            </Button>
-          </form>
+          ) : (
+            <form onSubmit={handleSendMessage} className="flex items-end gap-2">
+              <Input
+                value={newMessage}
+                onChange={handleInputChange}
+                placeholder="Type a message..."
+                disabled={sending}
+                className="flex-1 rounded-full"
+              />
+              {!newMessage.trim() ? (
+                <VoiceRecorder
+                  onRecordingComplete={handleVoiceRecordingComplete}
+                  onCancel={() => setIsRecordingVoice(false)}
+                />
+              ) : (
+                <Button 
+                  type="submit" 
+                  disabled={sending || !newMessage.trim()}
+                  size="icon"
+                  className="rounded-full"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              )}
+            </form>
+          )}
         </div>
       </CardContent>
     </Card>
