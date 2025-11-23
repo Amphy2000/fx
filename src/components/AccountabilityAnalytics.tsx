@@ -21,17 +21,22 @@ export default function AccountabilityAnalytics({ partnershipId }: Accountabilit
   const [currentUserId, setCurrentUserId] = useState<string>("");
 
   useEffect(() => {
-    loadAnalytics();
-    getCurrentUser();
+    const initialize = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("You must be logged in to view analytics");
+        setLoading(false);
+        return;
+      }
+      setCurrentUserId(user.id);
+      await loadAnalytics();
+    };
+    initialize();
   }, [partnershipId]);
-
-  const getCurrentUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) setCurrentUserId(user.id);
-  };
 
   const loadAnalytics = async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase.functions.invoke('get-partner-analytics', {
         body: { partnership_id: partnershipId, days: 30 },
       });
