@@ -60,23 +60,6 @@ export default function AdminRoleManager() {
   if (loading) return null;
   return <Card>
       
-      <CardContent>
-        {isAdmin ? <div className="text-sm text-muted-foreground">
-            ✅ You have admin access
-          </div> : <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Click below to grant admin access to your account. This will allow you to access all features without needing partnerships.
-            </p>
-            <p className="text-xs text-muted-foreground border-l-2 border-primary pl-3">
-              <strong>Note:</strong> If this fails, run this SQL in your database:<br />
-              <code className="text-xs bg-muted p-1 rounded">
-                INSERT INTO public.user_roles (user_id, role) VALUES ('{userId}', 'admin');
-              </code>
-            </p>
-            <Button onClick={grantAdminAccess} className="w-full">
-              Grant Admin Access
-            </Button>
-          </div>}
-      </CardContent>
+      
     </Card>;
 }
