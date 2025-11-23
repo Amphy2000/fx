@@ -100,6 +100,15 @@ export class RealtimeChat {
       // Create peer connection
       this.pc = new RTCPeerConnection();
 
+      // Monitor connection state
+      this.pc.onconnectionstatechange = () => {
+        console.log('Connection state:', this.pc?.connectionState);
+      };
+
+      this.pc.oniceconnectionstatechange = () => {
+        console.log('ICE connection state:', this.pc?.iceConnectionState);
+      };
+
       // Set up remote audio
       this.pc.ontrack = e => {
         console.log('Remote track received');
@@ -113,14 +122,63 @@ export class RealtimeChat {
 
       // Set up data channel
       this.dc = this.pc.createDataChannel("oai-events");
+      
       this.dc.addEventListener("message", (e) => {
-        const event = JSON.parse(e.data);
-        console.log("Received event:", event);
-        this.onMessage(event);
+        try {
+          const event = JSON.parse(e.data);
+          console.log("Received event type:", event.type);
+          
+          // Log important events
+          if (event.type === 'session.created') {
+            console.log('Session created successfully');
+          } else if (event.type === 'session.updated') {
+            console.log('Session updated successfully');
+          } else if (event.type === 'conversation.item.created') {
+            console.log('Conversation item created');
+          } else if (event.type === 'response.audio.delta') {
+            console.log('Receiving audio response');
+          } else if (event.type === 'error') {
+            console.error('OpenAI error:', event);
+          }
+          
+          this.onMessage(event);
+        } catch (err) {
+          console.error('Error parsing event:', err);
+        }
       });
 
       this.dc.addEventListener("open", () => {
         console.log('Data channel opened');
+        
+        // Configure the session once the data channel is open
+        const sessionConfig = {
+          type: 'session.update',
+          session: {
+            modalities: ['text', 'audio'],
+            instructions: 'You are an encouraging accountability partner assistant. Help traders stay motivated, provide positive reinforcement, and offer constructive feedback on their trading goals. Be supportive, friendly, and concise in your responses.',
+            voice: 'alloy',
+            input_audio_format: 'pcm16',
+            output_audio_format: 'pcm16',
+            turn_detection: {
+              type: 'server_vad',
+              threshold: 0.5,
+              prefix_padding_ms: 300,
+              silence_duration_ms: 1000
+            },
+            temperature: 0.8
+          }
+        };
+        
+        console.log('Sending session configuration');
+        this.dc!.send(JSON.stringify(sessionConfig));
+      });
+
+      this.dc.addEventListener("error", (e) => {
+        console.error('Data channel error:', e);
+      });
+
+      this.dc.addEventListener("close", () => {
+        console.log('Data channel closed');
       });
 
       // Create and set local description
