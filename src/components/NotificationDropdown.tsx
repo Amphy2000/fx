@@ -133,59 +133,78 @@ export const NotificationDropdown = ({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md">
-        <SheetHeader>
+      <SheetContent side="right" className="w-full sm:max-w-md border-l border-border/50 bg-gradient-to-b from-background to-background/95 backdrop-blur-xl">
+        <SheetHeader className="border-b border-border/50 pb-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              <SheetTitle>Notifications</SheetTitle>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                <Bell className="h-5 w-5 text-primary" />
+              </div>
+              <SheetTitle className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                Notifications
+              </SheetTitle>
             </div>
             {notifications.some(n => !n.is_read) && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={markAllAsRead}
-                className="text-xs"
+                className="text-xs hover:bg-primary/10 hover:text-primary transition-all duration-300"
               >
                 <CheckCheck className="h-4 w-4 mr-1" />
                 Mark all read
               </Button>
             )}
           </div>
-          <SheetDescription>
+          <SheetDescription className="text-muted-foreground/80">
             Stay updated with your latest notifications
           </SheetDescription>
         </SheetHeader>
 
-        <ScrollArea className="h-[calc(100vh-120px)] mt-4">
+        <ScrollArea className="h-[calc(100vh-140px)] mt-6">
           {loading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Loading notifications...
+            <div className="text-center py-12">
+              <div className="animate-pulse space-y-4">
+                <div className="h-20 bg-muted/20 rounded-xl" />
+                <div className="h-20 bg-muted/20 rounded-xl" />
+                <div className="h-20 bg-muted/20 rounded-xl" />
+              </div>
             </div>
           ) : notifications.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Bell className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>No notifications yet</p>
+            <div className="text-center py-16">
+              <div className="relative mx-auto w-24 h-24 mb-6">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5 rounded-full animate-pulse" />
+                <div className="relative flex items-center justify-center h-full">
+                  <Bell className="h-12 w-12 text-primary/40" />
+                </div>
+              </div>
+              <p className="text-lg font-semibold text-foreground/70 mb-2">All caught up!</p>
+              <p className="text-sm text-muted-foreground">No new notifications at the moment</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-4 rounded-lg bg-card cursor-pointer hover:bg-accent transition-colors ${
+                  className={`group relative p-4 rounded-xl cursor-pointer transition-all duration-300 ${
                     getNotificationColor(notification.type)
-                  } ${!notification.is_read ? 'bg-accent/50' : ''}`}
+                  } ${
+                    !notification.is_read 
+                      ? 'bg-gradient-to-r from-primary/10 via-primary/5 to-transparent shadow-lg shadow-primary/5 hover:shadow-xl hover:shadow-primary/10' 
+                      : 'bg-card/50 hover:bg-card/80 shadow-sm hover:shadow-md'
+                  } backdrop-blur-sm hover:scale-[1.02] border border-border/30`}
                   onClick={() => handleNotificationClick(notification)}
                 >
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-sm mb-1">
+                      <h4 className="font-semibold text-base mb-1.5 text-foreground group-hover:text-primary transition-colors">
                         {notification.title}
                       </h4>
-                      <p className="text-sm text-muted-foreground mb-2">
+                      <p className="text-sm text-muted-foreground leading-relaxed mb-2">
                         {notification.message}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground/60 flex items-center gap-1">
+                        <span className="inline-block w-1 h-1 rounded-full bg-primary/40" />
                         {formatDistanceToNow(new Date(notification.created_at), {
                           addSuffix: true,
                         })}
@@ -196,7 +215,7 @@ export const NotificationDropdown = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-8 w-8 hover:bg-primary/20 hover:text-primary transition-all duration-300"
                           onClick={(e) => {
                             e.stopPropagation();
                             markAsRead(notification.id);
@@ -208,7 +227,7 @@ export const NotificationDropdown = ({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-8 w-8 hover:bg-destructive/20 hover:text-destructive transition-all duration-300"
                         onClick={(e) => {
                           e.stopPropagation();
                           deleteNotification(notification.id);
