@@ -1,15 +1,14 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Brain, LogOut, LayoutDashboard, MessageSquare, Calendar, Settings, Shield, Sun, Moon, Download } from "lucide-react";
+import { Brain, LogOut, Shield, Sun, Moon, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 import { CreditDisplay } from "@/components/CreditDisplay";
 import { isAppInstalled } from "@/utils/browserDetection";
 const Navbar = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showInstallButton, setShowInstallButton] = useState(false);
@@ -58,9 +57,9 @@ const Navbar = () => {
         setIsAdmin(false);
 
         // Redirect to auth page if session expires or user signs out
-        if (!session && location.pathname !== '/auth' && location.pathname !== '/') {
+        if (!session && window.location.pathname !== '/auth' && window.location.pathname !== '/') {
           navigate('/auth');
-          if (event === 'SIGNED_OUT' && location.pathname !== '/') {
+          if (event === 'SIGNED_OUT' && window.location.pathname !== '/') {
             // Don't show expiry message for manual sign out
             return;
           }
@@ -69,7 +68,7 @@ const Navbar = () => {
       }
     });
     return () => subscription.unsubscribe();
-  }, [navigate, location.pathname]);
+  }, [navigate]);
   const checkAdminStatus = async (userId: string) => {
     try {
       const {
@@ -91,23 +90,6 @@ const Navbar = () => {
     toast.success("Signed out successfully");
     navigate("/");
   };
-  const navItems = [{
-    path: "/dashboard",
-    label: "Dashboard",
-    icon: LayoutDashboard
-  }, {
-    path: "/ai-features",
-    label: "AI Features Hub",
-    icon: Brain
-  }, {
-    path: "/weekly-summary",
-    label: "Weekly Summary",
-    icon: Calendar
-  }, {
-    path: "/settings",
-    label: "Settings",
-    icon: Settings
-  }];
   return (
     <nav className="flex-1 flex items-center justify-between">
       <div className="flex items-center justify-between w-full">
@@ -118,14 +100,6 @@ const Navbar = () => {
         
         <div className="flex items-center gap-4">
           {user ? <>
-              {navItems.map(item => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
-            return <Button key={item.path} variant={isActive ? "default" : "ghost"} size="sm" onClick={() => navigate(item.path)} className="gap-2 hidden md:flex">
-                    <Icon className="h-4 w-4" />
-                    {item.label}
-                  </Button>;
-          })}
               {isAdmin && <Button variant="ghost" size="sm" onClick={() => navigate("/admin")} className="gap-2 text-primary hover:text-primary/80 hidden md:flex">
                   <Shield className="h-4 w-4" />
                   Admin
