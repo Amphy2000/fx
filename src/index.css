@@ -88,36 +88,49 @@ All colors MUST be HSL.
   }
 
   .light {
-    --background: 0 0% 98%;
-    --foreground: 219 20% 8%;
+    --background: 0 0% 100%;
+    --foreground: 219 25% 10%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 219 20% 8%;
+    --card: 0 0% 99%;
+    --card-foreground: 219 25% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 219 20% 8%;
+    --popover-foreground: 219 25% 10%;
 
-    --primary: 213 94% 60%;
+    --primary: 213 94% 55%;
+    --primary-glow: 213 94% 65%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 219 20% 8%;
+    --secondary: 213 30% 95%;
+    --secondary-foreground: 219 25% 10%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 213 25% 96%;
+    --muted-foreground: 219 15% 40%;
 
-    --accent: 210 40% 96%;
-    --accent-foreground: 219 20% 8%;
+    --accent: 280 65% 60%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
+    --destructive-glow: 0 72% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 213 94% 60%;
-
     --success: 142 70% 45%;
+    --success-glow: 142 70% 55%;
     --success-foreground: 0 0% 100%;
+
+    --border: 213 25% 88%;
+    --input: 213 25% 92%;
+    --ring: 213 94% 55%;
+
+    /* Sidebar tokens for light theme */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 219 25% 10%;
+    --sidebar-primary: 213 94% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 213 94% 55%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 213 25% 90%;
+    --sidebar-ring: 213 94% 55%;
   }
 }
 
