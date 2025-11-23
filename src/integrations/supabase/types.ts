@@ -1755,6 +1755,8 @@ export type Database = {
           id: string
           sender_id: string
           updated_at: string
+          voice_duration: number | null
+          voice_url: string | null
         }
         Insert: {
           attachment_name?: string | null
@@ -1766,6 +1768,8 @@ export type Database = {
           id?: string
           sender_id: string
           updated_at?: string
+          voice_duration?: number | null
+          voice_url?: string | null
         }
         Update: {
           attachment_name?: string | null
@@ -1777,6 +1781,8 @@ export type Database = {
           id?: string
           sender_id?: string
           updated_at?: string
+          voice_duration?: number | null
+          voice_url?: string | null
         }
         Relationships: [
           {
