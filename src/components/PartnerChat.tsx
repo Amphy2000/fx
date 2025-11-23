@@ -547,7 +547,7 @@ export default function PartnerChat({ partnershipId, onBack }: PartnerChatProps)
             <Reply className="h-3.5 w-3.5" />
           </Button>
 
-          {isOwnMessage && !isVoice && (
+          {isOwnMessage && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
@@ -555,13 +555,15 @@ export default function PartnerChat({ partnershipId, onBack }: PartnerChatProps)
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => {
-                  setEditingMessageId(message.id);
-                  setEditingContent(message.content);
-                }}>
-                  <Edit2 className="h-4 w-4 mr-2" />
-                  Edit
-                </DropdownMenuItem>
+                {!message.voice_url && !message.attachment_url && (
+                  <DropdownMenuItem onClick={() => {
+                    setEditingMessageId(message.id);
+                    setEditingContent(message.content);
+                  }}>
+                    <Edit2 className="h-4 w-4 mr-2" />
+                    Edit
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   onClick={() => handleDeleteMessage(message.id, message.voice_url, message.attachment_url)}
                   className="text-destructive"
