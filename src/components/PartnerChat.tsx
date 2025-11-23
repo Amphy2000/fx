@@ -232,7 +232,7 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
       // Upload voice note to Supabase storage
       const fileName = `${currentUserId}/${Date.now()}.webm`;
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('trade-screenshots') // Using existing bucket
+        .from('voice-notes')
         .upload(fileName, audioBlob, {
           contentType: 'audio/webm',
           upsert: false
@@ -242,7 +242,7 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('trade-screenshots')
+        .from('voice-notes')
         .getPublicUrl(fileName);
 
       // Send voice message
