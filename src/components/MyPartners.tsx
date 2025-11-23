@@ -30,14 +30,8 @@ export default function MyPartners() {
         .from('accountability_partnerships')
         .select(`
           *,
-          partner_profile:accountability_profiles!accountability_partnerships_partner_id_fkey(
-            *,
-            profiles:user_id(full_name, email)
-          ),
-          user_profile:accountability_profiles!accountability_partnerships_user_id_fkey(
-            *,
-            profiles:user_id(full_name, email)
-          )
+          partner_profile:profiles!accountability_partnerships_partner_id_fkey(full_name, email),
+          user_profile:profiles!accountability_partnerships_user_id_fkey(full_name, email)
         `)
         .or(`user_id.eq.${user.id},partner_id.eq.${user.id}`)
         .eq('status', 'active');
@@ -51,10 +45,7 @@ export default function MyPartners() {
         .from('accountability_partnerships')
         .select(`
           *,
-          user_profile:accountability_profiles!accountability_partnerships_user_id_fkey(
-            *,
-            profiles:user_id(full_name, email)
-          )
+          user_profile:profiles!accountability_partnerships_user_id_fkey(full_name, email)
         `)
         .eq('partner_id', user.id)
         .eq('status', 'pending');
@@ -66,10 +57,7 @@ export default function MyPartners() {
         .from('accountability_partnerships')
         .select(`
           *,
-          partner_profile:accountability_profiles!accountability_partnerships_partner_id_fkey(
-            *,
-            profiles:user_id(full_name, email)
-          )
+          partner_profile:profiles!accountability_partnerships_partner_id_fkey(full_name, email)
         `)
         .eq('user_id', user.id)
         .eq('status', 'pending');
@@ -106,7 +94,7 @@ export default function MyPartners() {
   };
 
   const getInitials = (profile: any) => {
-    const name = profile?.profiles?.full_name || profile?.profiles?.email || "?";
+    const name = profile?.full_name || profile?.email || "?";
     return name.substring(0, 2).toUpperCase();
   };
 
@@ -158,7 +146,7 @@ export default function MyPartners() {
                       </Avatar>
                       <div className="flex-1">
                         <CardTitle className="text-lg">
-                          {partnerInfo?.profiles?.full_name || "Anonymous Trader"}
+                          {partnerInfo?.full_name || "Anonymous Trader"}
                         </CardTitle>
                         <CardDescription className="flex items-center gap-2 mt-1">
                           <Calendar className="h-3 w-3" />
@@ -203,7 +191,7 @@ export default function MyPartners() {
                         </Avatar>
                         <div>
                           <CardTitle className="text-lg">
-                            {requesterInfo?.profiles?.full_name || "Anonymous Trader"}
+                            {requesterInfo?.full_name || "Anonymous Trader"}
                           </CardTitle>
                           <CardDescription>
                             Sent {format(new Date(request.created_at), "MMM d")}
@@ -269,7 +257,7 @@ export default function MyPartners() {
                         </Avatar>
                         <div>
                           <CardTitle className="text-lg">
-                            {partnerInfo?.profiles?.full_name || "Anonymous Trader"}
+                            {partnerInfo?.full_name || "Anonymous Trader"}
                           </CardTitle>
                           <CardDescription>
                             Sent {format(new Date(request.created_at), "MMM d")}
