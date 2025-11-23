@@ -23,7 +23,13 @@ export default function AffiliateApply() {
     tiktok: "",
     website: "",
     paymentMethod: "",
-    paymentDetails: "",
+    // Payment details based on method
+    paypalEmail: "",
+    bankName: "",
+    accountHolderName: "",
+    accountNumber: "",
+    cryptoWalletAddress: "",
+    cryptoType: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,7 +82,18 @@ export default function AffiliateApply() {
           },
           payment_info: {
             method: formData.paymentMethod,
-            details: formData.paymentDetails,
+            ...(formData.paymentMethod === "paypal" && {
+              paypalEmail: formData.paypalEmail,
+            }),
+            ...(formData.paymentMethod === "bank" && {
+              bankName: formData.bankName,
+              accountHolderName: formData.accountHolderName,
+              accountNumber: formData.accountNumber,
+            }),
+            ...(formData.paymentMethod === "crypto" && {
+              cryptoWalletAddress: formData.cryptoWalletAddress,
+              cryptoType: formData.cryptoType,
+            }),
           },
           status: "pending",
         });
@@ -151,6 +168,9 @@ export default function AffiliateApply() {
                     <SelectItem value="macro">Macro (100K+ followers) - 40% commission</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-sm text-muted-foreground">
+                  Note: Your tier and commission rate will be verified and confirmed by our team based on your social media reach.
+                </p>
               </div>
 
               <div className="space-y-4">
@@ -235,16 +255,88 @@ export default function AffiliateApply() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="paymentDetails">Payment Details</Label>
-                  <Input
-                    id="paymentDetails"
-                    placeholder="Email, account number, or wallet address"
-                    value={formData.paymentDetails}
-                    onChange={(e) => setFormData({ ...formData, paymentDetails: e.target.value })}
-                    required
-                  />
-                </div>
+
+                {formData.paymentMethod === "paypal" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="paypalEmail">PayPal Email</Label>
+                    <Input
+                      id="paypalEmail"
+                      type="email"
+                      placeholder="your.email@example.com"
+                      value={formData.paypalEmail}
+                      onChange={(e) => setFormData({ ...formData, paypalEmail: e.target.value })}
+                      required
+                    />
+                  </div>
+                )}
+
+                {formData.paymentMethod === "bank" && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="bankName">Bank Name</Label>
+                      <Input
+                        id="bankName"
+                        placeholder="Enter your bank name"
+                        value={formData.bankName}
+                        onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="accountHolderName">Account Holder Name</Label>
+                      <Input
+                        id="accountHolderName"
+                        placeholder="Full name on account"
+                        value={formData.accountHolderName}
+                        onChange={(e) => setFormData({ ...formData, accountHolderName: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="accountNumber">Account Number</Label>
+                      <Input
+                        id="accountNumber"
+                        placeholder="Enter account number"
+                        value={formData.accountNumber}
+                        onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {formData.paymentMethod === "crypto" && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="cryptoType">Cryptocurrency Type</Label>
+                      <Select
+                        value={formData.cryptoType}
+                        onValueChange={(value) => setFormData({ ...formData, cryptoType: value })}
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select crypto" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="bitcoin">Bitcoin (BTC)</SelectItem>
+                          <SelectItem value="ethereum">Ethereum (ETH)</SelectItem>
+                          <SelectItem value="usdt">Tether (USDT)</SelectItem>
+                          <SelectItem value="usdc">USD Coin (USDC)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cryptoWalletAddress">Wallet Address</Label>
+                      <Input
+                        id="cryptoWalletAddress"
+                        placeholder="Enter your wallet address"
+                        value={formData.cryptoWalletAddress}
+                        onChange={(e) => setFormData({ ...formData, cryptoWalletAddress: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <Button type="submit" className="w-full" size="lg" disabled={loading}>
