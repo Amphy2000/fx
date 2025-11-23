@@ -166,7 +166,13 @@ export default function MyPartners({ onPartnerAccepted }: { onPartnerAccepted?: 
                       <Button 
                         variant="outline" 
                         className="flex-1"
-                        onClick={() => window.location.href = '/weekly-summary'}
+                        onClick={() => {
+                          const partnerInfo = getPartnerInfo(partnership);
+                          const partnerUserId = partnership.user_id === partnership.currentUserId 
+                            ? partnership.partner_id 
+                            : partnership.user_id;
+                          window.location.href = `/weekly-summary?partnerId=${partnerUserId}`;
+                        }}
                       >
                         View Summary
                       </Button>

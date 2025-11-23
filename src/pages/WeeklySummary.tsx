@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,9 +12,12 @@ import { Badge } from "@/components/ui/badge";
 
 const WeeklySummary = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const partnerId = searchParams.get('partnerId');
   const [summary, setSummary] = useState<string>("");
   const [stats, setStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [partnerName, setPartnerName] = useState<string>("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -27,12 +30,26 @@ const WeeklySummary = () => {
   const loadSummary = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('weekly-summary');
+      if (partnerId) {
+        // Load partner's summary
+        const { data, error } = await supabase.functions.invoke('partner-weekly-summary', {
+          body: { partner_id: partnerId }
+        });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      setSummary(data.summary);
-      setStats(data.stats);
+        setSummary(data.summary);
+        setStats(data.stats);
+        setPartnerName(data.partnerName || "Partner");
+      } else {
+        // Load own summary
+        const { data, error } = await supabase.functions.invoke('weekly-summary');
+
+        if (error) throw error;
+
+        setSummary(data.summary);
+        setStats(data.stats);
+      }
     } catch (error: any) {
       console.error("Summary error:", error);
       toast({
@@ -58,9 +75,11 @@ const WeeklySummary = () => {
             <div>
               <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
                 <Calendar className="h-8 w-8 text-primary" />
-                Weekly Summary
+                {partnerId ? `${partnerName}'s Weekly Summary` : "Weekly Summary"}
               </h1>
-              <p className="text-muted-foreground">Your performance over the last 7 days</p>
+              <p className="text-muted-foreground">
+                {partnerId ? `${partnerName}'s performance over the last 7 days` : "Your performance over the last 7 days"}
+              </p>
             </div>
             <Badge variant="outline" className="gap-1 bg-primary/10 text-primary border-primary/20">
               <Sparkles className="h-3 w-3" />
