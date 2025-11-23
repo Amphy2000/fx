@@ -196,11 +196,11 @@ export const NotificationDropdown = ({
                   onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-base mb-1.5 text-foreground group-hover:text-primary transition-colors">
+                    <div className="flex-1 overflow-hidden">
+                      <h4 className="font-semibold text-base mb-1.5 text-foreground group-hover:text-primary transition-colors break-words">
                         {notification.title}
                       </h4>
-                      <p className="text-sm text-muted-foreground leading-relaxed mb-2">
+                      <p className="text-sm text-muted-foreground leading-relaxed mb-2 break-words whitespace-pre-wrap">
                         {notification.message}
                       </p>
                       <p className="text-xs text-muted-foreground/60 flex items-center gap-1">
@@ -210,7 +210,7 @@ export const NotificationDropdown = ({
                         })}
                       </p>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex flex-col gap-1 flex-shrink-0">
                       {!notification.is_read && (
                         <Button
                           variant="ghost"
