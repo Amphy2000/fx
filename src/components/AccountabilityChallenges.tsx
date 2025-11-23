@@ -38,12 +38,25 @@ export default function AccountabilityChallenges() {
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   
+  const getDefaultDates = () => {
+    const today = new Date();
+    const thirtyDaysFromNow = new Date(today);
+    thirtyDaysFromNow.setDate(today.getDate() + 30);
+    
+    return {
+      start: today.toISOString().split('T')[0],
+      end: thirtyDaysFromNow.toISOString().split('T')[0]
+    };
+  };
+
+  const defaultDates = getDefaultDates();
+
   const [newChallenge, setNewChallenge] = useState({
     title: "",
     description: "",
     challenge_type: "streak",
-    start_date: "",
-    end_date: "",
+    start_date: defaultDates.start,
+    end_date: defaultDates.end,
     goal_criteria: { target: 7 },
     is_public: true,
     prize_description: "",
@@ -115,12 +128,13 @@ export default function AccountabilityChallenges() {
 
       toast.success("Challenge created successfully!");
       setIsCreateOpen(false);
+      const newDefaultDates = getDefaultDates();
       setNewChallenge({
         title: "",
         description: "",
         challenge_type: "streak",
-        start_date: "",
-        end_date: "",
+        start_date: newDefaultDates.start,
+        end_date: newDefaultDates.end,
         goal_criteria: { target: 7 },
         is_public: true,
         prize_description: "",
@@ -230,7 +244,7 @@ export default function AccountabilityChallenges() {
                   id="title"
                   value={newChallenge.title}
                   onChange={(e) => setNewChallenge({ ...newChallenge, title: e.target.value })}
-                  placeholder="e.g., 30-Day Trading Streak"
+                  placeholder="e.g., 30-Day Consistent Trading Challenge"
                 />
               </div>
               <div>
@@ -239,7 +253,7 @@ export default function AccountabilityChallenges() {
                   id="description"
                   value={newChallenge.description}
                   onChange={(e) => setNewChallenge({ ...newChallenge, description: e.target.value })}
-                  placeholder="Describe the challenge..."
+                  placeholder="Trade every day for 30 consecutive days, maintain your rules, and build the discipline that separates successful traders from the rest..."
                   rows={3}
                 />
               </div>
@@ -301,7 +315,7 @@ export default function AccountabilityChallenges() {
                   id="prize"
                   value={newChallenge.prize_description || ""}
                   onChange={(e) => setNewChallenge({ ...newChallenge, prize_description: e.target.value })}
-                  placeholder="e.g., Bragging rights!"
+                  placeholder="e.g., Winner gets bragging rights and a custom trading badge!"
                 />
               </div>
               <Button onClick={createChallenge} className="w-full mt-2">Create Challenge</Button>
