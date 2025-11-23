@@ -2266,6 +2266,7 @@ export type Database = {
           content: string | null
           created_at: string | null
           id: string
+          is_system: boolean | null
           message_type: string
           metadata: Json | null
           partnership_id: string
@@ -2279,6 +2280,7 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           id?: string
+          is_system?: boolean | null
           message_type?: string
           metadata?: Json | null
           partnership_id: string
@@ -2292,6 +2294,7 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           id?: string
+          is_system?: boolean | null
           message_type?: string
           metadata?: Json | null
           partnership_id?: string
@@ -3781,6 +3784,10 @@ export type Database = {
       is_group_member: {
         Args: { p_group_id: string; p_user_id: string }
         Returns: boolean
+      }
+      mark_messages_as_read: {
+        Args: { p_partnership_id: string; p_user_id: string }
+        Returns: undefined
       }
       record_email_send: {
         Args: { send_count?: number; send_domain: string }
