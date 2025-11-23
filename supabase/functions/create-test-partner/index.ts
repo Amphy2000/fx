@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     // Check if test partner already exists
     const { data: existingPartnership } = await supabaseAdmin
       .from('accountability_partnerships')
-      .select('id')
+      .select('id, partner_id')
       .or(`user_id.eq.${user.id},partner_id.eq.${user.id}`)
       .eq('status', 'active')
       .limit(1)
@@ -48,16 +48,41 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Generate unique email for test partner
-    const testEmail = `test.partner.${user.id.substring(0, 8)}@example.com`;
+    // Generate truly unique email with UUID to avoid duplicates
+    const uniqueId = crypto.randomUUID();
+    const testEmail = `test.partner.${uniqueId.substring(0, 8)}@example.com`;
+    
+    console.log('Attempting to create test user with email:', testEmail);
 
-    // Create test auth user using admin API
+    // Clean up any existing test users with similar email pattern for this user
+    const oldTestEmail = `test.partner.${user.id.substring(0, 8)}@example.com`;
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (existingUsers?.users) {
+      const oldTestUser = existingUsers.users.find(u => u.email === oldTestEmail);
+      if (oldTestUser) {
+        console.log('Deleting old test user and associated data:', oldTestUser.id);
+        
+        // Delete profile first (this will cascade delete other data)
+        await supabaseAdmin
+          .from('profiles')
+          .delete()
+          .eq('id', oldTestUser.id);
+        
+        // Then delete auth user
+        await supabaseAdmin.auth.admin.deleteUser(oldTestUser.id);
+      }
+    }
+
+    // Create test auth user using admin API with metadata to bypass duplicate checks
     const { data: testUser, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
       email: testEmail,
       password: 'testpassword123',
       email_confirm: true,
       user_metadata: {
         full_name: 'Test Partner',
+        signup_ip: 'test_partner',
+        signup_fingerprint: `test_${uniqueId}`,
       },
     });
 
