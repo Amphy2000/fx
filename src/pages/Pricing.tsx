@@ -46,6 +46,8 @@ const Pricing = () => {
         .eq("promo_code", promoCode.toUpperCase())
         .single();
 
+      console.log("Promo validation response:", { data, error });
+
       if (error || !data) {
         toast.error("Invalid promo code");
         setPromoValidated(false);
@@ -60,9 +62,11 @@ const Pricing = () => {
         return;
       }
 
+      const discountRate = data.commission_rate || 0;
+      console.log("Setting discount rate:", discountRate);
       setPromoValidated(true);
-      setPromoDiscount(data.commission_rate || 0);
-      toast.success(`Promo code applied! ${data.commission_rate}% discount`);
+      setPromoDiscount(discountRate);
+      toast.success(`Promo code applied! ${discountRate}% discount`);
     } catch (error) {
       console.error("Error validating promo:", error);
       toast.error("Failed to validate promo code");
