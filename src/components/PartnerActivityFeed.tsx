@@ -51,14 +51,8 @@ export default function PartnerActivityFeed() {
         .from('accountability_partnerships')
         .select(`
           *,
-          partner_profile:accountability_profiles!accountability_partnerships_partner_id_fkey(
-            *,
-            profiles:user_id(full_name)
-          ),
-          user_profile:accountability_profiles!accountability_partnerships_user_id_fkey(
-            *,
-            profiles:user_id(full_name)
-          )
+          partner_profile:profiles!accountability_partnerships_partner_id_fkey(full_name),
+          user_profile:profiles!accountability_partnerships_user_id_fkey(full_name)
         `)
         .or(`user_id.eq.${user.id},partner_id.eq.${user.id}`)
         .order('created_at', { ascending: false })
@@ -112,7 +106,7 @@ export default function PartnerActivityFeed() {
 
   const getActivityMessage = (activity: any) => {
     if (activity.type === 'partnership') {
-      const partnerName = activity.partner_profile?.profiles?.full_name || 'A trader';
+      const partnerName = activity.partner_profile?.full_name || 'A trader';
       if (activity.status === 'active') {
         return `${partnerName} is now your accountability partner`;
       }
