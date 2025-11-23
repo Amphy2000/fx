@@ -153,7 +153,7 @@ export function AppSidebar() {
   return <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
       <SidebarHeader className="border-b border-sidebar-border p-4 overflow-hidden">
         <div className="flex items-center gap-2 min-w-0">
-          <TrendingUp className="h-6 w-6 text-sidebar-primary shrink-0" />
+          <Brain className="h-6 w-6 text-sidebar-primary shrink-0" />
           <span className="font-bold text-lg text-sidebar-foreground truncate">Amphy AI</span>
         </div>
       </SidebarHeader>
