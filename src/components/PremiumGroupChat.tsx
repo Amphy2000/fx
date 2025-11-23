@@ -233,11 +233,28 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
     if (!newMessage.trim() || sending) return;
 
     setSending(true);
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMessage: any = {
+      id: tempId,
+      group_id: groupId,
+      sender_id: currentUserId,
+      content: newMessage.trim(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      sender: { id: currentUserId, display_name: 'You', full_name: 'You' },
+      reactions: []
+    };
+
+    // Optimistically add message
+    setMessages(prev => [...prev, optimisticMessage]);
+    const messageContent = newMessage.trim();
+    setNewMessage("");
+
     try {
       const messageData: any = {
         group_id: groupId,
         sender_id: currentUserId,
-        content: newMessage.trim()
+        content: messageContent
       };
 
       if (replyingTo) {
@@ -250,11 +267,13 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
 
       if (error) throw error;
       
-      setNewMessage("");
       setReplyingTo(null);
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error("Failed to send message");
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(m => m.id !== tempId));
+      setNewMessage(messageContent);
     } finally {
       setSending(false);
     }
@@ -552,14 +571,28 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
             {onlineUsers.size} online • {messages.length} messages
           </p>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowSearch(!showSearch)}
-          className="hover:bg-primary/10"
-        >
-          <Search className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowSearch(!showSearch)}
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleClearChat}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Clear Chat
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Search */}

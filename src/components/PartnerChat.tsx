@@ -96,15 +96,21 @@ export default function PartnerChat({ partnershipId, onBack }: PartnerChatProps)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setMessages(data || []);
+      
+      // Filter out messages hidden for current user
+      const visibleMessages = (data || []).filter((msg: any) => 
+        !msg.hidden_for || !msg.hidden_for.includes(currentUserId)
+      );
+      
+      setMessages(visibleMessages);
       
       // Mark messages as read
       if (currentUserId) {
-        const unreadMessages = data?.filter(m => 
+        const unreadMessages = visibleMessages.filter(m => 
           m.sender_id !== currentUserId && !m.read_at
         );
         
-        if (unreadMessages && unreadMessages.length > 0) {
+        if (unreadMessages.length > 0) {
           await supabase
             .from('partner_messages')
             .update({ read_at: new Date().toISOString() })
@@ -190,11 +196,29 @@ export default function PartnerChat({ partnershipId, onBack }: PartnerChatProps)
     if (!newMessage.trim() || sending) return;
 
     setSending(true);
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMessage: any = {
+      id: tempId,
+      partnership_id: partnershipId,
+      sender_id: currentUserId,
+      content: newMessage.trim(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      message_type: 'text',
+      sender: { id: currentUserId, display_name: 'You', full_name: 'You' },
+      reactions: []
+    };
+
+    // Optimistically add message
+    setMessages(prev => [...prev, optimisticMessage]);
+    const messageContent = newMessage.trim();
+    setNewMessage("");
+
     try {
       const messageData: any = {
         partnership_id: partnershipId,
         sender_id: currentUserId,
-        content: newMessage.trim(),
+        content: messageContent,
         message_type: 'text'
       };
 
@@ -208,13 +232,36 @@ export default function PartnerChat({ partnershipId, onBack }: PartnerChatProps)
 
       if (error) throw error;
       
-      setNewMessage("");
       setReplyingTo(null);
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error("Failed to send message");
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(m => m.id !== tempId));
+      setNewMessage(messageContent);
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleClearChat = async () => {
+    try {
+      // Update each message to add current user to hidden_for array
+      for (const message of messages) {
+        const hiddenFor = message.hidden_for || [];
+        if (!hiddenFor.includes(currentUserId)) {
+          await supabase
+            .from('partner_messages')
+            .update({ hidden_for: [...hiddenFor, currentUserId] })
+            .eq('id', message.id);
+        }
+      }
+      
+      setMessages([]);
+      toast.success("Chat cleared");
+    } catch (error) {
+      console.error('Error clearing chat:', error);
+      toast.error("Failed to clear chat");
     }
   };
 
@@ -538,14 +585,29 @@ export default function PartnerChat({ partnershipId, onBack }: PartnerChatProps)
             </p>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowSearch(!showSearch)}
-          className="hover:bg-primary/10"
-        >
-          <Search className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowSearch(!showSearch)}
+            className="hover:bg-primary/10"
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleClearChat}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Clear Chat
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Search */}
