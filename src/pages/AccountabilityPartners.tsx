@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, UserPlus, Settings, Target, TrendingUp, MessageSquare } from "lucide-react";
+import { Users, UserPlus, Settings, Target, TrendingUp, MessageSquare, UsersRound, Trophy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -13,6 +13,9 @@ import PartnerActivityFeed from "@/components/PartnerActivityFeed";
 import AccountabilityDebug from "@/components/AccountabilityDebug";
 import AccountabilityAnalytics from "@/components/AccountabilityAnalytics";
 import PartnerChat from "@/components/PartnerChat";
+import AccountabilityGroups from "@/components/AccountabilityGroups";
+import AccountabilityChallenges from "@/components/AccountabilityChallenges";
+import PartnershipLeaderboard from "@/components/PartnershipLeaderboard";
 
 export default function AccountabilityPartners() {
   const navigate = useNavigate();
@@ -95,14 +98,22 @@ export default function AccountabilityPartners() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="partners" disabled={!hasProfile}>
               <Users className="h-4 w-4 mr-2" />
               Partners
             </TabsTrigger>
+            <TabsTrigger value="groups" disabled={!hasProfile}>
+              <UsersRound className="h-4 w-4 mr-2" />
+              Groups
+            </TabsTrigger>
             <TabsTrigger value="goals" disabled={!hasProfile || activePartnerships.length === 0}>
               <Target className="h-4 w-4 mr-2" />
               Goals
+            </TabsTrigger>
+            <TabsTrigger value="challenges" disabled={!hasProfile}>
+              <Trophy className="h-4 w-4 mr-2" />
+              Challenges
             </TabsTrigger>
             <TabsTrigger value="chat" disabled={!hasProfile || activePartnerships.length === 0}>
               <MessageSquare className="h-4 w-4 mr-2" />
@@ -111,6 +122,10 @@ export default function AccountabilityPartners() {
             <TabsTrigger value="find" disabled={!hasProfile}>
               <UserPlus className="h-4 w-4 mr-2" />
               Find
+            </TabsTrigger>
+            <TabsTrigger value="leaderboard" disabled={!hasProfile}>
+              <Trophy className="h-4 w-4 mr-2" />
+              Leaderboard
             </TabsTrigger>
             <TabsTrigger value="analytics" disabled={!hasProfile || activePartnerships.length === 0}>
               <TrendingUp className="h-4 w-4 mr-2" />
@@ -153,8 +168,20 @@ export default function AccountabilityPartners() {
             )}
           </TabsContent>
 
+          <TabsContent value="groups" className="mt-6">
+            <AccountabilityGroups />
+          </TabsContent>
+
+          <TabsContent value="challenges" className="mt-6">
+            <AccountabilityChallenges />
+          </TabsContent>
+
           <TabsContent value="find" className="mt-6">
             <PartnerFinder />
+          </TabsContent>
+
+          <TabsContent value="leaderboard" className="mt-6">
+            <PartnershipLeaderboard />
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">

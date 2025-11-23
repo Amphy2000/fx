@@ -50,6 +50,106 @@ export type Database = {
         }
         Relationships: []
       }
+      accountability_challenges: {
+        Row: {
+          challenge_type: string
+          created_at: string | null
+          created_by: string
+          description: string | null
+          end_date: string
+          goal_criteria: Json
+          id: string
+          is_public: boolean | null
+          max_participants: number | null
+          prize_description: string | null
+          start_date: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          challenge_type: string
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          end_date: string
+          goal_criteria: Json
+          id?: string
+          is_public?: boolean | null
+          max_participants?: number | null
+          prize_description?: string | null
+          start_date: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          challenge_type?: string
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          end_date?: string
+          goal_criteria?: Json
+          id?: string
+          is_public?: boolean | null
+          max_participants?: number | null
+          prize_description?: string | null
+          start_date?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accountability_challenges_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accountability_groups: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          description: string | null
+          group_image_url: string | null
+          id: string
+          is_public: boolean | null
+          max_members: number | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          group_image_url?: string | null
+          id?: string
+          is_public?: boolean | null
+          max_members?: number | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          group_image_url?: string | null
+          id?: string
+          is_public?: boolean | null
+          max_members?: number | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accountability_groups_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accountability_partnerships: {
         Row: {
           accepted_at: string | null
@@ -222,6 +322,64 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "notification_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_participants: {
+        Row: {
+          challenge_id: string
+          completed_at: string | null
+          current_progress: Json | null
+          group_id: string | null
+          id: string
+          joined_at: string | null
+          rank: number | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          challenge_id: string
+          completed_at?: string | null
+          current_progress?: Json | null
+          group_id?: string | null
+          id?: string
+          joined_at?: string | null
+          rank?: number | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          challenge_id?: string
+          completed_at?: string | null
+          current_progress?: Json | null
+          group_id?: string | null
+          id?: string
+          joined_at?: string | null
+          rank?: number | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_participants_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "accountability_challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_participants_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "accountability_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1454,6 +1612,48 @@ export type Database = {
           },
         ]
       }
+      group_memberships: {
+        Row: {
+          group_id: string
+          id: string
+          joined_at: string | null
+          role: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          joined_at?: string | null
+          role?: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          joined_at?: string | null
+          role?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_memberships_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "accountability_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_memberships_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journal_entries: {
         Row: {
           created_at: string
@@ -2216,6 +2416,66 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partnership_analytics: {
+        Row: {
+          calculated_at: string | null
+          combined_profit_factor: number | null
+          combined_win_rate: number | null
+          completion_rate: number | null
+          engagement_score: number | null
+          group_id: string | null
+          id: string
+          partnership_id: string | null
+          total_goals_completed: number | null
+          total_goals_set: number | null
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          calculated_at?: string | null
+          combined_profit_factor?: number | null
+          combined_win_rate?: number | null
+          completion_rate?: number | null
+          engagement_score?: number | null
+          group_id?: string | null
+          id?: string
+          partnership_id?: string | null
+          total_goals_completed?: number | null
+          total_goals_set?: number | null
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          calculated_at?: string | null
+          combined_profit_factor?: number | null
+          combined_win_rate?: number | null
+          completion_rate?: number | null
+          engagement_score?: number | null
+          group_id?: string | null
+          id?: string
+          partnership_id?: string | null
+          total_goals_completed?: number | null
+          total_goals_set?: number | null
+          week_end?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partnership_analytics_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "accountability_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partnership_analytics_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "accountability_partnerships"
             referencedColumns: ["id"]
           },
         ]
