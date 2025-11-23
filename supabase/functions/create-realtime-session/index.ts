@@ -11,23 +11,45 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Get the authorization header from the request
+    // Get the JWT token from the authorization header
     const authHeader = req.headers.get('authorization');
+    console.log('Authorization header present:', !!authHeader);
+    
     if (!authHeader) {
       throw new Error('Missing authorization header');
     }
 
+    // Create Supabase client with the JWT token  
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY');
+    
+    console.log('Supabase URL configured:', !!supabaseUrl);
+    console.log('Supabase Key configured:', !!supabaseKey);
+    
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      supabaseUrl ?? '',
+      supabaseKey ?? '',
+      {
+        global: {
+          headers: {
+            Authorization: authHeader
+          }
+        }
+      }
     );
 
+    // Verify the user by getting their info from the JWT
+    console.log('Attempting to verify user...');
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    
+    console.log('User verification result:', { user: !!user, error: userError?.message });
+    
     if (userError || !user) {
-      console.error('Auth error:', userError);
-      throw new Error('Unauthorized: ' + (userError?.message || 'No user found'));
+      console.error('Auth verification failed:', userError);
+      throw new Error('Unauthorized: ' + (userError?.message || 'Invalid token'));
     }
+
+    console.log('User authenticated successfully:', user.id);
 
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     if (!OPENAI_API_KEY) {
