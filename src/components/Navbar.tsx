@@ -2,19 +2,26 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Brain, LogOut, LayoutDashboard, MessageSquare, Calendar, Settings, Shield, Sun, Moon } from "lucide-react";
+import { Brain, LogOut, LayoutDashboard, MessageSquare, Calendar, Settings, Shield, Sun, Moon, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 import { CreditDisplay } from "@/components/CreditDisplay";
+import { isAppInstalled } from "@/utils/browserDetection";
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showInstallButton, setShowInstallButton] = useState(false);
   const {
     theme,
     setTheme
   } = useTheme();
+
+  useEffect(() => {
+    // Show install button only if app is not already installed
+    setShowInstallButton(!isAppInstalled());
+  }, []);
   useEffect(() => {
     const loadUser = async () => {
       const {
@@ -124,6 +131,17 @@ const Navbar = () => {
                   Admin
                 </Button>}
               <CreditDisplay />
+              {showInstallButton && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => navigate("/install")} 
+                  className="gap-2 hidden md:flex"
+                >
+                  <Download className="h-4 w-4" />
+                  Install App
+                </Button>
+              )}
               <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="flex-shrink-0">
                 {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </Button>
