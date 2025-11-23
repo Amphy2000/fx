@@ -4,10 +4,12 @@ import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
-import { TrendingUp, DollarSign, Target, AlertTriangle, Calendar } from "lucide-react";
+import { TrendingUp, DollarSign, Target, AlertTriangle, Calendar, Sparkles } from "lucide-react";
 import { ModernGaugeChart } from '@/components/ModernGaugeChart';
 import { ModernDonutChart } from '@/components/ModernDonutChart';
 import { ModernRadarChart } from '@/components/ModernRadarChart';
+import { CreditsGuard } from "@/components/CreditsGuard";
+import { Badge } from "@/components/ui/badge";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
@@ -173,11 +175,18 @@ const AdvancedAnalytics = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto p-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Advanced Analytics</h1>
-          <p className="text-muted-foreground">Deep insights into your trading performance</p>
-        </div>
+      <CreditsGuard requiredCredits={0} featureName="Advanced Analytics">
+        <div className="container mx-auto p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">Advanced Analytics</h1>
+              <p className="text-muted-foreground">Deep insights into your trading performance</p>
+            </div>
+            <Badge variant="default" className="gap-1">
+              <Sparkles className="h-3 w-3" />
+              Premium Feature
+            </Badge>
+          </div>
 
         {insights.alerts && insights.alerts.length > 0 && (
           <Card className="border-yellow-500/50 bg-yellow-500/5">
@@ -376,6 +385,7 @@ const AdvancedAnalytics = () => {
           </Card>
         </div>
       </div>
+      </CreditsGuard>
     </Layout>
   );
 };
