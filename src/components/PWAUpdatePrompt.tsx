@@ -67,8 +67,13 @@ export const PWAUpdatePrompt = () => {
     if (registration?.waiting) {
       // Tell the service worker to skip waiting
       registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      
+      // Force reload after a short delay to ensure SW activates
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
     } else {
-      // Fallback: just reload
+      // Fallback: just reload immediately
       window.location.reload();
     }
   };
