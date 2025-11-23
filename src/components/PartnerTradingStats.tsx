@@ -110,8 +110,8 @@ export default function PartnerTradingStats({ partnershipId }: Props) {
         };
       };
 
-      const user1Name = (partnership.user as any)?.full_name || (partnership.user as any)?.email || 'User 1';
-      const user2Name = (partnership.partner as any)?.full_name || (partnership.partner as any)?.email || 'User 2';
+      const user1Name = (partnership.user as any)?.full_name || 'Partner';
+      const user2Name = (partnership.partner as any)?.full_name || 'Partner';
 
       const [user1Stats, user2Stats] = await Promise.all([
         calculateUserStats(partnership.user_id, user1Name),

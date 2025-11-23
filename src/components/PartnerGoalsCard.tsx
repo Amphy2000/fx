@@ -133,7 +133,7 @@ export default function PartnerGoalsCard({ goal, onCheckIn, onReload }: PartnerG
   };
 
   const getInitials = () => {
-    const name = goal.user?.full_name || goal.user?.email || "?";
+    const name = goal.user?.full_name || "User";
     return name.substring(0, 2).toUpperCase();
   };
 
