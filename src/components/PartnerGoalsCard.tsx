@@ -3,11 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { CheckCircle2, Calendar, Heart, PartyPopper, ThumbsUp, Zap, MessageSquare, Edit, Trash2 } from "lucide-react";
+import { CheckCircle2, Calendar, Heart, PartyPopper, ThumbsUp, Zap, MessageSquare, Edit2, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import GoalComments from "./GoalComments";
+import GoalEditDialog from "./GoalEditDialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   AlertDialog,
@@ -50,6 +51,7 @@ export default function PartnerGoalsCard({ goal, onCheckIn, onReload }: PartnerG
   const [sending, setSending] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
 
   useEffect(() => {
@@ -74,10 +76,34 @@ export default function PartnerGoalsCard({ goal, onCheckIn, onReload }: PartnerG
 
       if (error) throw error;
       toast.success("Goal deleted");
+      setShowDeleteDialog(false);
       onReload();
     } catch (error: any) {
       console.error('Error deleting goal:', error);
       toast.error("Failed to delete goal");
+    }
+  };
+
+  const handleEditGoal = async (goalData: any) => {
+    try {
+      const { error } = await supabase
+        .from('partner_goals')
+        .update({
+          goal_text: goalData.goal_text,
+          goal_type: goalData.goal_type,
+          target_date: goalData.target_date || null,
+          description: goalData.description || null,
+        })
+        .eq('id', goal.id)
+        .eq('user_id', currentUserId);
+
+      if (error) throw error;
+      toast.success("Goal updated");
+      setShowEditDialog(false);
+      onReload();
+    } catch (error: any) {
+      console.error('Error updating goal:', error);
+      toast.error("Failed to update goal");
     }
   };
 
@@ -165,14 +191,24 @@ export default function PartnerGoalsCard({ goal, onCheckIn, onReload }: PartnerG
               {goal.status}
             </Badge>
             {isMyGoal && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setShowDeleteDialog(true)}
-              >
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setShowEditDialog(true)}
+                >
+                  <Edit2 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -276,6 +312,13 @@ export default function PartnerGoalsCard({ goal, onCheckIn, onReload }: PartnerG
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <GoalEditDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        goal={goal}
+        onSubmit={handleEditGoal}
+      />
     </Card>
   );
 }

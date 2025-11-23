@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Plus, Target, Calendar, MoreVertical, Edit2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -25,6 +26,8 @@ export default function GroupGoals({ groupId }: GroupGoalsProps) {
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<any>(null);
   const [newGoalTitle, setNewGoalTitle] = useState("");
   const [newGoalDescription, setNewGoalDescription] = useState("");
   const [newGoalTargetDate, setNewGoalTargetDate] = useState("");
@@ -123,6 +126,42 @@ export default function GroupGoals({ groupId }: GroupGoalsProps) {
       if (error) throw error;
 
       toast.success("Goal status updated");
+      loadGoals();
+    } catch (error: any) {
+      console.error('Error updating goal:', error);
+      toast.error("Failed to update goal");
+    }
+  };
+
+  const handleEditGoal = (goal: any) => {
+    setEditingGoal(goal);
+    setNewGoalTitle(goal.title);
+    setNewGoalDescription(goal.description || "");
+    setNewGoalTargetDate(goal.target_date || "");
+    setShowEditDialog(true);
+  };
+
+  const handleUpdateGoal = async () => {
+    if (!newGoalTitle.trim() || !editingGoal) return;
+
+    try {
+      const { error } = await supabase
+        .from('group_goals')
+        .update({
+          title: newGoalTitle.trim(),
+          description: newGoalDescription.trim() || null,
+          target_date: newGoalTargetDate || null,
+        })
+        .eq('id', editingGoal.id);
+
+      if (error) throw error;
+
+      toast.success("Goal updated!");
+      setShowEditDialog(false);
+      setEditingGoal(null);
+      setNewGoalTitle("");
+      setNewGoalDescription("");
+      setNewGoalTargetDate("");
       loadGoals();
     } catch (error: any) {
       console.error('Error updating goal:', error);
@@ -244,6 +283,10 @@ export default function GroupGoals({ groupId }: GroupGoalsProps) {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEditGoal(goal)}>
+                            <Edit2 className="h-4 w-4 mr-2" />
+                            Edit Goal
+                          </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() =>
                               handleUpdateStatus(
@@ -272,6 +315,54 @@ export default function GroupGoals({ groupId }: GroupGoalsProps) {
           </div>
         )}
       </CardContent>
+
+      {/* Edit Goal Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Goal</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium">Title</Label>
+              <Input
+                value={newGoalTitle}
+                onChange={(e) => setNewGoalTitle(e.target.value)}
+                placeholder="Enter goal title"
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium">Description</Label>
+              <Textarea
+                value={newGoalDescription}
+                onChange={(e) => setNewGoalDescription(e.target.value)}
+                placeholder="Describe the goal (optional)"
+                className="min-h-[80px]"
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium">Target Date (Optional)</Label>
+              <Input
+                type="date"
+                value={newGoalTargetDate}
+                onChange={(e) => setNewGoalTargetDate(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleUpdateGoal} className="flex-1">
+                Update Goal
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowEditDialog(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
