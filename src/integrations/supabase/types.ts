@@ -1752,6 +1752,7 @@ export type Database = {
           content: string
           created_at: string
           group_id: string
+          hidden_for: string[] | null
           id: string
           sender_id: string
           updated_at: string
@@ -1765,6 +1766,7 @@ export type Database = {
           content: string
           created_at?: string
           group_id: string
+          hidden_for?: string[] | null
           id?: string
           sender_id: string
           updated_at?: string
@@ -1778,6 +1780,7 @@ export type Database = {
           content?: string
           created_at?: string
           group_id?: string
+          hidden_for?: string[] | null
           id?: string
           sender_id?: string
           updated_at?: string
@@ -2361,6 +2364,7 @@ export type Database = {
           attachment_url: string | null
           content: string | null
           created_at: string | null
+          hidden_for: string[] | null
           id: string
           is_system: boolean | null
           message_type: string
@@ -2378,6 +2382,7 @@ export type Database = {
           attachment_url?: string | null
           content?: string | null
           created_at?: string | null
+          hidden_for?: string[] | null
           id?: string
           is_system?: boolean | null
           message_type?: string
@@ -2395,6 +2400,7 @@ export type Database = {
           attachment_url?: string | null
           content?: string | null
           created_at?: string | null
+          hidden_for?: string[] | null
           id?: string
           is_system?: boolean | null
           message_type?: string
