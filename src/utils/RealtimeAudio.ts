@@ -75,6 +75,13 @@ export class RealtimeChat {
     try {
       console.log('Initializing Realtime Chat...');
       
+      // Verify user is authenticated before calling edge function
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('You must be logged in to use voice chat');
+      }
+      console.log('User session verified');
+      
       // Get ephemeral token from Supabase Edge Function
       // The SDK automatically includes the auth token
       const { data, error } = await supabase.functions.invoke("create-realtime-session");
