@@ -6,6 +6,7 @@ import { Brain, LogOut, Shield, Sun, Moon, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 import { CreditDisplay } from "@/components/CreditDisplay";
+import { NotificationBell } from "@/components/NotificationBell";
 import { isAppInstalled } from "@/utils/browserDetection";
 const Navbar = () => {
   const navigate = useNavigate();
@@ -105,6 +106,7 @@ const Navbar = () => {
                   Admin
                 </Button>}
               <CreditDisplay />
+              <NotificationBell />
               {showInstallButton && (
                 <Button 
                   variant="ghost" 

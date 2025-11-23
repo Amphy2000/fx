@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Loader2, Download, Search, Eye, Crown, Mail, BarChart3, Shield } from "lucide-react";
+import { Loader2, Download, Search, Eye, Crown, Mail, BarChart3, Shield, Bell } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ import { EmailWarmUpManager } from "@/components/EmailWarmUpManager";
 import { AdminCreditManager } from "@/components/AdminCreditManager";
 import { WeeklySummaryEmailManager } from "@/components/WeeklySummaryEmailManager";
 import AdminAffiliateManager from "@/components/AdminAffiliateManager";
+import { AdminNotificationSender } from "@/components/AdminNotificationSender";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -216,6 +217,10 @@ const Admin = () => {
           <div className="mb-3 overflow-x-auto">
             <TabsList className="flex flex-wrap w-full justify-start gap-1 h-auto bg-muted/50 p-1">
               <TabsTrigger value="users" className="text-xs px-2 py-1.5">Users</TabsTrigger>
+              <TabsTrigger value="notifications" className="text-xs px-2 py-1.5">
+                <Bell className="h-3 w-3 mr-1" />
+                <span>Notify</span>
+              </TabsTrigger>
               <TabsTrigger value="weekly-summaries" className="text-xs px-2 py-1.5">
                 <Mail className="h-3 w-3 mr-1" />
                 <span>Weekly</span>
@@ -429,6 +434,10 @@ const Admin = () => {
 
           <TabsContent value="affiliates">
             <AdminAffiliateManager />
+          </TabsContent>
+
+          <TabsContent value="notifications">
+            <AdminNotificationSender />
           </TabsContent>
         </Tabs>
 
