@@ -548,13 +548,15 @@ export default function PremiumGroupChat({ groupId }: PremiumGroupChatProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => {
-                  setEditingMessageId(message.id);
-                  setEditingContent(message.content);
-                }}>
-                  <Edit2 className="h-4 w-4 mr-2" />
-                  Edit
-                </DropdownMenuItem>
+                {!message.voice_url && !message.attachment_url && (
+                  <DropdownMenuItem onClick={() => {
+                    setEditingMessageId(message.id);
+                    setEditingContent(message.content);
+                  }}>
+                    <Edit2 className="h-4 w-4 mr-2" />
+                    Edit
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   onClick={() => handleDeleteMessage(message.id)}
                   className="text-destructive"
