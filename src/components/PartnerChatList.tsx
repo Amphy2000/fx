@@ -89,7 +89,7 @@ export default function PartnerChatList({
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground truncate">
-                    {partnerProfile?.email || 'No email'}
+                    Accountability Partner
                   </p>
                 </div>
                 
