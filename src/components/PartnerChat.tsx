@@ -240,10 +240,12 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
+      // Get signed URL (valid for 7 days)
+      const { data: urlData, error: urlError } = await supabase.storage
         .from('voice-notes')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 604800); // 7 days in seconds
+
+      if (urlError) throw urlError;
 
       // Send voice message
       const { error: messageError } = await supabase
@@ -253,7 +255,7 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
           sender_id: currentUserId,
           message_type: 'voice',
           content: 'Voice message',
-          voice_url: publicUrl,
+          voice_url: urlData.signedUrl,
           voice_duration: duration,
         });
 
@@ -321,8 +323,18 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
     }
   };
 
-  const handleDeleteMessage = async (messageId: string) => {
+  const handleDeleteMessage = async (messageId: string, voiceUrl?: string) => {
     try {
+      // If it's a voice message, delete the file from storage first
+      if (voiceUrl) {
+        // Extract file path from URL
+        const urlParts = voiceUrl.split('/voice-notes/');
+        if (urlParts.length > 1) {
+          const filePath = urlParts[1].split('?')[0]; // Remove query params
+          await supabase.storage.from('voice-notes').remove([filePath]);
+        }
+      }
+
       const { error } = await supabase
         .from('partner_messages')
         .delete()
@@ -445,43 +457,43 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
                 </div>
               )}
 
-              {!isVoice && (
-                <div className="flex items-center gap-1 mt-1">
-                  {!isOwn && (
-                    <div className="flex gap-0.5">
-                      {['heart', 'fire', 'thumbs_up'].map((type) => {
-                        const Icon = getReactionIcon(type);
-                        return (
-                          <button
-                            key={type}
-                            onClick={() => handleReaction(message.id, type)}
-                            className="p-1 hover:bg-muted rounded opacity-0 group-hover:opacity-50 hover:opacity-100 transition-opacity"
-                          >
-                            <Icon className="h-3 w-3" />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                  
-                  {isOwn && (
-                    <div className="flex gap-0.5">
+              <div className="flex items-center gap-1 mt-1">
+                {!isVoice && !isOwn && (
+                  <div className="flex gap-0.5">
+                    {['heart', 'fire', 'thumbs_up'].map((type) => {
+                      const Icon = getReactionIcon(type);
+                      return (
+                        <button
+                          key={type}
+                          onClick={() => handleReaction(message.id, type)}
+                          className="p-1 hover:bg-muted rounded opacity-0 group-hover:opacity-50 hover:opacity-100 transition-opacity"
+                        >
+                          <Icon className="h-3 w-3" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                
+                {isOwn && (
+                  <div className="flex gap-0.5">
+                    {!isVoice && (
                       <button
                         onClick={() => setIsEditing(true)}
                         className="p-1 hover:bg-muted rounded opacity-0 group-hover:opacity-50 hover:opacity-100 transition-opacity"
                       >
                         <MessageSquare className="h-3 w-3" />
                       </button>
-                      <button
-                        onClick={() => handleDeleteMessage(message.id)}
-                        className="p-1 hover:bg-muted rounded opacity-0 group-hover:opacity-50 hover:opacity-100 transition-opacity"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
+                    )}
+                    <button
+                      onClick={() => handleDeleteMessage(message.id, message.voice_url)}
+                      className="p-1 hover:bg-muted rounded opacity-0 group-hover:opacity-50 hover:opacity-100 transition-opacity"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>
