@@ -75,25 +75,16 @@ export class RealtimeChat {
     try {
       console.log('Initializing Realtime Chat...');
       
-      // Get current session token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error("User not authenticated");
-      }
-      
       // Get ephemeral token from Supabase Edge Function
-      const { data, error } = await supabase.functions.invoke("create-realtime-session", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
-      });
+      // The SDK automatically includes the auth token
+      const { data, error } = await supabase.functions.invoke("create-realtime-session");
       
       if (error) {
         console.error('Edge function error:', error);
-        throw error;
+        throw new Error(`Failed to create session: ${error.message}`);
       }
       if (!data?.client_secret?.value) {
-        throw new Error("Failed to get ephemeral token");
+        throw new Error("Failed to get ephemeral token from response");
       }
 
       const EPHEMERAL_KEY = data.client_secret.value;
