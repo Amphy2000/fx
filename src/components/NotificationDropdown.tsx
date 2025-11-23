@@ -151,7 +151,7 @@ export const NotificationDropdown = ({
       onOpenChange(isOpen);
       if (!isOpen) setSelectedNotification(null);
     }}>
-      <SheetContent side="right" className="w-full sm:max-w-md border-l border-border/50 bg-gradient-to-b from-background to-background/95 backdrop-blur-xl">
+      <SheetContent side="right" className="w-full sm:max-w-md border-l border-border/50 bg-gradient-to-b from-background to-background/95 backdrop-blur-xl overflow-hidden">
         {selectedNotification ? (
           // Detail View
           <>
@@ -175,10 +175,10 @@ export const NotificationDropdown = ({
               </div>
             </SheetHeader>
 
-            <ScrollArea className="h-[calc(100vh-140px)] mt-6 pr-4 overflow-x-hidden">
-              <div className="space-y-6 max-w-full">
+            <ScrollArea className="h-[calc(100vh-140px)] mt-6 pr-4 overflow-x-hidden max-w-full">
+              <div className="space-y-6 max-w-full w-full">
                 {/* Header Card */}
-                <div className={`p-6 rounded-2xl bg-gradient-to-br ${
+                <div className={`p-4 sm:p-6 rounded-2xl bg-gradient-to-br ${
                   selectedNotification.type === 'success' 
                     ? 'from-green-500/10 to-green-500/5 border-l-4 border-l-green-500'
                     : selectedNotification.type === 'warning'
@@ -186,8 +186,8 @@ export const NotificationDropdown = ({
                     : selectedNotification.type === 'error'
                     ? 'from-red-500/10 to-red-500/5 border-l-4 border-l-red-500'
                     : 'from-primary/10 to-primary/5 border-l-4 border-l-primary'
-                } shadow-lg backdrop-blur-sm border border-border/30`}>
-                  <h2 className="text-2xl font-bold text-foreground mb-2 leading-tight break-words max-w-full overflow-hidden">
+                } shadow-lg backdrop-blur-sm border border-border/30 max-w-full overflow-hidden`}>
+                  <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2 leading-tight break-words max-w-full" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                     {selectedNotification.title}
                   </h2>
                   <p className="text-xs text-muted-foreground/60 flex items-center gap-1">
@@ -199,11 +199,11 @@ export const NotificationDropdown = ({
                 </div>
 
                 {/* Message Card */}
-                <div className="p-6 rounded-2xl bg-card/50 shadow-md border border-border/30 backdrop-blur-sm overflow-hidden">
+                <div className="p-4 sm:p-6 rounded-2xl bg-card/50 shadow-md border border-border/30 backdrop-blur-sm max-w-full overflow-hidden">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
                     Message
                   </h3>
-                  <div className="text-base text-foreground/90 leading-relaxed whitespace-pre-wrap break-all max-w-full overflow-hidden">
+                  <div className="text-sm sm:text-base text-foreground/90 leading-relaxed whitespace-pre-wrap max-w-full" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                     {selectedNotification.message}
                   </div>
                 </div>
