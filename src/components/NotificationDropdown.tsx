@@ -175,8 +175,8 @@ export const NotificationDropdown = ({
               </div>
             </SheetHeader>
 
-            <ScrollArea className="h-[calc(100vh-140px)] mt-6">
-              <div className="space-y-6 px-1">
+            <ScrollArea className="h-[calc(100vh-140px)] mt-6 pr-4">
+              <div className="space-y-6">
                 {/* Header Card */}
                 <div className={`p-6 rounded-2xl bg-gradient-to-br ${
                   selectedNotification.type === 'success' 
@@ -187,7 +187,7 @@ export const NotificationDropdown = ({
                     ? 'from-red-500/10 to-red-500/5 border-l-4 border-l-red-500'
                     : 'from-primary/10 to-primary/5 border-l-4 border-l-primary'
                 } shadow-lg backdrop-blur-sm border border-border/30`}>
-                  <h2 className="text-2xl font-bold text-foreground mb-2 leading-tight">
+                  <h2 className="text-2xl font-bold text-foreground mb-2 leading-tight break-words">
                     {selectedNotification.title}
                   </h2>
                   <p className="text-xs text-muted-foreground/60 flex items-center gap-1">
@@ -203,9 +203,9 @@ export const NotificationDropdown = ({
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
                     Message
                   </h3>
-                  <p className="text-base text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                  <div className="text-base text-foreground/90 leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere">
                     {selectedNotification.message}
-                  </p>
+                  </div>
                 </div>
 
                 {/* Action Button */}
