@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { Brain, TrendingUp, Moon, Heart, Target, BarChart3 } from "lucide-react";
+import { Brain, TrendingUp, Moon, Heart, Target, BarChart3, Sparkles } from "lucide-react";
 import { ModernBarChart } from "@/components/ModernBarChart";
 import { ModernDonutChart } from "@/components/ModernDonutChart";
 import { ModernGaugeChart } from "@/components/ModernGaugeChart";
 import { SimpleBarChart } from "@/components/SimpleBarChart";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CreditsGuard } from "@/components/CreditsGuard";
+import { Badge } from "@/components/ui/badge";
 
 interface CorrelationData {
   winRateByConfidence: Array<{ name: string; value: number }>;
@@ -172,11 +174,18 @@ export default function MentalStateCorrelation() {
   if (loading) {
     return (
       <Layout>
-        <div className="container mx-auto p-6 space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold">Mental State ↔ Performance</h1>
-            <p className="text-muted-foreground">How your psychology impacts your trading results</p>
-          </div>
+        <CreditsGuard requiredCredits={0} featureName="Mental State Correlation">
+          <div className="container mx-auto p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold">Mental State ↔ Performance</h1>
+                <p className="text-muted-foreground">How your psychology impacts your trading results</p>
+              </div>
+              <Badge variant="default" className="gap-1">
+                <Sparkles className="h-3 w-3" />
+                Premium Feature
+              </Badge>
+            </div>
           <div className="grid gap-6 md:grid-cols-2">
             {[...Array(4)].map((_, i) => (
               <Card key={i}>
@@ -190,6 +199,7 @@ export default function MentalStateCorrelation() {
             ))}
           </div>
         </div>
+        </CreditsGuard>
       </Layout>
     );
   }
@@ -197,7 +207,8 @@ export default function MentalStateCorrelation() {
   if (!data) {
     return (
       <Layout>
-        <div className="container mx-auto p-6">
+        <CreditsGuard requiredCredits={0} featureName="Mental State Correlation">
+          <div className="container mx-auto p-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -218,20 +229,28 @@ export default function MentalStateCorrelation() {
             </CardContent>
           </Card>
         </div>
+        </CreditsGuard>
       </Layout>
     );
   }
 
   return (
     <Layout>
-      <div className="container mx-auto p-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Brain className="w-8 h-8" />
-            Mental State ↔ Performance
-          </h1>
-          <p className="text-muted-foreground">Data-driven insights: Your psychology IS your edge</p>
-        </div>
+      <CreditsGuard requiredCredits={0} featureName="Mental State Correlation">
+        <div className="container mx-auto p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold flex items-center gap-2">
+                <Brain className="w-8 h-8" />
+                Mental State ↔ Performance
+              </h1>
+              <p className="text-muted-foreground">Data-driven insights: Your psychology IS your edge</p>
+            </div>
+            <Badge variant="default" className="gap-1">
+              <Sparkles className="h-3 w-3" />
+              Premium Feature
+            </Badge>
+          </div>
 
         {/* Overall Impact */}
         <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/30">
@@ -370,6 +389,7 @@ export default function MentalStateCorrelation() {
           </CardContent>
         </Card>
       </div>
+      </CreditsGuard>
     </Layout>
   );
 }

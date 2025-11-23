@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Brain, GraduationCap, Loader2, TrendingUp, Sparkles } from "lucide-react";
 import { CreditsDisplay } from "@/components/CreditsDisplay";
 import { Badge } from "@/components/ui/badge";
+import { CreditsGuard } from "@/components/CreditsGuard";
+import { CREDIT_COSTS } from "@/utils/creditManager";
 
 export default function AICoach() {
   const [loading, setLoading] = useState(false);
@@ -73,7 +75,8 @@ export default function AICoach() {
 
   return (
     <Layout>
-      <div className="container mx-auto p-6 max-w-5xl space-y-6">
+      <CreditsGuard requiredCredits={CREDIT_COSTS.ai_coach_message} featureName="AI Coach">
+        <div className="container mx-auto p-6 max-w-5xl space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-bold flex items-center gap-3">
@@ -128,6 +131,7 @@ export default function AICoach() {
           </CardContent>
         </Card>
       </div>
+      </CreditsGuard>
     </Layout>
   );
 }

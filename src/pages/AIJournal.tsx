@@ -7,6 +7,8 @@ import { Calendar, Brain, TrendingUp, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
+import { CreditsGuard } from "@/components/CreditsGuard";
+import { CREDIT_COSTS } from "@/utils/creditManager";
 
 interface DailySummary {
   date: string;
@@ -66,7 +68,8 @@ const AIJournal = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto p-4 md:p-6 space-y-6">
+      <CreditsGuard requiredCredits={CREDIT_COSTS.checkin_analysis} featureName="AI Journal">
+        <div className="container mx-auto p-4 md:p-6 space-y-6">
         <div>
           <h1 className="text-3xl font-bold mb-2">AI Trading Journal</h1>
           <p className="text-muted-foreground">
@@ -179,6 +182,7 @@ const AIJournal = () => {
           </div>
         )}
       </div>
+      </CreditsGuard>
     </Layout>
   );
 };

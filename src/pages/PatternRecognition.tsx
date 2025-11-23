@@ -9,6 +9,8 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreditCostBadge } from "@/components/CreditCostBadge";
 import { toast } from "sonner";
+import { CreditsGuard } from "@/components/CreditsGuard";
+import { CREDIT_COSTS } from "@/utils/creditManager";
 
 interface TradePattern {
   setupName: string;
@@ -77,7 +79,8 @@ const PatternRecognition = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto p-4 md:p-6 space-y-6">
+      <CreditsGuard requiredCredits={CREDIT_COSTS.pattern_recognition} featureName="Pattern Recognition">
+        <div className="container mx-auto p-4 md:p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">Pattern Recognition</h1>
@@ -203,6 +206,7 @@ const PatternRecognition = () => {
           </div>
         )}
       </div>
+      </CreditsGuard>
     </Layout>
   );
 };

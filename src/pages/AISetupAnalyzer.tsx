@@ -7,8 +7,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CreditCostBadge } from "@/components/CreditCostBadge";
 import { useNavigate } from "react-router-dom";
+import { CreditsGuard } from "@/components/CreditsGuard";
+import { CREDIT_COSTS } from "@/utils/creditManager";
 
-const ANALYSIS_COST = 5;
+const ANALYSIS_COST = CREDIT_COSTS.setup_analysis;
 
 export default function AISetupAnalyzer() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -75,7 +77,8 @@ export default function AISetupAnalyzer() {
 
   return (
     <Layout>
-      <div className="container mx-auto px-8 py-10 max-w-5xl">
+      <CreditsGuard requiredCredits={ANALYSIS_COST} featureName="AI Setup Analyzer">
+        <div className="container mx-auto px-8 py-10 max-w-5xl">
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">AI Setup Analyzer</h1>
           <p className="text-muted-foreground">
@@ -182,6 +185,7 @@ export default function AISetupAnalyzer() {
           )}
         </div>
       </div>
+      </CreditsGuard>
     </Layout>
   );
 }

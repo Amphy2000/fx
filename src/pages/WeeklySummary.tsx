@@ -4,8 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Target, Award, Calendar } from "lucide-react";
+import { TrendingUp, Target, Award, Calendar, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { CreditsGuard } from "@/components/CreditsGuard";
+import { CREDIT_COSTS } from "@/utils/creditManager";
+import { Badge } from "@/components/ui/badge";
 
 const WeeklySummary = () => {
   const navigate = useNavigate();
@@ -49,14 +52,21 @@ const WeeklySummary = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
-            <Calendar className="h-8 w-8 text-primary" />
-            Weekly Summary
-          </h1>
-          <p className="text-muted-foreground">Your performance over the last 7 days</p>
-        </div>
+      <CreditsGuard requiredCredits={CREDIT_COSTS.weekly_summary} featureName="Weekly Summary">
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
+                <Calendar className="h-8 w-8 text-primary" />
+                Weekly Summary
+              </h1>
+              <p className="text-muted-foreground">Your performance over the last 7 days</p>
+            </div>
+            <Badge variant="outline" className="gap-1 bg-primary/10 text-primary border-primary/20">
+              <Sparkles className="h-3 w-3" />
+              {CREDIT_COSTS.weekly_summary} credits
+            </Badge>
+          </div>
 
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -160,6 +170,7 @@ const WeeklySummary = () => {
           </CardContent>
         </Card>
       </div>
+      </CreditsGuard>
     </Layout>
   );
 };
