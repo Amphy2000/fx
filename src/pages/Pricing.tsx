@@ -62,7 +62,7 @@ const Pricing = () => {
         return;
       }
 
-      const discountRate = data.commission_rate || 0;
+      const discountRate = 10; // Fixed 10% customer discount
       console.log("Setting discount rate:", discountRate);
       setPromoValidated(true);
       setPromoDiscount(discountRate);
