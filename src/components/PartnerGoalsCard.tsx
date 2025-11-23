@@ -3,12 +3,42 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { CheckCircle2, Calendar, Heart, PartyPopper, ThumbsUp, Zap, MessageSquare } from "lucide-react";
+import { CheckCircle2, Calendar, Heart, PartyPopper, ThumbsUp, Zap, MessageSquare, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import GoalComments from "./GoalComments";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+const getAvatarColor = (userId: string) => {
+  const colors = [
+    'bg-red-500',
+    'bg-blue-500',
+    'bg-green-500',
+    'bg-yellow-500',
+    'bg-purple-500',
+    'bg-pink-500',
+    'bg-indigo-500',
+    'bg-orange-500',
+    'bg-teal-500',
+    'bg-cyan-500',
+  ];
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
 
 interface PartnerGoalsCardProps {
   goal: any;
@@ -19,6 +49,37 @@ interface PartnerGoalsCardProps {
 export default function PartnerGoalsCard({ goal, onCheckIn, onReload }: PartnerGoalsCardProps) {
   const [sending, setSending] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+
+  useState(() => {
+    getCurrentUser();
+  });
+
+  const getCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) setCurrentUserId(user.id);
+  };
+
+  const isMyGoal = currentUserId === goal.user_id;
+  const avatarColor = getAvatarColor(goal.user_id);
+
+  const handleDeleteGoal = async () => {
+    try {
+      const { error } = await supabase
+        .from('partner_goals')
+        .delete()
+        .eq('id', goal.id)
+        .eq('user_id', currentUserId);
+
+      if (error) throw error;
+      toast.success("Goal deleted");
+      onReload();
+    } catch (error: any) {
+      console.error('Error deleting goal:', error);
+      toast.error("Failed to delete goal");
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { label: string; variant: any; icon: any }> = {
@@ -41,13 +102,8 @@ export default function PartnerGoalsCard({ goal, onCheckIn, onReload }: PartnerG
     return name.substring(0, 2).toUpperCase();
   };
 
-  const isMyGoal = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user?.id === goal.user_id;
-  };
-
   const handleReaction = async (reactionType: string) => {
-    if (await isMyGoal()) {
+    if (isMyGoal) {
       toast.error("You can't react to your own check-in");
       return;
     }
@@ -90,8 +146,8 @@ export default function PartnerGoalsCard({ goal, onCheckIn, onReload }: PartnerG
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3 flex-1">
-            <Avatar className="h-10 w-10">
-              <AvatarFallback className="bg-primary/10 text-primary">
+            <Avatar className={`h-10 w-10 ${avatarColor}`}>
+              <AvatarFallback className="text-white bg-transparent">
                 {getInitials()}
               </AvatarFallback>
             </Avatar>
@@ -104,9 +160,21 @@ export default function PartnerGoalsCard({ goal, onCheckIn, onReload }: PartnerG
               </CardDescription>
             </div>
           </div>
-          <Badge variant={goal.status === 'active' ? 'default' : 'secondary'}>
-            {goal.status}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant={goal.status === 'active' ? 'default' : 'secondary'}>
+              {goal.status}
+            </Badge>
+            {isMyGoal && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
 
@@ -191,6 +259,23 @@ export default function PartnerGoalsCard({ goal, onCheckIn, onReload }: PartnerG
           </CollapsibleContent>
         </Collapsible>
       </CardContent>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Goal?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your goal and all check-ins.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteGoal} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

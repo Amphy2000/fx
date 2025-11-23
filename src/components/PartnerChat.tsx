@@ -11,6 +11,26 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { RealtimeChat } from "@/utils/RealtimeAudio";
 
+const getAvatarColor = (userId: string) => {
+  const colors = [
+    'bg-red-500',
+    'bg-blue-500',
+    'bg-green-500',
+    'bg-yellow-500',
+    'bg-purple-500',
+    'bg-pink-500',
+    'bg-indigo-500',
+    'bg-orange-500',
+    'bg-teal-500',
+    'bg-cyan-500',
+  ];
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
+
 interface PartnerChatProps {
   partnershipId: string;
 }
@@ -297,11 +317,12 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
     const isOwn = message.sender_id === currentUserId;
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState(message.content);
+    const avatarColor = getAvatarColor(message.sender_id);
 
     return (
       <div className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}>
-        <Avatar className={`h-8 w-8 ${getAvatarColor(message.sender_id)}`}>
-          <AvatarFallback className="text-white">
+        <Avatar className={`h-8 w-8 ${avatarColor}`}>
+          <AvatarFallback className="text-white bg-transparent">
             {(message.sender?.full_name || message.sender?.email || '?').substring(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
