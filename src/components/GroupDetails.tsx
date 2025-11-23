@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, MessageSquare, Target, ArrowLeft } from "lucide-react";
+import { AvatarImage, getDisplayName } from "./AvatarImage";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PremiumGroupChat from "./PremiumGroupChat";
@@ -43,7 +44,9 @@ export default function GroupDetails({ groupId, onBack }: GroupDetailsProps) {
           profiles:user_id (
             id,
             full_name,
-            email
+            email,
+            display_name,
+            avatar_url
           )
         `)
         .eq('group_id', groupId)
@@ -134,9 +137,14 @@ export default function GroupDetails({ groupId, onBack }: GroupDetailsProps) {
             <CardContent className="pt-6">
               <div className="space-y-4">
                 {members.map((member) => (
-                  <div key={member.id} className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">{member.profiles?.full_name || 'Unknown'}</p>
+                  <div key={member.id} className="flex items-center gap-3">
+                    <AvatarImage 
+                      avatarUrl={member.profiles?.avatar_url}
+                      fallbackText={getDisplayName(member.profiles)}
+                      className="h-10 w-10"
+                    />
+                    <div className="flex-1">
+                      <p className="font-medium">{getDisplayName(member.profiles)}</p>
                       <p className="text-sm text-muted-foreground capitalize">{member.role}</p>
                     </div>
                   </div>
