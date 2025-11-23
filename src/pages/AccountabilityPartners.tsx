@@ -197,7 +197,11 @@ export default function AccountabilityPartners() {
           <TabsContent value="partners" className="mt-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                <MyPartners />
+                <MyPartners onPartnerAccepted={(partnershipId) => {
+                  setSelectedPartnershipId(partnershipId);
+                  setIsChatOpen(true);
+                  setActiveTab("chat");
+                }} />
               </div>
               <div>
                 <PartnerActivityFeed />
