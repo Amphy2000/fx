@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from "@/components/ui/label";
 import { Users, Plus, Crown, UserMinus } from "lucide-react";
 import { toast } from "sonner";
+import GroupDetails from "./GroupDetails";
 
 interface Group {
   id: string;
@@ -27,6 +28,7 @@ export default function AccountabilityGroups() {
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   
   const [newGroup, setNewGroup] = useState({
     name: "",
@@ -184,6 +186,10 @@ export default function AccountabilityGroups() {
     return <div className="text-center py-12 text-muted-foreground">Loading groups...</div>;
   }
 
+  if (selectedGroupId) {
+    return <GroupDetails groupId={selectedGroupId} onBack={() => setSelectedGroupId(null)} />;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -287,14 +293,22 @@ export default function AccountabilityGroups() {
                     </span>
                   </div>
                   {isMember ? (
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => leaveGroup(group.id)}
-                    >
-                      <UserMinus className="h-4 w-4 mr-2" />
-                      Leave Group
-                    </Button>
+                    <div className="space-y-2">
+                      <Button
+                        className="w-full"
+                        onClick={() => setSelectedGroupId(group.id)}
+                      >
+                        Open Group
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => leaveGroup(group.id)}
+                      >
+                        <UserMinus className="h-4 w-4 mr-2" />
+                        Leave Group
+                      </Button>
+                    </div>
                   ) : (
                     <Button
                       className="w-full"

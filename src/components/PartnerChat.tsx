@@ -278,6 +278,21 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
     }
   };
 
+  const getAvatarColor = (userId: string) => {
+    const colors = [
+      'bg-red-500',
+      'bg-blue-500',
+      'bg-green-500',
+      'bg-yellow-500',
+      'bg-purple-500',
+      'bg-pink-500',
+      'bg-indigo-500',
+      'bg-orange-500',
+    ];
+    const index = userId.charCodeAt(0) % colors.length;
+    return colors[index];
+  };
+
   const MessageItem = ({ message }: { message: any }) => {
     const isOwn = message.sender_id === currentUserId;
     const [isEditing, setIsEditing] = useState(false);
@@ -285,8 +300,8 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
 
     return (
       <div className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}>
-        <Avatar className="h-8 w-8">
-          <AvatarFallback>
+        <Avatar className={`h-8 w-8 ${getAvatarColor(message.sender_id)}`}>
+          <AvatarFallback className="text-white">
             {(message.sender?.full_name || message.sender?.email || '?').substring(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
