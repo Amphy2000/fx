@@ -17,6 +17,7 @@ import AccountabilityGroups from "@/components/AccountabilityGroups";
 import AccountabilityChallenges from "@/components/AccountabilityChallenges";
 import PartnershipLeaderboard from "@/components/PartnershipLeaderboard";
 import AdminRoleManager from "@/components/AdminRoleManager";
+import TestPartnerSetup from "@/components/TestPartnerSetup";
 
 export default function AccountabilityPartners() {
   const navigate = useNavigate();
@@ -228,6 +229,7 @@ export default function AccountabilityPartners() {
               </div>
               <div className="space-y-6">
                 <AdminRoleManager />
+                <TestPartnerSetup />
                 <AccountabilityDebug />
               </div>
             </div>
