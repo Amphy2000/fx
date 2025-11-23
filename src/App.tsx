@@ -32,6 +32,7 @@ import Streaks from "./pages/Streaks";
 import Onboarding from "./pages/Onboarding";
 import OnboardingOptimized from "./pages/OnboardingOptimized";
 import Achievements from "./pages/Achievements";
+import AccountabilityPartners from "./pages/AccountabilityPartners";
 import Install from "./pages/Install";
 import AbusePreventionAdmin from "./pages/AbusePreventionAdmin";
 import AIFeatures from "./pages/AIFeatures";
@@ -77,6 +78,7 @@ const AppContent = () => {
         <Route path="/onboarding" element={<OnboardingOptimized />} />
         <Route path="/onboarding-full" element={<Onboarding />} />
         <Route path="/achievements" element={<Achievements />} />
+        <Route path="/accountability-partners" element={<AccountabilityPartners />} />
         <Route path="/install" element={<Install />} />
         <Route path="/psychology-guide" element={<PsychologyGuide />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
