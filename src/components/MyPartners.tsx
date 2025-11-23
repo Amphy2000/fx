@@ -171,7 +171,7 @@ export default function MyPartners({ onPartnerAccepted }: { onPartnerAccepted?: 
                           const partnerUserId = partnership.user_id === partnership.currentUserId 
                             ? partnership.partner_id 
                             : partnership.user_id;
-                          window.location.href = `/weekly-summary?partnerId=${partnerUserId}`;
+                          window.location.href = `/partner-summary?partnerId=${partnerUserId}`;
                         }}
                       >
                         View Summary
