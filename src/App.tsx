@@ -54,6 +54,7 @@ const AppContent = () => {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/calculators" element={<Calculators />} />
           <Route path="/weekly-summary" element={<WeeklySummary />} />
+          <Route path="/partner-summary" element={<WeeklySummary />} />
         <Route path="/ai-journal" element={<AIJournal />} />
         <Route path="/ai-setup-analyzer" element={<AISetupAnalyzer />} />
         <Route path="/ai-features" element={<AIFeatures />} />
