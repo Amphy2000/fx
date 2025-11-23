@@ -232,6 +232,14 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
       toast.success("Voice chat ended");
     } else {
       try {
+        // Check for microphone permission first
+        const permission = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+        if (permission.state === 'denied') {
+          toast.error("Microphone access denied. Please enable it in your browser settings.");
+          return;
+        }
+
+        toast.info("Connecting to voice chat...");
         realtimeChatRef.current = new RealtimeChat((event) => {
           console.log('Voice event:', event);
           // Handle voice events - could display transcripts, etc.
@@ -241,7 +249,9 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
         toast.success("Voice chat started - speak naturally!");
       } catch (error: any) {
         console.error('Error starting voice:', error);
-        toast.error("Failed to start voice chat");
+        const errorMessage = error?.message || "Failed to start voice chat";
+        toast.error(errorMessage);
+        realtimeChatRef.current = null;
       }
     }
   };
