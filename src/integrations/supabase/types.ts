@@ -2680,11 +2680,13 @@ export type Database = {
       profiles: {
         Row: {
           ai_credits: number | null
+          avatar_url: string | null
           consent_date: string | null
           created_at: string | null
           credits_reset_date: string | null
           current_streak: number | null
           data_collection_consent: boolean | null
+          display_name: string | null
           email: string | null
           email_notifications_enabled: boolean | null
           full_name: string | null
@@ -2709,11 +2711,13 @@ export type Database = {
         }
         Insert: {
           ai_credits?: number | null
+          avatar_url?: string | null
           consent_date?: string | null
           created_at?: string | null
           credits_reset_date?: string | null
           current_streak?: number | null
           data_collection_consent?: boolean | null
+          display_name?: string | null
           email?: string | null
           email_notifications_enabled?: boolean | null
           full_name?: string | null
@@ -2738,11 +2742,13 @@ export type Database = {
         }
         Update: {
           ai_credits?: number | null
+          avatar_url?: string | null
           consent_date?: string | null
           created_at?: string | null
           credits_reset_date?: string | null
           current_streak?: number | null
           data_collection_consent?: boolean | null
+          display_name?: string | null
           email?: string | null
           email_notifications_enabled?: boolean | null
           full_name?: string | null

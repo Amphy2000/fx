@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { RealtimeChat } from "@/utils/RealtimeAudio";
+import { AvatarImage, getDisplayName } from "@/components/AvatarImage";
 
 const getAvatarColor = (userId: string) => {
   const colors = [
@@ -68,7 +69,7 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
         .from('partner_messages')
         .select(`
           *,
-          sender:profiles!partner_messages_sender_id_fkey(full_name, email),
+          sender:profiles!partner_messages_sender_id_fkey(full_name, email, display_name, avatar_url),
           reactions:message_reactions(id, user_id, reaction_type)
         `)
         .eq('partnership_id', partnershipId)
@@ -321,11 +322,11 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
 
     return (
       <div className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}>
-        <Avatar className={`h-8 w-8 ${avatarColor}`}>
-          <AvatarFallback className="text-white bg-transparent">
-            {(message.sender?.full_name || message.sender?.email || '?').substring(0, 2).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+        <AvatarImage
+          avatarUrl={message.sender?.avatar_url}
+          fallbackText={getDisplayName(message.sender)}
+          className="h-8 w-8"
+        />
         
         <div className={`flex-1 max-w-[70%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
           {isEditing ? (

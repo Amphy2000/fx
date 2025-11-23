@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Clock, Target, TrendingUp, UserPlus } from "lucide-react";
 import PartnerRequestDialog from "./PartnerRequestDialog";
+import { AvatarImage, getDisplayName } from "@/components/AvatarImage";
 
 interface PartnerCardProps {
   partner: any;
@@ -13,11 +13,6 @@ interface PartnerCardProps {
 
 export default function PartnerCard({ partner, onSendRequest }: PartnerCardProps) {
   const [showRequestDialog, setShowRequestDialog] = useState(false);
-
-  const getInitials = () => {
-    const name = partner.profiles?.full_name || partner.profiles?.email || "?";
-    return name.substring(0, 2).toUpperCase();
-  };
 
   const getExperienceLabel = () => {
     const levels: Record<string, string> = {
@@ -34,14 +29,14 @@ export default function PartnerCard({ partner, onSendRequest }: PartnerCardProps
       <Card className="hover:shadow-lg transition-shadow">
         <CardHeader>
           <div className="flex items-start gap-4">
-            <Avatar className="h-12 w-12">
-              <AvatarFallback className="bg-primary/10 text-primary">
-                {getInitials()}
-              </AvatarFallback>
-            </Avatar>
+            <AvatarImage
+              avatarUrl={partner.profiles?.avatar_url}
+              fallbackText={getDisplayName(partner.profiles)}
+              className="h-12 w-12"
+            />
             <div className="flex-1">
               <CardTitle className="text-lg">
-                {partner.profiles?.full_name || "Anonymous Trader"}
+                {getDisplayName(partner.profiles)}
               </CardTitle>
               <CardDescription className="flex items-center gap-1 mt-1">
                 <TrendingUp className="h-3 w-3" />
@@ -122,7 +117,7 @@ export default function PartnerCard({ partner, onSendRequest }: PartnerCardProps
       <PartnerRequestDialog
         open={showRequestDialog}
         onOpenChange={setShowRequestDialog}
-        partnerName={partner.profiles?.full_name || "this trader"}
+        partnerName={getDisplayName(partner.profiles)}
         onSend={(message) => {
           onSendRequest(partner.user_id, message);
           setShowRequestDialog(false);

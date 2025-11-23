@@ -37,7 +37,9 @@ Deno.serve(async (req) => {
         *,
         profiles:user_id (
           full_name,
-          email
+          email,
+          display_name,
+          avatar_url
         )
       `)
       .eq('is_seeking_partner', true)
