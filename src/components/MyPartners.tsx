@@ -5,11 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Check, X, Users, Clock, Calendar } from "lucide-react";
+import { Loader2, Check, X, Users, Clock, Calendar, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import { AvatarImage, getDisplayName } from "@/components/AvatarImage";
 
-export default function MyPartners() {
+export default function MyPartners({ onPartnerAccepted }: { onPartnerAccepted?: (partnershipId: string) => void }) {
   const [loading, setLoading] = useState(true);
   const [activePartnerships, setActivePartnerships] = useState<any[]>([]);
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
@@ -79,7 +79,18 @@ export default function MyPartners() {
 
       if (error) throw error;
       
-      toast.success(action === 'accept' ? "Partnership accepted!" : "Request declined");
+      if (action === 'accept') {
+        toast.success("Partnership accepted! Click below to start chatting.", {
+          action: onPartnerAccepted ? {
+            label: "Go to Chat",
+            onClick: () => onPartnerAccepted(partnershipId)
+          } : undefined,
+          duration: 5000,
+        });
+      } else {
+        toast.success("Request declined");
+      }
+      
       loadPartnerships();
     } catch (error: any) {
       console.error('Error responding to request:', error);
@@ -151,13 +162,23 @@ export default function MyPartners() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => window.location.href = '/weekly-summary'}
-                    >
-                      View Shared Summary
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={() => window.location.href = '/weekly-summary'}
+                      >
+                        View Summary
+                      </Button>
+                      <Button 
+                        variant="default" 
+                        className="flex-1"
+                        onClick={() => onPartnerAccepted?.(partnership.id)}
+                      >
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Chat
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               );

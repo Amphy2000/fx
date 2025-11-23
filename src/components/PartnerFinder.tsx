@@ -45,7 +45,9 @@ export default function PartnerFinder() {
       });
 
       if (error) throw error;
-      toast.success("Partnership request sent!");
+      toast.success("Partnership request sent! You'll be able to chat once they accept.", {
+        duration: 4000,
+      });
       
       // Remove from list
       setPartners(partners.filter(p => p.user_id !== partnerId));
