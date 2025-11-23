@@ -6,7 +6,8 @@ import {
   MessageSquare, 
   X,
   TrendingUp,
-  Sparkles
+  Sparkles,
+  Users
 } from "lucide-react";
 import { GlobalVoiceAssistant } from "./GlobalVoiceAssistant";
 import { FeedbackModal } from "./FeedbackModal";
@@ -47,6 +48,15 @@ export const FloatingActionMenu = () => {
         setIsOpen(false);
       },
       color: "bg-orange-600 hover:bg-orange-700"
+    },
+    {
+      icon: Users,
+      label: "Partners",
+      action: () => {
+        navigate("/accountability-partners");
+        setIsOpen(false);
+      },
+      color: "bg-blue-600 hover:bg-blue-700"
     },
     {
       icon: MessageSquare,
