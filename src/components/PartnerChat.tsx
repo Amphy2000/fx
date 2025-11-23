@@ -73,10 +73,19 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
           reactions:message_reactions(id, user_id, reaction_type)
         `)
         .eq('partnership_id', partnershipId)
+        .eq('is_system', false) // Filter out system messages
         .order('created_at', { ascending: true });
 
       if (error) throw error;
       setMessages(data || []);
+      
+      // Mark messages as read when loading
+      if (currentUserId) {
+        await supabase.rpc('mark_messages_as_read', {
+          p_partnership_id: partnershipId,
+          p_user_id: currentUserId
+        });
+      }
     } catch (error: any) {
       console.error('Error loading messages:', error);
       toast.error("Failed to load messages");
@@ -424,8 +433,8 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
   };
 
   return (
-    <Card className="h-[600px] flex flex-col">
-      <CardHeader className="border-b">
+    <Card className="flex flex-col h-[700px]">
+      <CardHeader className="border-b shrink-0">
         <CardTitle className="flex items-center gap-2">
           Partner Chat
           {isVoiceActive && (
@@ -436,12 +445,24 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col p-0">
+      <CardContent className="flex-1 flex flex-col p-0 min-h-0">
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-4">
-            {messages.map((message) => (
-              <MessageItem key={message.id} message={message} />
-            ))}
+            {messages.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-center py-12">
+                <div>
+                  <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-50" />
+                  <p className="text-muted-foreground">No messages yet</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Start the conversation with your partner!
+                  </p>
+                </div>
+              </div>
+            ) : (
+              messages.map((message) => (
+                <MessageItem key={message.id} message={message} />
+              ))
+            )}
             
             {typingUsers.size > 0 && (
               <div className="flex gap-3">
@@ -462,7 +483,7 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
           </div>
         </ScrollArea>
 
-        <div className="border-t p-4">
+        <div className="border-t p-4 shrink-0">
           <form onSubmit={handleSendMessage} className="flex gap-2">
             <Button
               type="button"

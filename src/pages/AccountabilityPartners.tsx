@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Users, UserPlus, Settings, Target, TrendingUp, MessageSquare, UsersRound, Trophy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { AvatarImage, getDisplayName } from "@/components/AvatarImage";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import PartnerFinder from "@/components/PartnerFinder";
 import MyPartners from "@/components/MyPartners";
 import AccountabilityProfileSetup from "@/components/AccountabilityProfileSetup";
@@ -29,6 +31,9 @@ export default function AccountabilityPartners() {
   const [activePartnerships, setActivePartnerships] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedPartnershipId, setSelectedPartnershipId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  
+  const { unreadCounts, totalUnread } = useUnreadMessages(currentUserId);
 
   useEffect(() => {
     checkAuth();
@@ -47,6 +52,8 @@ export default function AccountabilityPartners() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      
+      setCurrentUserId(user.id);
 
       // Check if user is admin
       const { data: adminRole } = await supabase
@@ -149,6 +156,11 @@ export default function AccountabilityPartners() {
             <TabsTrigger value="chat" disabled={!hasProfile || (activePartnerships.length === 0 && !isAdmin)} title={!hasProfile ? "Create a profile first" : (activePartnerships.length === 0 && !isAdmin) ? "Connect with a partner first (or get admin access)" : ""}>
               <MessageSquare className="h-4 w-4 mr-2" />
               Chat
+              {totalUnread > 0 && (
+                <Badge variant="destructive" className="ml-2 h-5 w-5 p-0 flex items-center justify-center rounded-full">
+                  {totalUnread > 9 ? '9+' : totalUnread}
+                </Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="find" disabled={!hasProfile}>
               <UserPlus className="h-4 w-4 mr-2" />
@@ -216,12 +228,13 @@ export default function AccountabilityPartners() {
                           const isInitiator = partnership.user_id === partnership.currentUserId;
                           const partnerProfile = isInitiator ? partnership.partner_profile : partnership.user_profile;
                           const partnerName = getDisplayName(partnerProfile);
+                          const unreadCount = unreadCounts[partnership.id] || 0;
                           
                           return (
                             <button
                               key={partnership.id}
                               onClick={() => setSelectedPartnershipId(partnership.id)}
-                              className={`px-4 py-3 rounded-xl border transition-all flex items-center gap-3 font-medium hover:shadow-md ${
+                              className={`px-4 py-3 rounded-xl border transition-all flex items-center gap-3 font-medium hover:shadow-md relative ${
                                 selectedPartnershipId === partnership.id
                                   ? 'bg-primary text-primary-foreground border-primary shadow-lg scale-105'
                                   : 'bg-card hover:bg-accent border-border'
@@ -233,6 +246,14 @@ export default function AccountabilityPartners() {
                                 className="h-8 w-8"
                               />
                               <div className="font-semibold">{partnerName}</div>
+                              {unreadCount > 0 && (
+                                <Badge 
+                                  variant="destructive" 
+                                  className="ml-auto h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full text-xs"
+                                >
+                                  {unreadCount > 9 ? '9+' : unreadCount}
+                                </Badge>
+                              )}
                             </button>
                           );
                         })}
