@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
 import { useSessionTracking } from "@/hooks/useSessionTracking";
+import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -86,6 +87,7 @@ const AppContent = () => {
         <Route path="*" element={<NotFound />} />
       </Routes>
       <FloatingActionMenu />
+      <PWAUpdatePrompt />
     </BrowserRouter>
     </>
   );
