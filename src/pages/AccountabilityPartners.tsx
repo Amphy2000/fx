@@ -26,6 +26,7 @@ export default function AccountabilityPartners() {
   const [activeTab, setActiveTab] = useState("partners");
   const [activePartnerships, setActivePartnerships] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [selectedPartnershipId, setSelectedPartnershipId] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -66,14 +67,29 @@ export default function AccountabilityPartners() {
         setActiveTab("setup");
       }
 
-      // Load active partnerships
+      // Load active partnerships with profiles
       const { data: partnerships } = await supabase
         .from('accountability_partnerships')
-        .select('*')
+        .select(`
+          *,
+          partner_profile:profiles!accountability_partnerships_partner_id_fkey(full_name, email),
+          user_profile:profiles!accountability_partnerships_user_id_fkey(full_name, email)
+        `)
         .or(`user_id.eq.${user.id},partner_id.eq.${user.id}`)
         .eq('status', 'active');
       
-      setActivePartnerships(partnerships || []);
+      // Add current user ID to each partnership for easier reference
+      const partnershipsWithUserId = partnerships?.map(p => ({
+        ...p,
+        currentUserId: user.id
+      })) || [];
+      
+      setActivePartnerships(partnershipsWithUserId);
+      
+      // Auto-select first partnership if available
+      if (partnerships && partnerships.length > 0 && !selectedPartnershipId) {
+        setSelectedPartnershipId(partnerships[0].id);
+      }
     } catch (error) {
       console.error('Error checking profile:', error);
     } finally {
@@ -178,7 +194,35 @@ export default function AccountabilityPartners() {
 
           <TabsContent value="chat" className="mt-6">
             {activePartnerships.length > 0 ? (
-              <PartnerChat partnershipId={activePartnerships[0].id} />
+              <div className="space-y-4">
+                {activePartnerships.length > 1 && (
+                  <div className="flex gap-2 flex-wrap">
+                    {activePartnerships.map((partnership) => {
+                      const isInitiator = partnership.user_id === partnership.currentUserId;
+                      const partnerProfile = isInitiator ? partnership.partner_profile : partnership.user_profile;
+                      const partnerName = partnerProfile?.full_name || partnerProfile?.email || "Partner";
+                      
+                      return (
+                        <button
+                          key={partnership.id}
+                          onClick={() => setSelectedPartnershipId(partnership.id)}
+                          className={`px-4 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
+                            selectedPartnershipId === partnership.id
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-background hover:bg-muted border-border'
+                          }`}
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                          {partnerName}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {selectedPartnershipId && (
+                  <PartnerChat partnershipId={selectedPartnershipId} />
+                )}
+              </div>
             ) : isAdmin ? (
               <div className="text-center py-12 text-muted-foreground">
                 <p className="mb-4">⚡ Admin Mode: Normally requires an active partnership</p>
