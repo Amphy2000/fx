@@ -16,7 +16,7 @@ export default defineConfig(() => {
     componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      injectRegister: 'auto',
+      injectRegister: null,
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,woff2}"],
         maximumFileSizeToCacheInBytes: 5000000,
