@@ -200,9 +200,9 @@ const Admin = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto p-4 max-w-7xl">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Admin Panel</h1>
+      <div className="w-full px-3 sm:px-4 lg:px-6 py-4 max-w-full overflow-x-hidden">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Admin Panel</h1>
           <Button onClick={handleExportCSV} variant="outline" size="sm">
             <Download className="mr-2 h-4 w-4" />
             Export
@@ -210,45 +210,51 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="users" className="w-full">
-          <ScrollArea className="w-full">
-            <TabsList className="inline-flex mb-6">
-              <TabsTrigger value="users">Users</TabsTrigger>
-              <TabsTrigger value="weekly-summaries">
-                <Mail className="h-4 w-4 mr-2" />
-                Weekly Summaries
+          <ScrollArea className="w-full whitespace-nowrap">
+            <TabsList className="inline-flex mb-4 h-auto flex-wrap gap-1">
+              <TabsTrigger value="users" className="text-xs sm:text-sm">Users</TabsTrigger>
+              <TabsTrigger value="weekly-summaries" className="text-xs sm:text-sm">
+                <Mail className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Weekly Summaries</span>
+                <span className="sm:hidden">Weekly</span>
               </TabsTrigger>
-              <TabsTrigger value="abuse-prevention">
-                <Shield className="h-4 w-4 mr-2" />
-                Abuse Prevention
+              <TabsTrigger value="abuse-prevention" className="text-xs sm:text-sm">
+                <Shield className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Abuse Prevention</span>
+                <span className="sm:hidden">Abuse</span>
               </TabsTrigger>
-              <TabsTrigger value="email-lists">Lists</TabsTrigger>
-              <TabsTrigger value="email-templates">Templates</TabsTrigger>
-              <TabsTrigger value="email-campaigns">Campaigns</TabsTrigger>
-              <TabsTrigger value="email-workflows">Workflows</TabsTrigger>
-              <TabsTrigger value="ab-tests">A/B Tests</TabsTrigger>
-              <TabsTrigger value="personalization">Personalization</TabsTrigger>
-              <TabsTrigger value="warmup">Warm-Up</TabsTrigger>
-              <TabsTrigger value="email-analytics">Analytics</TabsTrigger>
+              <TabsTrigger value="email-lists" className="text-xs sm:text-sm">Lists</TabsTrigger>
+              <TabsTrigger value="email-templates" className="text-xs sm:text-sm">Templates</TabsTrigger>
+              <TabsTrigger value="email-campaigns" className="text-xs sm:text-sm">Campaigns</TabsTrigger>
+              <TabsTrigger value="email-workflows" className="text-xs sm:text-sm">Workflows</TabsTrigger>
+              <TabsTrigger value="ab-tests" className="text-xs sm:text-sm">A/B Tests</TabsTrigger>
+              <TabsTrigger value="personalization" className="text-xs sm:text-sm">Personalization</TabsTrigger>
+              <TabsTrigger value="warmup" className="text-xs sm:text-sm">Warm-Up</TabsTrigger>
+              <TabsTrigger value="email-analytics" className="text-xs sm:text-sm">
+                <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Analytics</span>
+                <span className="sm:hidden">Stats</span>
+              </TabsTrigger>
             </TabsList>
           </ScrollArea>
 
-          <TabsContent value="users" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <TabsContent value="users" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card className="border-border bg-card">
-                <CardHeader>
-                  <CardTitle className="text-foreground">Total Users</CardTitle>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-foreground">Total Users</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-4xl font-bold text-primary">{stats.totalUsers}</p>
+                  <p className="text-3xl font-bold text-primary">{stats.totalUsers}</p>
                 </CardContent>
               </Card>
 
               <Card className="border-border bg-card">
-                <CardHeader>
-                  <CardTitle className="text-foreground">Total Trades</CardTitle>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-foreground">Total Trades</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-4xl font-bold text-primary">{stats.totalTrades}</p>
+                  <p className="text-3xl font-bold text-primary">{stats.totalTrades}</p>
                 </CardContent>
               </Card>
             </div>
@@ -271,29 +277,29 @@ const Admin = () => {
 
             {/* Users Table */}
             <Card className="border-border">
-              <CardHeader>
-                <CardTitle className="text-foreground">All Users</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base text-foreground">All Users</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <ScrollArea className="h-[600px] w-full">
-                  <div className="min-w-[800px]">
+                <div className="overflow-x-auto">
+                  <ScrollArea className="h-[500px] w-full">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Trades</TableHead>
-                          <TableHead>Subscription</TableHead>
-                          <TableHead>Joined</TableHead>
-                          <TableHead>Actions</TableHead>
+                          <TableHead className="whitespace-nowrap">Email</TableHead>
+                          <TableHead className="whitespace-nowrap">Name</TableHead>
+                          <TableHead className="whitespace-nowrap">Trades</TableHead>
+                          <TableHead className="whitespace-nowrap min-w-[200px]">Subscription</TableHead>
+                          <TableHead className="whitespace-nowrap">Joined</TableHead>
+                          <TableHead className="whitespace-nowrap">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredUsers.map((user) => (
                           <TableRow key={user.id}>
-                            <TableCell className="text-foreground">{user.email}</TableCell>
-                            <TableCell className="text-foreground">{user.full_name || "N/A"}</TableCell>
-                            <TableCell className="text-foreground">{user.trades_count || 0}</TableCell>
+                            <TableCell className="text-foreground whitespace-nowrap text-sm">{user.email}</TableCell>
+                            <TableCell className="text-foreground whitespace-nowrap text-sm">{user.full_name || "N/A"}</TableCell>
+                            <TableCell className="text-foreground text-sm">{user.trades_count || 0}</TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 {getSubscriptionBadge(user.subscription_tier || 'free')}
@@ -301,7 +307,7 @@ const Admin = () => {
                                   value={user.subscription_tier || 'free'}
                                   onValueChange={(value) => handleUpdateSubscription(user.id, value)}
                                 >
-                                  <SelectTrigger className="w-[130px]">
+                                  <SelectTrigger className="w-[110px] h-8 text-xs">
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -317,7 +323,7 @@ const Admin = () => {
                                 </Select>
                               </div>
                             </TableCell>
-                            <TableCell className="text-muted-foreground">
+                            <TableCell className="text-muted-foreground whitespace-nowrap text-sm">
                               {new Date(user.created_at).toLocaleDateString()}
                             </TableCell>
                             <TableCell>
@@ -325,17 +331,18 @@ const Admin = () => {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleViewDetails(user)}
+                                className="h-8"
                               >
-                                <Eye className="h-4 w-4 mr-1" />
-                                View
+                                <Eye className="h-3 w-3 mr-1" />
+                                <span className="text-xs">View</span>
                               </Button>
                             </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
-                  </div>
-                </ScrollArea>
+                  </ScrollArea>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -421,56 +428,58 @@ const Admin = () => {
 
         {/* User Details Modal */}
         <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-full sm:max-w-3xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>User Details: {selectedUser?.email}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg">User Details: {selectedUser?.email}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Full Name</p>
-                  <p className="text-foreground font-medium">{selectedUser?.full_name || "N/A"}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Full Name</p>
+                  <p className="text-sm sm:text-base text-foreground font-medium">{selectedUser?.full_name || "N/A"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Trades</p>
-                  <p className="text-foreground font-medium">{selectedUser?.trades_count || 0}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Total Trades</p>
+                  <p className="text-sm sm:text-base text-foreground font-medium">{selectedUser?.trades_count || 0}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Subscription</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Subscription</p>
                   <div className="mt-1">{getSubscriptionBadge(selectedUser?.subscription_tier || 'free')}</div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold mb-2 text-foreground">Recent Trades</h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Pair</TableHead>
-                      <TableHead>Direction</TableHead>
-                      <TableHead>Result</TableHead>
-                      <TableHead>P/L</TableHead>
-                      <TableHead>Date</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {userTrades.map((trade) => (
-                      <TableRow key={trade.id}>
-                        <TableCell className="text-foreground">{trade.pair}</TableCell>
-                        <TableCell className="text-foreground">{trade.direction}</TableCell>
-                        <TableCell>
-                          <span className={trade.result === 'win' ? 'text-success' : trade.result === 'loss' ? 'text-destructive' : 'text-muted-foreground'}>
-                            {trade.result || 'pending'}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-foreground">{trade.profit_loss || 'N/A'}</TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {new Date(trade.created_at).toLocaleDateString()}
-                        </TableCell>
+                <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">Recent Trades</h3>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs sm:text-sm whitespace-nowrap">Pair</TableHead>
+                        <TableHead className="text-xs sm:text-sm whitespace-nowrap">Direction</TableHead>
+                        <TableHead className="text-xs sm:text-sm whitespace-nowrap">Result</TableHead>
+                        <TableHead className="text-xs sm:text-sm whitespace-nowrap">P/L</TableHead>
+                        <TableHead className="text-xs sm:text-sm whitespace-nowrap">Date</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {userTrades.map((trade) => (
+                        <TableRow key={trade.id}>
+                          <TableCell className="text-foreground text-xs sm:text-sm">{trade.pair}</TableCell>
+                          <TableCell className="text-foreground text-xs sm:text-sm">{trade.direction}</TableCell>
+                          <TableCell className="text-xs sm:text-sm">
+                            <span className={trade.result === 'win' ? 'text-success' : trade.result === 'loss' ? 'text-destructive' : 'text-muted-foreground'}>
+                              {trade.result || 'pending'}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-foreground text-xs sm:text-sm">{trade.profit_loss || 'N/A'}</TableCell>
+                          <TableCell className="text-muted-foreground text-xs sm:text-sm whitespace-nowrap">
+                            {new Date(trade.created_at).toLocaleDateString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             </div>
           </DialogContent>
