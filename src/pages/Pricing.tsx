@@ -21,6 +21,8 @@ const Pricing = () => {
     const ref = searchParams.get("ref");
     if (ref) {
       trackPromoClick(ref);
+      // Auto-validate promo code from referral link
+      validatePromoCode();
     }
   }, [searchParams]);
 
@@ -60,7 +62,7 @@ const Pricing = () => {
 
       setPromoValidated(true);
       setPromoDiscount(10);
-      toast.success(`Promo code applied! ${promoDiscount}% discount`);
+      toast.success(`Promo code applied! 10% discount`);
     } catch (error) {
       console.error("Error validating promo:", error);
       toast.error("Failed to validate promo code");
@@ -161,13 +163,21 @@ const Pricing = () => {
           </p>
         </div>
 
+        {searchParams.get("ref") && (
+          <div className="max-w-md mx-auto mb-6 p-4 bg-primary/10 border border-primary/20 rounded-lg text-center">
+            <p className="text-sm font-medium">
+              🎉 You've been referred! Your promo code <span className="font-mono font-bold">{searchParams.get("ref")}</span> has been applied
+            </p>
+          </div>
+        )}
+
         <Card className="max-w-md mx-auto mb-12 bg-gradient-to-br from-primary/5 to-purple-500/5 border-primary/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Tag className="h-5 w-5" />
               Have a Promo Code?
             </CardTitle>
-            <CardDescription>Enter your referral or promo code to get a discount</CardDescription>
+            <CardDescription>Enter your referral or promo code to get 10% off</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-2">
