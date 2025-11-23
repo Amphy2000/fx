@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, ThumbsUp, PartyPopper, Heart, Flame, MessageSquare, Trash2, Check, CheckCheck } from "lucide-react";
+import { Send, ThumbsUp, PartyPopper, Heart, Flame, MessageSquare, Trash2, Check, CheckCheck, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
@@ -35,9 +35,10 @@ const getAvatarColor = (userId: string) => {
 
 interface PartnerChatProps {
   partnershipId: string;
+  onBack?: () => void;
 }
 
-export default function PartnerChat({ partnershipId }: PartnerChatProps) {
+export default function PartnerChat({ partnershipId, onBack }: PartnerChatProps) {
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string>("");
@@ -504,7 +505,19 @@ export default function PartnerChat({ partnershipId }: PartnerChatProps) {
   return (
     <Card className="flex flex-col h-[700px]">
       <CardHeader className="border-b shrink-0 py-3">
-        <CardTitle className="text-base">Partner Chat</CardTitle>
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onBack}
+              className="h-8 w-8 p-0"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          )}
+          <CardTitle className="text-base">Partner Chat</CardTitle>
+        </div>
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col p-0 min-h-0 bg-muted/20">

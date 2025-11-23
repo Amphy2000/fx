@@ -17,6 +17,7 @@ import PartnerActivityFeed from "@/components/PartnerActivityFeed";
 import AccountabilityDebug from "@/components/AccountabilityDebug";
 import AccountabilityAnalytics from "@/components/AccountabilityAnalytics";
 import PartnerChat from "@/components/PartnerChat";
+import PartnerChatList from "@/components/PartnerChatList";
 import AccountabilityGroups from "@/components/AccountabilityGroups";
 import AccountabilityChallenges from "@/components/AccountabilityChallenges";
 import PartnershipLeaderboard from "@/components/PartnershipLeaderboard";
@@ -31,6 +32,7 @@ export default function AccountabilityPartners() {
   const [activePartnerships, setActivePartnerships] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedPartnershipId, setSelectedPartnershipId] = useState<string | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   
   const { unreadCounts, totalUnread } = useUnreadMessages(currentUserId);
@@ -94,11 +96,6 @@ export default function AccountabilityPartners() {
       })) || [];
       
       setActivePartnerships(partnershipsWithUserId);
-      
-      // Auto-select first partnership if available
-      if (partnerships && partnerships.length > 0 && !selectedPartnershipId) {
-        setSelectedPartnershipId(partnerships[0].id);
-      }
     } catch (error) {
       console.error('Error checking profile:', error);
     } finally {
@@ -111,6 +108,23 @@ export default function AccountabilityPartners() {
     setActiveTab("partners");
     toast.success("Profile created! Now you can find accountability partners.");
   };
+
+  const handleSelectPartner = (partnershipId: string) => {
+    setSelectedPartnershipId(partnershipId);
+    setIsChatOpen(true);
+  };
+
+  const handleBackToList = () => {
+    setIsChatOpen(false);
+    setSelectedPartnershipId(null);
+  };
+
+  // Reset chat state when switching away from chat tab
+  useEffect(() => {
+    if (activeTab !== "chat") {
+      setIsChatOpen(false);
+    }
+  }, [activeTab]);
 
   if (loading) {
     return (
@@ -208,63 +222,19 @@ export default function AccountabilityPartners() {
 
           <TabsContent value="chat" className="mt-6">
             {activePartnerships.length > 0 ? (
-              <div className="space-y-4">
-                <Card className="border-border/50">
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <MessageSquare className="h-5 w-5 text-primary" />
-                      Partner Chat
-                    </CardTitle>
-                    <CardDescription>
-                      {activePartnerships.length === 1
-                        ? "1-on-1 conversation with your accountability partner"
-                        : `Select a partner to chat with (${activePartnerships.length} partners)`}
-                    </CardDescription>
-                  </CardHeader>
-                  {activePartnerships.length > 1 && (
-                    <CardContent>
-                      <div className="flex gap-3 flex-wrap">
-                        {activePartnerships.map((partnership) => {
-                          const isInitiator = partnership.user_id === partnership.currentUserId;
-                          const partnerProfile = isInitiator ? partnership.partner_profile : partnership.user_profile;
-                          const partnerName = getDisplayName(partnerProfile);
-                          const unreadCount = unreadCounts[partnership.id] || 0;
-                          
-                          return (
-                            <button
-                              key={partnership.id}
-                              onClick={() => setSelectedPartnershipId(partnership.id)}
-                              className={`px-4 py-3 rounded-xl border transition-all flex items-center gap-3 font-medium hover:shadow-md relative ${
-                                selectedPartnershipId === partnership.id
-                                  ? 'bg-primary text-primary-foreground border-primary shadow-lg scale-105'
-                                  : 'bg-card hover:bg-accent border-border'
-                              }`}
-                            >
-                              <AvatarImage 
-                                avatarUrl={partnerProfile?.avatar_url}
-                                fallbackText={partnerName}
-                                className="h-8 w-8"
-                              />
-                              <div className="font-semibold">{partnerName}</div>
-                              {unreadCount > 0 && (
-                                <Badge 
-                                  variant="destructive" 
-                                  className="ml-auto h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full text-xs"
-                                >
-                                  {unreadCount > 9 ? '9+' : unreadCount}
-                                </Badge>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </CardContent>
-                  )}
-                </Card>
-                {selectedPartnershipId && (
-                  <PartnerChat partnershipId={selectedPartnershipId} />
-                )}
-              </div>
+              isChatOpen && selectedPartnershipId ? (
+                <PartnerChat 
+                  partnershipId={selectedPartnershipId}
+                  onBack={handleBackToList}
+                />
+              ) : (
+                <PartnerChatList
+                  partnerships={activePartnerships}
+                  unreadCounts={unreadCounts}
+                  currentUserId={currentUserId}
+                  onSelectPartner={handleSelectPartner}
+                />
+              )
             ) : isAdmin ? (
               <Card className="border-border/50">
                 <CardContent className="py-12 text-center">
