@@ -12,6 +12,56 @@ export const WeeklySummaryEmailManager = () => {
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [testEmail, setTestEmail] = useState("");
   const [lastRun, setLastRun] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(true);
+
+  // Load analytics on mount
+  useState(() => {
+    loadAnalytics();
+  });
+
+  const loadAnalytics = async () => {
+    try {
+      // Get weekly summary campaign data
+      const { data: campaigns, error: campaignsError } = await supabase
+        .from('email_campaigns')
+        .select('id, name, sent_count, opened_count, clicked_count, delivered_count, bounced_count, sent_at')
+        .ilike('name', '%weekly%summary%')
+        .order('sent_at', { ascending: false })
+        .limit(10);
+
+      if (campaignsError) throw campaignsError;
+
+      // Calculate totals
+      const totals = campaigns?.reduce((acc, campaign) => ({
+        totalSent: acc.totalSent + (campaign.sent_count || 0),
+        totalOpened: acc.totalOpened + (campaign.opened_count || 0),
+        totalClicked: acc.totalClicked + (campaign.clicked_count || 0),
+        totalDelivered: acc.totalDelivered + (campaign.delivered_count || 0),
+        totalBounced: acc.totalBounced + (campaign.bounced_count || 0),
+      }), { totalSent: 0, totalOpened: 0, totalClicked: 0, totalDelivered: 0, totalBounced: 0 });
+
+      const openRate = totals && totals.totalSent > 0 ? ((totals.totalOpened / totals.totalSent) * 100).toFixed(1) : '0';
+      const clickRate = totals && totals.totalSent > 0 ? ((totals.totalClicked / totals.totalSent) * 100).toFixed(1) : '0';
+      const deliveryRate = totals && totals.totalSent > 0 ? ((totals.totalDelivered / totals.totalSent) * 100).toFixed(1) : '0';
+
+      setAnalytics({
+        totalSent: totals?.totalSent || 0,
+        totalOpened: totals?.totalOpened || 0,
+        totalClicked: totals?.totalClicked || 0,
+        totalDelivered: totals?.totalDelivered || 0,
+        totalBounced: totals?.totalBounced || 0,
+        openRate,
+        clickRate,
+        deliveryRate,
+        recentCampaigns: campaigns?.slice(0, 5) || []
+      });
+    } catch (error) {
+      console.error('Error loading analytics:', error);
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  };
 
   const handleSendWeeklySummaries = async () => {
     setIsSending(true);
@@ -32,6 +82,9 @@ export const WeeklySummaryEmailManager = () => {
         errors: data.errors,
         totalUsers: data.totalUsers
       });
+
+      // Reload analytics after sending
+      loadAnalytics();
 
     } catch (error: any) {
       console.error('Error sending weekly summaries:', error);
@@ -87,6 +140,35 @@ export const WeeklySummaryEmailManager = () => {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Analytics Overview */}
+        {!loadingAnalytics && analytics && (
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="bg-muted p-4 rounded-lg">
+              <p className="text-xs text-muted-foreground mb-1">Total Sent</p>
+              <p className="text-2xl font-bold">{analytics.totalSent}</p>
+            </div>
+            <div className="bg-muted p-4 rounded-lg">
+              <p className="text-xs text-muted-foreground mb-1">Delivered</p>
+              <p className="text-2xl font-bold text-green-600">{analytics.totalDelivered}</p>
+              <p className="text-xs text-muted-foreground">{analytics.deliveryRate}%</p>
+            </div>
+            <div className="bg-muted p-4 rounded-lg">
+              <p className="text-xs text-muted-foreground mb-1">Opened</p>
+              <p className="text-2xl font-bold text-blue-600">{analytics.totalOpened}</p>
+              <p className="text-xs text-muted-foreground">{analytics.openRate}%</p>
+            </div>
+            <div className="bg-muted p-4 rounded-lg">
+              <p className="text-xs text-muted-foreground mb-1">Clicked</p>
+              <p className="text-2xl font-bold text-purple-600">{analytics.totalClicked}</p>
+              <p className="text-xs text-muted-foreground">{analytics.clickRate}%</p>
+            </div>
+            <div className="bg-muted p-4 rounded-lg">
+              <p className="text-xs text-muted-foreground mb-1">Bounced</p>
+              <p className="text-2xl font-bold text-red-600">{analytics.totalBounced}</p>
+            </div>
+          </div>
+        )}
+
         {/* Schedule Info */}
         <div className="bg-muted p-4 rounded-lg space-y-2">
           <h4 className="font-semibold text-sm flex items-center gap-2">
@@ -237,8 +319,10 @@ export const WeeklySummaryEmailManager = () => {
           <ul className="text-xs text-muted-foreground space-y-1">
             <li>• Ensure RESEND_API_KEY is configured in Supabase secrets</li>
             <li>• Verify your domain at resend.com to avoid spam filters</li>
-            <li>• Update the "from" email address in the edge function</li>
+            <li>• Update the "from" email address in the edge function (line 153)</li>
             <li>• Cron job runs automatically every Sunday at 9 AM UTC</li>
+            <li>• Test email uses the exact same template as real emails</li>
+            <li>• Real emails will have actual user data instead of mock data</li>
           </ul>
         </div>
       </CardContent>
