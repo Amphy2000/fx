@@ -35,7 +35,7 @@ export default function NotificationTimesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-primary" />
@@ -46,7 +46,7 @@ export default function NotificationTimesDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-6 py-4 overflow-y-auto max-h-[50vh]">
           <div className="space-y-2">
             <Label htmlFor="goal-time">Goal Check-In Reminders</Label>
             <Select value={goalReminderTime} onValueChange={setGoalReminderTime}>
