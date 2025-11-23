@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
@@ -18,6 +19,7 @@ export default function AdminAffiliateManager() {
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState("");
   const [newStatus, setNewStatus] = useState("");
+  const [customPromoCode, setCustomPromoCode] = useState("");
   const [stats, setStats] = useState({ total: 0, active: 0, pending: 0, totalEarnings: 0 });
 
   useEffect(() => {
@@ -82,12 +84,34 @@ export default function AdminAffiliateManager() {
     if (!selectedProfile) return;
 
     try {
+      const updateData: any = {
+        status: newStatus,
+        application_notes: notes,
+      };
+
+      // If custom promo code is provided, validate and update it
+      if (customPromoCode && customPromoCode !== selectedProfile.promo_code) {
+        const cleanCode = customPromoCode.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        
+        // Check if code is unique
+        const { data: existing } = await supabase
+          .from("affiliate_profiles")
+          .select("id")
+          .eq("promo_code", cleanCode)
+          .neq("id", selectedProfile.id)
+          .single();
+
+        if (existing) {
+          toast.error("This promo code is already in use");
+          return;
+        }
+
+        updateData.promo_code = cleanCode;
+      }
+
       const { error } = await supabase
         .from("affiliate_profiles")
-        .update({
-          status: newStatus,
-          application_notes: notes,
-        })
+        .update(updateData)
         .eq("id", selectedProfile.id);
 
       if (error) throw error;
@@ -95,6 +119,7 @@ export default function AdminAffiliateManager() {
       toast.success("Profile updated successfully");
       loadData();
       setSelectedProfile(null);
+      setCustomPromoCode("");
     } catch (error) {
       console.error("Error updating profile:", error);
       toast.error("Failed to update profile");
@@ -206,6 +231,7 @@ export default function AdminAffiliateManager() {
                           setSelectedProfile(profile);
                           setNotes(profile.application_notes || "");
                           setNewStatus(profile.status);
+                          setCustomPromoCode("");
                         }}
                       >
                         <Eye className="h-4 w-4" />
@@ -255,8 +281,8 @@ export default function AdminAffiliateManager() {
                   <p className="text-sm">{selectedProfile.profiles?.email}</p>
                 </div>
                 <div>
-                  <Label>Promo Code</Label>
-                  <p className="text-sm font-mono">{selectedProfile.promo_code}</p>
+                  <Label>Current Promo Code</Label>
+                  <p className="text-sm font-mono bg-muted px-2 py-1 rounded">{selectedProfile.promo_code}</p>
                 </div>
                 <div>
                   <Label>Tier</Label>
@@ -266,6 +292,21 @@ export default function AdminAffiliateManager() {
                   <Label>Commission Rate</Label>
                   <p className="text-sm">{selectedProfile.commission_rate}%</p>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="customPromo">Custom Promo Code (for influencers)</Label>
+                <Input
+                  id="customPromo"
+                  value={customPromoCode}
+                  onChange={(e) => setCustomPromoCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                  placeholder="e.g., TRADER10, FOREXKING"
+                  className="font-mono"
+                  maxLength={20}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Leave blank to keep current code. Only letters and numbers allowed.
+                </p>
               </div>
 
               {selectedProfile.social_links && (
