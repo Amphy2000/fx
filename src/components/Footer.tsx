@@ -26,7 +26,7 @@ export const Footer = () => {
                 <Twitter className="h-4 w-4" />
               </a>
               <a 
-                href="https://linkedin.com/company/amphyai" 
+                href="https://www.linkedin.com/in/amphyfx"
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="w-9 h-9 rounded-full bg-muted hover:bg-primary/20 flex items-center justify-center transition-colors"
