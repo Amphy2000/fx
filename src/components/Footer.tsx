@@ -17,7 +17,7 @@ export const Footer = () => {
             </p>
             <div className="flex items-center gap-3">
               <a 
-                href="https://twitter.com/amphyai" 
+                href="https://x.com/amphyfx"
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="w-9 h-9 rounded-full bg-muted hover:bg-primary/20 flex items-center justify-center transition-colors"
