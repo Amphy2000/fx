@@ -101,6 +101,9 @@ const Navbar = () => {
         
         <div className="flex items-center gap-4">
           {user ? <>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/guides")} className="hidden md:flex">
+                Guides
+              </Button>
               {isAdmin && <Button variant="ghost" size="sm" onClick={() => navigate("/admin")} className="gap-2 text-primary hover:text-primary/80 hidden md:flex">
                   <Shield className="h-4 w-4" />
                   Admin
@@ -126,6 +129,12 @@ const Navbar = () => {
                 Sign Out
               </Button>
             </> : <>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/pricing")}>
+                Pricing
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/guides")}>
+                Guides
+              </Button>
               <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
                 Sign In
               </Button>

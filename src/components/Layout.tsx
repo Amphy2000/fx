@@ -4,6 +4,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Navbar from "@/components/Navbar";
 import { NotificationBell } from "@/components/NotificationBell";
+import { Footer } from "@/components/Footer";
 import { TrendingUp, Menu, Moon, Sun } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,9 @@ export function Layout({
               {children}
             </div>
           </main>
+
+          {/* Footer */}
+          <Footer />
         </div>
       </div>
     </SidebarProvider>;

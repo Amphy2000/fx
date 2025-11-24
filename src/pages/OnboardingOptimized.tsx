@@ -177,14 +177,17 @@ export default function OnboardingOptimized() {
           <div className="p-6 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent border border-primary/30 rounded-xl">
             <h3 className="text-xl font-bold mb-3">What Makes Amphy Different?</h3>
             <p className="text-muted-foreground mb-4">
-              <strong className="text-foreground">95% of trading failure is mental, not technical.</strong> Most journals track numbers. We track what really matters: your psychology.
+              <strong className="text-foreground">95% of trading failure is mental, not technical.</strong> Most journals track numbers. We track what really matters: your psychology, emotions, and behavioral patterns.
             </p>
             <div className="flex flex-wrap gap-2">
               <div className="px-3 py-1 bg-primary/20 rounded-full text-sm font-semibold">
-                85% less emotional trading
+                AI Trade Interceptor
               </div>
               <div className="px-3 py-1 bg-primary/20 rounded-full text-sm font-semibold">
-                3.2x win rate improvement
+                Behavioral Pattern Recognition
+              </div>
+              <div className="px-3 py-1 bg-primary/20 rounded-full text-sm font-semibold">
+                Mental State Tracking
               </div>
             </div>
           </div>
@@ -193,16 +196,16 @@ export default function OnboardingOptimized() {
             <div className="flex items-start gap-3 p-4 border-2 border-primary/30 rounded-lg bg-primary/5">
               <Heart className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
               <div>
-                <h4 className="font-semibold text-sm mb-1">AI Trade Interceptor</h4>
-                <p className="text-xs text-muted-foreground">Stops emotional trades before you make them</p>
+                <h4 className="font-semibold text-sm mb-1">🚨 AI Trade Interceptor</h4>
+                <p className="text-xs text-muted-foreground">Warns you BEFORE emotionally-driven trades based on your patterns</p>
               </div>
             </div>
             
             <div className="flex items-start gap-3 p-4 border-2 border-primary/30 rounded-lg bg-primary/5">
               <Target className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
               <div>
-                <h4 className="font-semibold text-sm mb-1">Mental State Tracking</h4>
-                <p className="text-xs text-muted-foreground">See how sleep/stress impacts performance</p>
+                <h4 className="font-semibold text-sm mb-1">🧠 Mental State Tracking</h4>
+                <p className="text-xs text-muted-foreground">Discover how sleep, stress & mood affect your win rate</p>
               </div>
             </div>
             
