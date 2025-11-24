@@ -1,9 +1,7 @@
 import { Link } from "react-router-dom";
 import { Brain, Twitter, Linkedin, Send } from "lucide-react";
-
 export const Footer = () => {
-  return (
-    <footer className="border-t border-border/50 bg-background">
+  return <footer className="border-t border-border/50 bg-background">
       <div className="container mx-auto px-4 py-12">
         <div className="grid md:grid-cols-4 gap-8">
           {/* Brand */}
@@ -16,31 +14,13 @@ export const Footer = () => {
               Master your trading psychology with AI-powered insights
             </p>
             <div className="flex items-center gap-3">
-              <a 
-                href="https://x.com/amphyfx"
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-full bg-muted hover:bg-primary/20 flex items-center justify-center transition-colors"
-                aria-label="Twitter"
-              >
+              <a href="https://x.com/amphyfx" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-muted hover:bg-primary/20 flex items-center justify-center transition-colors" aria-label="Twitter">
                 <Twitter className="h-4 w-4" />
               </a>
-              <a 
-                href="https://www.linkedin.com/in/amphyfx"
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-full bg-muted hover:bg-primary/20 flex items-center justify-center transition-colors"
-                aria-label="LinkedIn"
-              >
+              <a href="https://www.linkedin.com/in/amphyfx" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-muted hover:bg-primary/20 flex items-center justify-center transition-colors" aria-label="LinkedIn">
                 <Linkedin className="h-4 w-4" />
               </a>
-              <a 
-                href="https://t.me/amphyfxacademy" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-full bg-muted hover:bg-primary/20 flex items-center justify-center transition-colors"
-                aria-label="Telegram Channel"
-              >
+              <a href="https://t.me/amphyfxacademy" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-muted hover:bg-primary/20 flex items-center justify-center transition-colors" aria-label="Telegram Channel">
                 <Send className="h-4 w-4" />
               </a>
             </div>
@@ -48,7 +28,7 @@ export const Footer = () => {
 
           {/* Product */}
           <div>
-            <h4 className="font-semibold mb-4">Product</h4>
+            <h4 className="font-semibold mb-4">Resources</h4>
             <ul className="space-y-3 text-sm">
               <li>
                 <Link to="/guides" className="text-muted-foreground hover:text-foreground transition-colors">
@@ -74,44 +54,7 @@ export const Footer = () => {
           </div>
 
           {/* Resources */}
-          <div>
-            <h4 className="font-semibold mb-4">Resources</h4>
-            <ul className="space-y-3 text-sm">
-              <li>
-                <Link to="/feedback" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Feedback
-                </Link>
-              </li>
-              <li>
-                <a 
-                  href="https://docs.amphyai.com" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Documentation
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="https://blog.amphyai.com" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Blog
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="mailto:support@amphyai.com"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Support
-                </a>
-              </li>
-            </ul>
-          </div>
+          
 
           {/* Legal */}
           <div>
@@ -123,10 +66,7 @@ export const Footer = () => {
                 </Link>
               </li>
               <li>
-                <a 
-                  href="/terms" 
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
+                <a href="/terms" className="text-muted-foreground hover:text-foreground transition-colors">
                   Terms of Service
                 </a>
               </li>
@@ -146,6 +86,5 @@ export const Footer = () => {
           </div>
         </div>
       </div>
-    </footer>
-  );
+    </footer>;
 };
