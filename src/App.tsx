@@ -21,6 +21,7 @@ import TradeCalendar from "./pages/TradeCalendar";
 import Pricing from "./pages/Pricing";
 import Feedback from "./pages/Feedback";
 import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import Integrations from "./pages/Integrations";
 import MT5Setup from "./pages/MT5Setup";
 import NotFound from "./pages/NotFound";
@@ -74,6 +75,7 @@ const AppContent = () => {
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/feedback" element={<Feedback />} />
         <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
         <Route path="/check-in" element={<CheckIn />} />
         <Route path="/routine" element={<Routine />} />
         <Route path="/setups" element={<Setups />} />
