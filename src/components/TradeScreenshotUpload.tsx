@@ -253,8 +253,8 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
         </div>
 
         {preview && (
-          <div className="relative rounded-lg overflow-hidden border">
-            <img src={preview} alt="Trade screenshot" className="w-full h-48 object-cover" />
+          <div className="relative rounded-lg overflow-hidden border bg-muted/30">
+            <img src={preview} alt="Trade screenshot" className="w-full max-h-64 object-contain" />
             {extracting && (
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-white" />
