@@ -5,6 +5,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Brain, AlertTriangle, Heart, Mic, Camera, MessageSquare, LineChart, Target, BarChart3, TrendingUp, Users, Bell, Zap, Shield, BookOpen, Trophy, Calendar, Calculator, Award, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/Footer";
+import Navbar from "@/components/Navbar";
 
 const Guides = () => {
   const navigate = useNavigate();
@@ -210,6 +211,9 @@ const Guides = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-4">
+        <Navbar />
+      </div>
       {/* Header */}
       <section className="border-b border-border/50 bg-gradient-to-b from-primary/5 to-background">
         <div className="container mx-auto px-4 py-16">
