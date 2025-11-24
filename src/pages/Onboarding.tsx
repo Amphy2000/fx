@@ -520,6 +520,44 @@ export default function Onboarding() {
           </div>
 
           <div className="space-y-4">
+            <div className="p-4 border-2 border-primary/30 rounded-lg bg-primary/5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Zap className="h-5 w-5 text-primary" />
+                </div>
+                <h4 className="font-semibold">💎 Earn Unlimited Credits</h4>
+              </div>
+              <p className="text-sm text-muted-foreground mb-3">
+                Stay consistent and never run out of AI credits
+              </p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-primary" />
+                  <span>+1 per daily check-in</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-primary" />
+                  <span>+1 per trade logged</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-primary" />
+                  <span>+10 for 7-day streaks</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-primary" />
+                  <span>+50 for 30-day streaks</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-primary" />
+                  <span>+5 per achievement</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-primary" />
+                  <span>+2 for feedback</span>
+                </div>
+              </div>
+          </div>
+
             <div className="p-4 border rounded-lg bg-background/50">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">

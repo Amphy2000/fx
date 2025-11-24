@@ -168,7 +168,15 @@ const Guides = () => {
   const faqs = [
     {
       question: "How does the credit system work?",
-      answer: "Credits power AI features. Free tier: 50 credits/month. AI analysis costs 1-5 credits depending on complexity. You earn 2 credits for daily check-ins. Upgrade to Pro for 500 credits/month or Lifetime for unlimited."
+      answer: "Credits power AI features. Free: 50/month, Pro: 500/month, Lifetime: Unlimited. Credits reset monthly based on your billing cycle."
+    },
+    {
+      question: "How can I earn free credits?",
+      answer: "Earn unlimited credits organically: +1 for daily check-ins, +1 per trade logged, +10 for 7-day streaks, +50 for 30-day streaks, +5 per achievement unlocked, +2 for feedback submitted. Stay consistent and you'll never run out!"
+    },
+    {
+      question: "What costs credits?",
+      answer: "AI features: Check-in analysis (2 credits), Trade validation (2 credits), Trade analysis (5 credits), AI Coach messages (5 credits), Weekly summary (10 credits), Pattern recognition (3 credits), Setup analysis (3 credits). Many features like viewing patterns and analytics are completely free."
     },
     {
       question: "What's the AI Trade Interceptor and how accurate is it?",

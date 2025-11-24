@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export type CreditEarningType = 
   | 'daily_checkin'
@@ -45,6 +46,20 @@ export async function awardCredits(
     });
 
     if (error) throw error;
+
+    // Show success notification
+    const messages: Record<CreditEarningType, string> = {
+      daily_checkin: '🎯 +1 credit earned for daily check-in!',
+      trade_logged: '📊 +1 credit earned for logging trade!',
+      streak_milestone: `🔥 +${credits} credits earned for streak milestone!`,
+      achievement_unlocked: '🏆 +5 credits earned for unlocking achievement!',
+      referral: '🎁 +25 credits earned for referral!',
+      feedback_submitted: '💬 +2 credits earned for feedback!',
+    };
+
+    toast.success(messages[earningType] || `+${credits} credits earned!`, {
+      description: description,
+    });
 
     return { success: true };
   } catch (error) {
