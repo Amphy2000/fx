@@ -222,7 +222,7 @@ const Guides = () => {
               How to Master Trading Psychology with AI
             </h1>
             <p className="text-xl text-muted-foreground">
-              Everything you need to know about using Amphy to overcome emotional trading and maximize performance
+              Everything you need to know about using Amphy AI to overcome emotional trading and maximize performance
             </p>
           </div>
         </div>
