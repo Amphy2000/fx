@@ -415,6 +415,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
                   <SelectItem value="win">Win</SelectItem>
                   <SelectItem value="loss">Loss</SelectItem>
                   <SelectItem value="breakeven">Breakeven</SelectItem>
+                  <SelectItem value="missed">Missed</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -531,7 +532,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
                       <img
                         src={preview}
                         alt={`Screenshot ${index + 1}`}
-                        className="w-full h-24 object-cover rounded border"
+                        className="w-full h-32 object-contain rounded border bg-muted/30"
                       />
                       <button
                         type="button"
