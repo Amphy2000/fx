@@ -24,20 +24,38 @@ serve(async (req) => {
     );
 
     // Verify admin access
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    
+    if (authError) {
+      console.error('Auth error:', authError);
+      throw new Error(`Authentication failed: ${authError.message}`);
+    }
+    
     if (!user) {
-      throw new Error('Unauthorized');
+      console.error('No user found in session');
+      throw new Error('Unauthorized: No authenticated user');
     }
 
-    const { data: userRoles } = await supabaseClient
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
+    console.log('Authenticated user:', user.id);
 
-    if (userRoles?.role !== 'admin') {
+    // Check admin role using the security definer function
+    const { data: hasAdminRole, error: roleError } = await supabaseClient
+      .rpc('has_role', { 
+        _user_id: user.id, 
+        _role: 'admin' 
+      });
+
+    if (roleError) {
+      console.error('Role check error:', roleError);
+      throw new Error(`Failed to verify admin access: ${roleError.message}`);
+    }
+
+    if (!hasAdminRole) {
+      console.error('User does not have admin role:', user.id);
       throw new Error('Unauthorized: Admin access required');
     }
+
+    console.log('Admin access verified for user:', user.id);
 
     const { dateRange = 30 } = await req.json();
     const startDate = new Date();
