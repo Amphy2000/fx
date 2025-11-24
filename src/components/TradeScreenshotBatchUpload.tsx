@@ -389,11 +389,11 @@ export const TradeScreenshotBatchUpload = () => {
       </Card>
 
       {trades.length > 0 && (
-        <ScrollArea className="h-[600px]">
-          <div className="space-y-4 pr-4">
+        <ScrollArea className="h-[600px] w-full">
+          <div className="space-y-4 pr-4 pb-4">
             {trades.map((trade) => (
-              <Card key={trade.id} className="p-4">
-                <div className="flex gap-4">
+              <Card key={trade.id} className="p-4 min-w-[800px]">
+                <div className="flex gap-4 w-full">
                   {/* Preview Image */}
                   <div className="relative w-40 h-40 flex-shrink-0 rounded-lg overflow-hidden border bg-muted/30">
                       <img 
