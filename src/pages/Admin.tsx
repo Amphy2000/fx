@@ -38,6 +38,7 @@ const Admin = () => {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [userTrades, setUserTrades] = useState<any[]>([]);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     checkAdminAccess();
@@ -214,7 +215,7 @@ const Admin = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="overview" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="mb-3 overflow-x-auto">
             <TabsList className="flex flex-wrap w-full justify-start gap-1 h-auto bg-muted/50 p-1">
               <TabsTrigger value="overview" className="text-xs px-3 py-1.5 font-medium">
@@ -271,19 +272,19 @@ const Admin = () => {
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <Button variant="outline" className="justify-start" onClick={() => navigate("/admin")}>
+                <Button variant="outline" className="justify-start" onClick={() => setActiveTab("users")}>
                   <Crown className="h-4 w-4 mr-2" />
                   Manage Users
                 </Button>
-                <Button variant="outline" className="justify-start">
+                <Button variant="outline" className="justify-start" onClick={() => setActiveTab("email-management")}>
                   <Mail className="h-4 w-4 mr-2" />
                   Email Campaigns
                 </Button>
-                <Button variant="outline" className="justify-start">
+                <Button variant="outline" className="justify-start" onClick={() => setActiveTab("ai-insights")}>
                   <Brain className="h-4 w-4 mr-2" />
                   View AI Insights
                 </Button>
-                <Button variant="outline" className="justify-start">
+                <Button variant="outline" className="justify-start" onClick={() => setActiveTab("security")}>
                   <Shield className="h-4 w-4 mr-2" />
                   Security Settings
                 </Button>
