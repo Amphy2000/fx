@@ -425,10 +425,9 @@ export const TradeScreenshotBatchUpload = () => {
 
                   {/* Trade Data - Editable Form */}
                   <div className="flex-1 min-w-0">
-                    <ScrollArea className="max-h-[500px] pr-2">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-muted-foreground truncate">{trade.fileName}</span>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground truncate">{trade.fileName}</span>
                         {trade.status === 'ready' && (
                           <div className="flex gap-2">
                             <Button
@@ -721,10 +720,9 @@ export const TradeScreenshotBatchUpload = () => {
                         </div>
                       )}
                     </div>
-                  </ScrollArea>
+                  </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
             ))}
           </div>
         </ScrollArea>
