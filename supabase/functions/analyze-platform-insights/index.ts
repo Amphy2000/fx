@@ -15,8 +15,17 @@ serve(async (req) => {
   try {
     // Get the authorization token from the request
     const authHeader = req.headers.get('Authorization');
+    console.log('Authorization header present:', !!authHeader);
+    
     if (!authHeader) {
-      throw new Error('No authorization header provided');
+      console.error('No authorization header provided');
+      return new Response(
+        JSON.stringify({ error: 'No authorization header provided' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     const supabaseClient = createClient(
@@ -31,15 +40,28 @@ serve(async (req) => {
 
     // Verify admin access
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    console.log('User retrieved:', !!user, 'Error:', authError?.message);
     
     if (authError) {
       console.error('Auth error:', authError);
-      throw new Error(`Authentication failed: ${authError.message}`);
+      return new Response(
+        JSON.stringify({ error: `Authentication failed: ${authError.message}` }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
     
     if (!user) {
       console.error('No user found in session');
-      throw new Error('Unauthorized: No authenticated user');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: No authenticated user' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     console.log('Authenticated user:', user.id);
@@ -53,12 +75,24 @@ serve(async (req) => {
 
     if (roleError) {
       console.error('Role check error:', roleError);
-      throw new Error(`Failed to verify admin access: ${roleError.message}`);
+      return new Response(
+        JSON.stringify({ error: `Failed to verify admin access: ${roleError.message}` }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     if (!hasAdminRole) {
       console.error('User does not have admin role:', user.id);
-      throw new Error('Unauthorized: Admin access required');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: Admin access required' }),
+        { 
+          status: 403, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     console.log('Admin access verified for user:', user.id);
