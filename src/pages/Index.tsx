@@ -8,6 +8,7 @@ import heroImage from "@/assets/hero-bg.jpg";
 import { supabase } from "@/integrations/supabase/client";
 import { Testimonials } from "@/components/Testimonials";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
+import { Footer } from "@/components/Footer";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -57,9 +58,9 @@ const Index = () => {
   ];
 
   const stats = [
-    { value: "85%", label: "Reduced Emotional Trading" },
-    { value: "10K+", label: "Traders Transformed" },
-    { value: "3.2x", label: "Avg Win Rate Improvement" }
+    { value: "95%", label: "Of Trading Failure Is Mental" },
+    { value: "Beta", label: "Early Access Program" },
+    { value: "AI", label: "Psychology Analysis" }
   ];
 
   const benefits = [
@@ -222,7 +223,7 @@ const Index = () => {
               Stop Trading On Emotion. Start Trading With Intelligence.
             </h2>
             <p className="text-base sm:text-xl text-muted-foreground mb-8 sm:mb-12 px-4">
-              Join 10,000+ traders who've mastered their psychology and transformed their trading results
+              Join our early access program and master your trading psychology with AI-powered insights
             </p>
             <Button 
               size="lg" 
@@ -238,6 +239,9 @@ const Index = () => {
 
       {/* PWA Install Prompt */}
       <PWAInstallPrompt />
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };

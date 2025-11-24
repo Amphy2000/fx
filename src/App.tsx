@@ -33,6 +33,7 @@ import Streaks from "./pages/Streaks";
 import Onboarding from "./pages/Onboarding";
 import OnboardingOptimized from "./pages/OnboardingOptimized";
 import Achievements from "./pages/Achievements";
+import Guides from "./pages/Guides";
 import AccountabilityPartners from "./pages/AccountabilityPartners";
 import Install from "./pages/Install";
 import AbusePreventionAdmin from "./pages/AbusePreventionAdmin";
@@ -87,6 +88,7 @@ const AppContent = () => {
         <Route path="/affiliate/dashboard" element={<AffiliateDashboard />} />
         <Route path="/install" element={<Install />} />
         <Route path="/psychology-guide" element={<PsychologyGuide />} />
+        <Route path="/guides" element={<Guides />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
