@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Layout } from "@/components/Layout";
 import { TradeScreenshotBatchUpload } from "@/components/TradeScreenshotBatchUpload";
 import { PatternsDashboard } from "@/components/PatternsDashboard";
@@ -7,8 +8,10 @@ import { StandaloneVoiceLogger } from "@/components/StandaloneVoiceLogger";
 import { JournalInsightsPanel } from "@/components/JournalInsightsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Brain, Camera, TrendingUp, MessageSquare, Mic, Lightbulb } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 const AIFeatures = () => {
+  const [activeTab, setActiveTab] = useState("screenshots");
 
   return (
     <Layout>
@@ -25,7 +28,7 @@ const AIFeatures = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2">
-            <Tabs defaultValue="screenshots" className="space-y-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
               <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="screenshots" className="flex items-center gap-2">
                   <Camera className="w-4 h-4" />
@@ -95,67 +98,85 @@ const AIFeatures = () => {
 
           <div className="space-y-4">
             <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-6 rounded-lg border">
-              <h3 className="font-semibold mb-3">How It Works</h3>
-              <div className="space-y-3 text-sm">
-                <div>
+              <h3 className="font-semibold mb-3">Quick Actions</h3>
+              <div className="space-y-2">
+                <Card 
+                  className="p-3 cursor-pointer hover:bg-accent transition-colors"
+                  onClick={() => setActiveTab("screenshots")}
+                >
                   <div className="flex items-center gap-2 font-medium mb-1">
                     <Camera className="w-4 h-4 text-primary" />
                     Screenshot Upload
                   </div>
-                  <p className="text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Upload multiple screenshots - AI extracts all trade data automatically
                   </p>
-                </div>
+                </Card>
 
-                <div>
+                <Card 
+                  className="p-3 cursor-pointer hover:bg-accent transition-colors"
+                  onClick={() => setActiveTab("voice")}
+                >
                   <div className="flex items-center gap-2 font-medium mb-1">
                     <Mic className="w-4 h-4 text-primary" />
                     Voice Logging
                   </div>
-                  <p className="text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Speak your trade details - AI saves everything automatically
                   </p>
-                </div>
+                </Card>
 
-                <div>
+                <Card 
+                  className="p-3 cursor-pointer hover:bg-accent transition-colors"
+                  onClick={() => setActiveTab("patterns")}
+                >
                   <div className="flex items-center gap-2 font-medium mb-1">
                     <TrendingUp className="w-4 h-4 text-primary" />
                     Pattern Analysis
                   </div>
-                  <p className="text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Discovers winning/losing patterns across pairs, times, and sessions
                   </p>
-                </div>
+                </Card>
 
-                <div>
+                <Card 
+                  className="p-3 cursor-pointer hover:bg-accent transition-colors"
+                  onClick={() => setActiveTab("behavior")}
+                >
                   <div className="flex items-center gap-2 font-medium mb-1">
                     <Brain className="w-4 h-4 text-primary" />
                     Behavioral Detection
                   </div>
-                  <p className="text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Identifies revenge trading, overtrading, and emotional decisions
                   </p>
-                </div>
+                </Card>
 
-                <div>
+                <Card 
+                  className="p-3 cursor-pointer hover:bg-accent transition-colors"
+                  onClick={() => setActiveTab("assistant")}
+                >
                   <div className="flex items-center gap-2 font-medium mb-1">
                     <MessageSquare className="w-4 h-4 text-primary" />
                     Trading Assistant
                   </div>
-                  <p className="text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Ask for second opinions on setups, get risk management advice
                   </p>
-                </div>
+                </Card>
 
-                <div>
+                <Card 
+                  className="p-3 cursor-pointer hover:bg-accent transition-colors"
+                  onClick={() => setActiveTab("insights")}
+                >
                   <div className="flex items-center gap-2 font-medium mb-1">
                     <Lightbulb className="w-4 h-4 text-primary" />
                     Emotional Insights
                   </div>
-                  <p className="text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Analyzes how your emotions correlate with trading performance
                   </p>
-                </div>
+                </Card>
               </div>
             </div>
 

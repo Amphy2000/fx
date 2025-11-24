@@ -395,11 +395,11 @@ export const TradeScreenshotBatchUpload = () => {
               <Card key={trade.id} className="p-4">
                 <div className="flex gap-4">
                   {/* Preview Image */}
-                  <div className="relative w-32 h-32 flex-shrink-0 rounded-lg overflow-hidden border bg-muted/30">
+                  <div className="relative w-40 h-40 flex-shrink-0 rounded-lg overflow-hidden border bg-muted/30">
                       <img 
                         src={trade.preview} 
                         alt={trade.fileName}
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-contain p-1"
                       />
                       {trade.status === 'uploading' && (
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -643,6 +643,7 @@ export const TradeScreenshotBatchUpload = () => {
                                 <SelectItem value="win">Win</SelectItem>
                                 <SelectItem value="loss">Loss</SelectItem>
                                 <SelectItem value="breakeven">Breakeven</SelectItem>
+                                <SelectItem value="missed">Missed</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
