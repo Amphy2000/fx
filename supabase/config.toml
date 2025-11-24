@@ -66,6 +66,9 @@ verify_jwt = true
 [functions.admin-upgrade-user]
 verify_jwt = true
 
+[functions.analyze-platform-insights]
+verify_jwt = true
+
 [functions.admin-add-credits]
 verify_jwt = true
 

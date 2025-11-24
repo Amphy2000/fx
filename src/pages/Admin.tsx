@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Loader2, Download, Search, Eye, Crown, Mail, BarChart3, Shield, Bell } from "lucide-react";
+import { Loader2, Download, Search, Eye, Crown, Mail, BarChart3, Shield, Bell, Brain } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ import { AdminCreditManager } from "@/components/AdminCreditManager";
 import { WeeklySummaryEmailManager } from "@/components/WeeklySummaryEmailManager";
 import AdminAffiliateManager from "@/components/AdminAffiliateManager";
 import { AdminNotificationSender } from "@/components/AdminNotificationSender";
+import { AdminAIInsights } from "@/components/AdminAIInsights";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -241,6 +242,10 @@ const Admin = () => {
                 Stats
               </TabsTrigger>
               <TabsTrigger value="affiliates" className="text-xs px-2 py-1.5">Affiliates</TabsTrigger>
+              <TabsTrigger value="ai-insights" className="text-xs px-2 py-1.5">
+                <Brain className="h-3 w-3 mr-1" />
+                <span>AI Insights</span>
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -438,6 +443,10 @@ const Admin = () => {
 
           <TabsContent value="notifications">
             <AdminNotificationSender />
+          </TabsContent>
+
+          <TabsContent value="ai-insights">
+            <AdminAIInsights />
           </TabsContent>
         </Tabs>
 
