@@ -11,19 +11,17 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { awardCredits, CREDIT_REWARDS } from "@/utils/creditManager";
-
-const OnboardingStep = ({ 
-  children, 
-  title, 
-  description, 
-  icon: Icon 
-}: { 
-  children: React.ReactNode; 
-  title: string; 
-  description: string; 
+const OnboardingStep = ({
+  children,
+  title,
+  description,
+  icon: Icon
+}: {
+  children: React.ReactNode;
+  title: string;
+  description: string;
   icon: any;
-}) => (
-  <div className="space-y-6">
+}) => <div className="space-y-6">
     <div className="text-center space-y-4">
       <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
         <Icon className="h-8 w-8 text-primary" />
@@ -36,9 +34,7 @@ const OnboardingStep = ({
     <div className="max-w-2xl mx-auto">
       {children}
     </div>
-  </div>
-);
-
+  </div>;
 export default function OnboardingOptimized() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
@@ -51,15 +47,17 @@ export default function OnboardingOptimized() {
     confidence: 5,
     stress: 5,
     sleep_hours: 7,
-    focus_level: 5,
+    focus_level: 5
   });
-
   useEffect(() => {
     checkAuth();
   }, []);
-
   const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: {
+        user
+      }
+    } = await supabase.auth.getUser();
     if (!user) {
       navigate("/auth");
       return;
@@ -67,62 +65,46 @@ export default function OnboardingOptimized() {
     setUserId(user.id);
 
     // Check if already completed onboarding
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('onboarding_completed, onboarding_step')
-      .eq('id', user.id)
-      .single();
-
+    const {
+      data: profile
+    } = await supabase.from('profiles').select('onboarding_completed, onboarding_step').eq('id', user.id).single();
     if (profile?.onboarding_completed) {
       navigate("/dashboard");
     } else if (profile?.onboarding_step) {
       setCurrentStep(Math.min(profile.onboarding_step, 3)); // Max 4 steps (0-3)
     }
   };
-
   const updateOnboardingStep = async (step: number) => {
     if (!userId) return;
-    await supabase
-      .from('profiles')
-      .update({ onboarding_step: step })
-      .eq('id', userId);
+    await supabase.from('profiles').update({
+      onboarding_step: step
+    }).eq('id', userId);
   };
-
   const completeOnboarding = async () => {
     if (!userId) return;
-    await supabase
-      .from('profiles')
-      .update({ 
-        onboarding_completed: true,
-        onboarding_step: 4
-      })
-      .eq('id', userId);
-    
+    await supabase.from('profiles').update({
+      onboarding_completed: true,
+      onboarding_step: 4
+    }).eq('id', userId);
     toast.success("Welcome aboard! 🎉", {
       description: "You're all set to start your trading journey!"
     });
     navigate("/dashboard");
   };
-
   const skipToCheckIn = async () => {
     setCurrentStep(2);
     await updateOnboardingStep(2);
   };
-
   const skipOnboarding = async () => {
     if (!userId) {
       toast.error("Please wait while we load your account");
       return;
     }
     try {
-      await supabase
-        .from('profiles')
-        .update({ 
-          onboarding_completed: true,
-          onboarding_step: 4 
-        })
-        .eq('id', userId);
-      
+      await supabase.from('profiles').update({
+        onboarding_completed: true,
+        onboarding_step: 4
+      }).eq('id', userId);
       toast.success("Onboarding skipped");
       navigate("/dashboard");
     } catch (error) {
@@ -130,52 +112,39 @@ export default function OnboardingOptimized() {
       toast.error('Failed to skip. Please try again.');
     }
   };
-
   const handleCheckInSubmit = async () => {
     if (!userId) return;
-    
     try {
       const today = new Date().toISOString().split('T')[0];
-      await supabase
-        .from('daily_checkins')
-        .upsert({
-          user_id: userId,
-          check_in_date: today,
-          ...checkInData
-        }, {
-          onConflict: 'user_id,check_in_date'
-        });
+      await supabase.from('daily_checkins').upsert({
+        user_id: userId,
+        check_in_date: today,
+        ...checkInData
+      }, {
+        onConflict: 'user_id,check_in_date'
+      });
 
       // Award credits for first check-in
       await awardCredits(userId, 'daily_checkin', CREDIT_REWARDS.daily_checkin, 'First daily check-in completed');
-
       setCheckInComplete(true);
       toast.success("First check-in complete! 🎯");
     } catch (error: any) {
       toast.error(error.message || "Failed to save check-in");
     }
   };
-
   const nextStep = () => {
     const next = currentStep + 1;
     setCurrentStep(next);
     updateOnboardingStep(next);
   };
-
-  const progress = ((currentStep + 1) / 4) * 100;
-
+  const progress = (currentStep + 1) / 4 * 100;
   const steps = [
-    // Step 0: Welcome
-    <OnboardingStep
-      key="welcome"
-      icon={Brain}
-      title="Your Biggest Enemy Isn't The Market"
-      description="It's your psychology. We help you master it with AI."
-    >
+  // Step 0: Welcome
+  <OnboardingStep key="welcome" icon={Brain} title="Your Biggest Enemy Isn't The Market" description="It's your psychology. We help you master it with AI.">
       <Card className="border-border/50 bg-card/50 backdrop-blur">
         <CardContent className="p-8 space-y-6">
           <div className="p-6 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent border border-primary/30 rounded-xl">
-            <h3 className="text-xl font-bold mb-3">What Makes Amphy Different?</h3>
+            <h3 className="text-xl font-bold mb-3">What Makes Amphy AI Different?</h3>
             <p className="text-muted-foreground mb-4">
               <strong className="text-foreground">95% of trading failure is mental, not technical.</strong> Most journals track numbers. We track what really matters: your psychology, emotions, and behavioral patterns.
             </p>
@@ -239,14 +208,8 @@ export default function OnboardingOptimized() {
         </CardContent>
       </Card>
     </OnboardingStep>,
-
-    // Step 1: Key Features Overview
-    <OnboardingStep
-      key="features"
-      icon={Zap}
-      title="Your AI-Powered Trading System"
-      description="Everything you need to master trading psychology"
-    >
+  // Step 1: Key Features Overview
+  <OnboardingStep key="features" icon={Zap} title="Your AI-Powered Trading System" description="Everything you need to master trading psychology">
       <Card className="border-border/50">
         <CardContent className="p-6 space-y-6">
           <div className="space-y-4">
@@ -327,18 +290,11 @@ export default function OnboardingOptimized() {
         </CardContent>
       </Card>
     </OnboardingStep>,
-
-    // Step 2: Daily Check-In (CORE)
-    <OnboardingStep
-      key="checkin"
-      icon={Heart}
-      title="Start With Your Mind, Not Your Trades"
-      description="Psychology drives 95% of your results. Let's track it."
-    >
+  // Step 2: Daily Check-In (CORE)
+  <OnboardingStep key="checkin" icon={Heart} title="Start With Your Mind, Not Your Trades" description="Psychology drives 95% of your results. Let's track it.">
       <Card className="border-border/50">
         <CardContent className="p-6">
-          {!checkInComplete ? (
-            <div className="space-y-6">
+          {!checkInComplete ? <div className="space-y-6">
               <div className="p-4 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent border border-primary/30 rounded-lg">
                 <h4 className="font-semibold mb-2">Why This Matters</h4>
                 <p className="text-sm text-muted-foreground">
@@ -349,7 +305,10 @@ export default function OnboardingOptimized() {
               <div className="space-y-4">
                 <div>
                   <Label>How are you feeling right now?</Label>
-                  <Select value={checkInData.mood} onValueChange={(value) => setCheckInData({ ...checkInData, mood: value })}>
+                  <Select value={checkInData.mood} onValueChange={value => setCheckInData({
+                ...checkInData,
+                mood: value
+              })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -365,46 +324,34 @@ export default function OnboardingOptimized() {
 
                 <div>
                   <Label>Confidence Level: {checkInData.confidence}/10</Label>
-                  <Slider
-                    value={[checkInData.confidence]}
-                    onValueChange={([value]) => setCheckInData({ ...checkInData, confidence: value })}
-                    max={10}
-                    step={1}
-                    className="mt-2"
-                  />
+                  <Slider value={[checkInData.confidence]} onValueChange={([value]) => setCheckInData({
+                ...checkInData,
+                confidence: value
+              })} max={10} step={1} className="mt-2" />
                 </div>
 
                 <div>
                   <Label>Stress Level: {checkInData.stress}/10</Label>
-                  <Slider
-                    value={[checkInData.stress]}
-                    onValueChange={([value]) => setCheckInData({ ...checkInData, stress: value })}
-                    max={10}
-                    step={1}
-                    className="mt-2"
-                  />
+                  <Slider value={[checkInData.stress]} onValueChange={([value]) => setCheckInData({
+                ...checkInData,
+                stress: value
+              })} max={10} step={1} className="mt-2" />
                 </div>
 
                 <div>
                   <Label>Hours of Sleep: {checkInData.sleep_hours}</Label>
-                  <Slider
-                    value={[checkInData.sleep_hours]}
-                    onValueChange={([value]) => setCheckInData({ ...checkInData, sleep_hours: value })}
-                    max={12}
-                    step={0.5}
-                    className="mt-2"
-                  />
+                  <Slider value={[checkInData.sleep_hours]} onValueChange={([value]) => setCheckInData({
+                ...checkInData,
+                sleep_hours: value
+              })} max={12} step={0.5} className="mt-2" />
                 </div>
 
                 <div>
                   <Label>Focus Level: {checkInData.focus_level}/10</Label>
-                  <Slider
-                    value={[checkInData.focus_level]}
-                    onValueChange={([value]) => setCheckInData({ ...checkInData, focus_level: value })}
-                    max={10}
-                    step={1}
-                    className="mt-2"
-                  />
+                  <Slider value={[checkInData.focus_level]} onValueChange={([value]) => setCheckInData({
+                ...checkInData,
+                focus_level: value
+              })} max={10} step={1} className="mt-2" />
                 </div>
               </div>
 
@@ -416,9 +363,7 @@ export default function OnboardingOptimized() {
               <p className="text-xs text-center text-muted-foreground">
                 Takes 60 seconds • AI analyzes how this affects your trading
               </p>
-            </div>
-          ) : (
-            <div className="text-center py-8 space-y-4">
+            </div> : <div className="text-center py-8 space-y-4">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/10">
                 <CheckCircle2 className="h-8 w-8 text-green-500" />
               </div>
@@ -432,19 +377,12 @@ export default function OnboardingOptimized() {
                 Continue to Dashboard
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-            </div>
-          )}
+            </div>}
         </CardContent>
       </Card>
     </OnboardingStep>,
-
-    // Step 3: Completion
-    <OnboardingStep
-      key="complete"
-      icon={CheckCircle2}
-      title="You're Ready! 🚀"
-      description="Start logging trades and mastering your psychology"
-    >
+  // Step 3: Completion
+  <OnboardingStep key="complete" icon={CheckCircle2} title="You're Ready! 🚀" description="Start logging trades and mastering your psychology">
       <Card className="border-border/50 bg-gradient-to-br from-primary/10 via-card to-card">
         <CardContent className="p-8 space-y-6">
           <div className="text-center space-y-2">
@@ -477,11 +415,8 @@ export default function OnboardingOptimized() {
           </Button>
         </CardContent>
       </Card>
-    </OnboardingStep>,
-  ];
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-background/50 relative overflow-hidden">
+    </OnboardingStep>];
+  return <div className="min-h-screen bg-gradient-to-b from-background via-background to-background/50 relative overflow-hidden">
       <div className="absolute inset-0 bg-grid-white/[0.02] pointer-events-none" />
       <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
@@ -506,6 +441,5 @@ export default function OnboardingOptimized() {
           {steps[currentStep]}
         </div>
       </div>
-    </div>
-  );
+    </div>;
 }
