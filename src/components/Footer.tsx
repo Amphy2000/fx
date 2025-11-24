@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Brain, Twitter, Linkedin, MessageCircle } from "lucide-react";
+import { Brain, Twitter, Linkedin, Send } from "lucide-react";
 
 export const Footer = () => {
   return (
@@ -35,13 +35,13 @@ export const Footer = () => {
                 <Linkedin className="h-4 w-4" />
               </a>
               <a 
-                href="https://discord.gg/amphyai" 
+                href="https://t.me/amphyfxacademy" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="w-9 h-9 rounded-full bg-muted hover:bg-primary/20 flex items-center justify-center transition-colors"
-                aria-label="Discord Community"
+                aria-label="Telegram Channel"
               >
-                <MessageCircle className="h-4 w-4" />
+                <Send className="h-4 w-4" />
               </a>
             </div>
           </div>
