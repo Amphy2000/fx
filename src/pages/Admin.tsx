@@ -214,40 +214,82 @@ const Admin = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="users" className="w-full">
+        <Tabs defaultValue="overview" className="w-full">
           <div className="mb-3 overflow-x-auto">
             <TabsList className="flex flex-wrap w-full justify-start gap-1 h-auto bg-muted/50 p-1">
-              <TabsTrigger value="users" className="text-xs px-2 py-1.5">Users</TabsTrigger>
-              <TabsTrigger value="notifications" className="text-xs px-2 py-1.5">
-                <Bell className="h-3 w-3 mr-1" />
-                <span>Notify</span>
-              </TabsTrigger>
-              <TabsTrigger value="weekly-summaries" className="text-xs px-2 py-1.5">
-                <Mail className="h-3 w-3 mr-1" />
-                <span>Weekly</span>
-              </TabsTrigger>
-              <TabsTrigger value="abuse-prevention" className="text-xs px-2 py-1.5">
-                <Shield className="h-3 w-3 mr-1" />
-                <span>Abuse</span>
-              </TabsTrigger>
-              <TabsTrigger value="email-lists" className="text-xs px-2 py-1.5">Lists</TabsTrigger>
-              <TabsTrigger value="email-templates" className="text-xs px-2 py-1.5">Templates</TabsTrigger>
-              <TabsTrigger value="email-campaigns" className="text-xs px-2 py-1.5">Campaigns</TabsTrigger>
-              <TabsTrigger value="email-workflows" className="text-xs px-2 py-1.5">Workflows</TabsTrigger>
-              <TabsTrigger value="ab-tests" className="text-xs px-2 py-1.5">A/B</TabsTrigger>
-              <TabsTrigger value="personalization" className="text-xs px-2 py-1.5">Personal</TabsTrigger>
-              <TabsTrigger value="warmup" className="text-xs px-2 py-1.5">Warm-Up</TabsTrigger>
-              <TabsTrigger value="email-analytics" className="text-xs px-2 py-1.5">
+              <TabsTrigger value="overview" className="text-xs px-3 py-1.5 font-medium">
                 <BarChart3 className="h-3 w-3 mr-1" />
-                Stats
+                Overview
               </TabsTrigger>
-              <TabsTrigger value="affiliates" className="text-xs px-2 py-1.5">Affiliates</TabsTrigger>
-              <TabsTrigger value="ai-insights" className="text-xs px-2 py-1.5">
+              <TabsTrigger value="users" className="text-xs px-3 py-1.5">
+                <Crown className="h-3 w-3 mr-1" />
+                Users
+              </TabsTrigger>
+              <TabsTrigger value="email-management" className="text-xs px-3 py-1.5">
+                <Mail className="h-3 w-3 mr-1" />
+                Email Management
+              </TabsTrigger>
+              <TabsTrigger value="notifications" className="text-xs px-3 py-1.5">
+                <Bell className="h-3 w-3 mr-1" />
+                Notifications
+              </TabsTrigger>
+              <TabsTrigger value="affiliates" className="text-xs px-3 py-1.5">Affiliates</TabsTrigger>
+              <TabsTrigger value="security" className="text-xs px-3 py-1.5">
+                <Shield className="h-3 w-3 mr-1" />
+                Security
+              </TabsTrigger>
+              <TabsTrigger value="ai-insights" className="text-xs px-3 py-1.5">
                 <Brain className="h-3 w-3 mr-1" />
-                <span>AI Insights</span>
+                AI Insights
               </TabsTrigger>
             </TabsList>
           </div>
+
+          <TabsContent value="overview" className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <Card className="border-border bg-card">
+                <CardHeader className="pb-2 px-3 pt-3">
+                  <CardTitle className="text-xs font-medium text-foreground">Total Users</CardTitle>
+                </CardHeader>
+                <CardContent className="px-3 pb-3">
+                  <p className="text-2xl font-bold text-primary">{stats.totalUsers}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border bg-card">
+                <CardHeader className="pb-2 px-3 pt-3">
+                  <CardTitle className="text-xs font-medium text-foreground">Total Trades</CardTitle>
+                </CardHeader>
+                <CardContent className="px-3 pb-3">
+                  <p className="text-2xl font-bold text-primary">{stats.totalTrades}</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <Button variant="outline" className="justify-start" onClick={() => navigate("/admin")}>
+                  <Crown className="h-4 w-4 mr-2" />
+                  Manage Users
+                </Button>
+                <Button variant="outline" className="justify-start">
+                  <Mail className="h-4 w-4 mr-2" />
+                  Email Campaigns
+                </Button>
+                <Button variant="outline" className="justify-start">
+                  <Brain className="h-4 w-4 mr-2" />
+                  View AI Insights
+                </Button>
+                <Button variant="outline" className="justify-start">
+                  <Shield className="h-4 w-4 mr-2" />
+                  Security Settings
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="users" className="space-y-3">
             <div className="grid grid-cols-2 gap-2">
@@ -359,7 +401,75 @@ const Admin = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="abuse-prevention">
+          <TabsContent value="email-management" className="space-y-3">
+            <Tabs defaultValue="campaigns" className="w-full">
+              <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 mb-4">
+                <TabsTrigger value="campaigns" className="text-xs">Campaigns</TabsTrigger>
+                <TabsTrigger value="templates" className="text-xs">Templates</TabsTrigger>
+                <TabsTrigger value="lists" className="text-xs">Lists</TabsTrigger>
+                <TabsTrigger value="workflows" className="text-xs">Workflows</TabsTrigger>
+                <TabsTrigger value="ab-tests" className="text-xs">A/B Tests</TabsTrigger>
+                <TabsTrigger value="personalization" className="text-xs">Personalization</TabsTrigger>
+                <TabsTrigger value="warmup" className="text-xs">Warm-Up</TabsTrigger>
+                <TabsTrigger value="analytics" className="text-xs">Analytics</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="campaigns">
+                <EmailCampaignManager />
+              </TabsContent>
+
+              <TabsContent value="templates">
+                <EmailTemplateManager />
+              </TabsContent>
+
+              <TabsContent value="lists">
+                <EmailListManager />
+              </TabsContent>
+
+              <TabsContent value="workflows">
+                <EmailWorkflowManager />
+              </TabsContent>
+
+              <TabsContent value="ab-tests">
+                <EmailABTestManager />
+              </TabsContent>
+
+              <TabsContent value="personalization">
+                <EmailPersonalizationManager />
+              </TabsContent>
+
+              <TabsContent value="warmup">
+                <EmailWarmUpManager />
+              </TabsContent>
+
+              <TabsContent value="analytics">
+                <EmailAnalyticsDashboard />
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
+
+          <TabsContent value="notifications" className="space-y-3">
+            <Tabs defaultValue="send" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="send">Send Notifications</TabsTrigger>
+                <TabsTrigger value="weekly">Weekly Summaries</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="send">
+                <AdminNotificationSender />
+              </TabsContent>
+
+              <TabsContent value="weekly">
+                <WeeklySummaryEmailManager />
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
+
+          <TabsContent value="affiliates">
+            <AdminAffiliateManager />
+          </TabsContent>
+
+          <TabsContent value="security">
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -399,50 +509,6 @@ const Admin = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="email-lists">
-            <EmailListManager />
-          </TabsContent>
-
-          <TabsContent value="email-templates">
-            <EmailTemplateManager />
-          </TabsContent>
-
-          <TabsContent value="email-campaigns">
-            <EmailCampaignManager />
-          </TabsContent>
-
-          <TabsContent value="email-workflows">
-            <EmailWorkflowManager />
-          </TabsContent>
-
-          <TabsContent value="ab-tests">
-            <EmailABTestManager />
-          </TabsContent>
-
-          <TabsContent value="personalization">
-            <EmailPersonalizationManager />
-          </TabsContent>
-
-          <TabsContent value="warmup">
-            <EmailWarmUpManager />
-          </TabsContent>
-
-          <TabsContent value="email-analytics">
-            <EmailAnalyticsDashboard />
-          </TabsContent>
-
-          <TabsContent value="weekly-summaries">
-            <WeeklySummaryEmailManager />
-          </TabsContent>
-
-          <TabsContent value="affiliates">
-            <AdminAffiliateManager />
-          </TabsContent>
-
-          <TabsContent value="notifications">
-            <AdminNotificationSender />
           </TabsContent>
 
           <TabsContent value="ai-insights">
