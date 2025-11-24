@@ -290,12 +290,29 @@ export default function OnboardingOptimized() {
             </div>
           </div>
 
-          <div className="p-4 bg-muted rounded-lg border">
-            <p className="text-sm text-center">
-              <strong>Free Tier:</strong> 50 AI credits/month • 10 trades/month
-              <br />
-              <span className="text-xs text-muted-foreground">Upgrade anytime for unlimited access</span>
-            </p>
+          <div className="space-y-3">
+            <div className="p-4 bg-primary/10 rounded-lg border border-primary/30">
+              <h4 className="font-semibold text-sm mb-2">💎 Earn Unlimited Free Credits</h4>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>✓ +1 credit per daily check-in</div>
+                <div>✓ +1 credit per trade logged</div>
+                <div>✓ +10 credits for 7-day streaks</div>
+                <div>✓ +50 credits for 30-day streaks</div>
+                <div>✓ +5 credits per achievement</div>
+                <div>✓ +2 credits for feedback</div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Stay consistent = unlimited credits, even on Free plan!
+              </p>
+            </div>
+            
+            <div className="p-4 bg-muted rounded-lg border">
+              <p className="text-sm text-center">
+                <strong>Free Tier:</strong> 50 credits/month + unlimited earning
+                <br />
+                <span className="text-xs text-muted-foreground">Pro: 500/month + unlimited • Lifetime: Unlimited</span>
+              </p>
+            </div>
           </div>
 
           <div className="flex gap-3">
