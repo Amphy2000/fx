@@ -28,6 +28,9 @@ serve(async (req) => {
       );
     }
 
+    // Extract JWT token from authorization header
+    const token = authHeader.replace('Bearer ', '');
+    
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -38,8 +41,8 @@ serve(async (req) => {
       }
     );
 
-    // Verify admin access
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    // Get user from JWT token
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
     console.log('User retrieved:', !!user, 'Error:', authError?.message);
     
     if (authError) {
