@@ -199,11 +199,17 @@ export const TradeScreenshotBatchUpload = () => {
       });
 
       if (error) {
+        console.error('Validation error:', error);
         if (error.message.includes('Insufficient credits')) {
           toast.error('Insufficient AI credits for validation');
         } else {
-          throw error;
+          toast.error('Failed to validate trade. Please try again.');
         }
+        return;
+      }
+
+      if (!data || !data.risk_score) {
+        toast.error('Invalid validation response. Please try again.');
         return;
       }
 
@@ -384,13 +390,12 @@ export const TradeScreenshotBatchUpload = () => {
 
       {trades.length > 0 && (
         <ScrollArea className="h-[600px]">
-          <div className="space-y-4">
+          <div className="space-y-4 pr-4">
             {trades.map((trade) => (
               <Card key={trade.id} className="p-4">
-                <div className="space-y-3">
-                  <div className="flex gap-4">
-                    {/* Preview Image */}
-                    <div className="relative w-32 h-32 flex-shrink-0 rounded-lg overflow-hidden border">
+                <div className="flex gap-4">
+                  {/* Preview Image */}
+                  <div className="relative w-32 h-32 flex-shrink-0 rounded-lg overflow-hidden border">
                       <img 
                         src={trade.preview} 
                         alt={trade.fileName}
@@ -418,10 +423,12 @@ export const TradeScreenshotBatchUpload = () => {
                       )}
                     </div>
 
-                    {/* Trade Data - Editable Form */}
-                    <div className="flex-1 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-muted-foreground truncate">{trade.fileName}</span>
+                  {/* Trade Data - Editable Form */}
+                  <div className="flex-1 min-w-0">
+                    <ScrollArea className="max-h-[500px] pr-2">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-muted-foreground truncate">{trade.fileName}</span>
                         {trade.status === 'ready' && (
                           <div className="flex gap-2">
                             <Button
@@ -713,9 +720,10 @@ export const TradeScreenshotBatchUpload = () => {
                         </div>
                       )}
                     </div>
-                  </div>
+                  </ScrollArea>
                 </div>
-              </Card>
+              </div>
+            </Card>
             ))}
           </div>
         </ScrollArea>
