@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Brain, AlertTriangle, Heart, Mic, Camera, MessageSquare, LineChart, Target, BarChart3, TrendingUp, Users, Bell, Zap, Shield, BookOpen } from "lucide-react";
+import { Brain, AlertTriangle, Heart, Mic, Camera, MessageSquare, LineChart, Target, BarChart3, TrendingUp, Users, Bell, Zap, Shield, BookOpen, Trophy, Calendar, Calculator, Award, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/Footer";
 
@@ -74,12 +74,93 @@ const Guides = () => {
       creditCost: "Free feature"
     },
     {
+      icon: <Target className="h-6 w-6" />,
+      title: "Setup Performance Analyzer",
+      category: "analysis",
+      description: "Track and analyze the performance of your specific trade setups",
+      howItWorks: "Tag trades with your setup names (e.g., 'Head & Shoulders', 'Trendline Break'). AI analyzes which setups work best for you, their win rates, average RR, and when they perform best.",
+      whenToUse: "After logging 10+ trades per setup to get statistically meaningful insights.",
+      creditCost: "Free feature"
+    },
+    {
       icon: <Users className="h-6 w-6" />,
       title: "Accountability Partners",
       category: "social",
       description: "Connect with other traders for mutual accountability",
-      howItWorks: "Match with traders, share goals, track progress together, and provide support. Creates positive peer pressure and reduces isolation.",
+      howItWorks: "Match with traders, share goals, track progress together, provide support, and chat about trades. Creates positive peer pressure and reduces isolation.",
       whenToUse: "Great for staying disciplined and motivated long-term.",
+      creditCost: "Premium feature"
+    },
+    {
+      icon: <Trophy className="h-6 w-6" />,
+      title: "Achievements & Streaks",
+      category: "social",
+      description: "Gamified progress tracking to maintain consistency",
+      howItWorks: "Earn badges for milestones like '7-day check-in streak', '50 trades logged', 'First profitable month'. Track your longest streaks and compete on the leaderboard.",
+      whenToUse: "Automatic tracking. Check your achievements page to see progress.",
+      creditCost: "Free feature"
+    },
+    {
+      icon: <Calendar className="h-6 w-6" />,
+      title: "Trade Calendar",
+      category: "analysis",
+      description: "Visual calendar view of your trading activity and performance",
+      howItWorks: "See all trades displayed on a calendar with color-coding for wins/losses. Quickly identify hot streaks, drawdown periods, and trading patterns by date.",
+      whenToUse: "Review weekly to spot timing patterns and optimal trading days.",
+      creditCost: "Free feature"
+    },
+    {
+      icon: <Calculator className="h-6 w-6" />,
+      title: "Trading Calculators",
+      category: "tools",
+      description: "Essential calculators for position sizing and risk management",
+      howItWorks: "Includes position size calculator, risk/reward calculator, pip calculator, and more. Helps you size positions correctly and manage risk.",
+      whenToUse: "Use before every trade to calculate proper position size.",
+      creditCost: "Free feature"
+    },
+    {
+      icon: <Bell className="h-6 w-6" />,
+      title: "Weekly Summary Reports",
+      category: "analysis",
+      description: "AI-generated weekly performance summaries delivered automatically",
+      howItWorks: "Every week, receive a comprehensive report with your performance metrics, emotional patterns, key insights, and personalized recommendations.",
+      whenToUse: "Delivered automatically every Sunday evening via email.",
+      creditCost: "Free feature"
+    },
+    {
+      icon: <BookOpen className="h-6 w-6" />,
+      title: "AI Journal Insights",
+      category: "analysis",
+      description: "Deep analysis of your trading journal entries",
+      howItWorks: "AI analyzes your journal notes, emotions, and lessons learned to identify recurring themes, emotional triggers, and growth opportunities.",
+      whenToUse: "Review monthly to track psychological development.",
+      creditCost: "3 credits per insight generation"
+    },
+    {
+      icon: <Award className="h-6 w-6" />,
+      title: "Public Leaderboard",
+      category: "social",
+      description: "Compete with other traders on global leaderboards",
+      howItWorks: "Opt-in to display your anonymized stats (win rate, profit factor) on public leaderboards. Compare your performance and learn from top traders.",
+      whenToUse: "Enable in Settings if you want to participate in community rankings.",
+      creditCost: "Free feature"
+    },
+    {
+      icon: <Target className="h-6 w-6" />,
+      title: "Goals & Targets",
+      category: "tools",
+      description: "Set and track trading goals with accountability partners",
+      howItWorks: "Create weekly/monthly goals (profit targets, max drawdown, consistency metrics). Share with accountability partners and get notifications on progress.",
+      whenToUse: "Set at the start of each week/month. Review progress daily.",
+      creditCost: "Free feature"
+    },
+    {
+      icon: <Shield className="h-6 w-6" />,
+      title: "MT5 Auto-Sync",
+      category: "tools",
+      description: "Automatically import trades from MetaTrader 5",
+      howItWorks: "Connect your MT5 account once. All trades are automatically imported with 100% accuracy - no manual logging needed.",
+      whenToUse: "Set up in Settings → Integrations. Syncs every 15 minutes.",
       creditCost: "Free feature"
     }
   ];
@@ -174,10 +255,12 @@ const Guides = () => {
           <h2 className="text-3xl font-bold mb-8">Feature Guides</h2>
           
           <Tabs defaultValue="core" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="core">Core Features</TabsTrigger>
               <TabsTrigger value="logging">Logging Tools</TabsTrigger>
               <TabsTrigger value="analysis">Analysis & Insights</TabsTrigger>
+              <TabsTrigger value="social">Social & Community</TabsTrigger>
+              <TabsTrigger value="tools">Tools & Utilities</TabsTrigger>
             </TabsList>
             
             <TabsContent value="core" className="mt-6">
@@ -246,7 +329,71 @@ const Guides = () => {
             
             <TabsContent value="analysis" className="mt-6">
               <div className="grid gap-4">
-                {features.filter(f => f.category === "analysis" || f.category === "social").map((feature, index) => (
+                {features.filter(f => f.category === "analysis").map((feature, index) => (
+                  <Card key={index}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          {feature.icon}
+                        </div>
+                        {feature.title}
+                      </CardTitle>
+                      <CardDescription>{feature.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <h4 className="font-semibold mb-2">How It Works</h4>
+                        <p className="text-sm text-muted-foreground">{feature.howItWorks}</p>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold mb-2">When to Use</h4>
+                        <p className="text-sm text-muted-foreground">{feature.whenToUse}</p>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="font-semibold">Credit Cost:</span>
+                        <span className="text-muted-foreground">{feature.creditCost}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="social" className="mt-6">
+              <div className="grid gap-4">
+                {features.filter(f => f.category === "social").map((feature, index) => (
+                  <Card key={index}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          {feature.icon}
+                        </div>
+                        {feature.title}
+                      </CardTitle>
+                      <CardDescription>{feature.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <h4 className="font-semibold mb-2">How It Works</h4>
+                        <p className="text-sm text-muted-foreground">{feature.howItWorks}</p>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold mb-2">When to Use</h4>
+                        <p className="text-sm text-muted-foreground">{feature.whenToUse}</p>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="font-semibold">Credit Cost:</span>
+                        <span className="text-muted-foreground">{feature.creditCost}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="tools" className="mt-6">
+              <div className="grid gap-4">
+                {features.filter(f => f.category === "tools").map((feature, index) => (
                   <Card key={index}>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-3">
