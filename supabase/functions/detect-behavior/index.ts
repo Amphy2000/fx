@@ -100,9 +100,9 @@ serve(async (req) => {
       await supabaseAdmin.from('trading_behaviors').insert({
         user_id: user.id,
         behavior_type: behavior.behavior_type,
-        trade_sequence: behavior.trade_sequence,
         severity: behavior.severity,
-        ai_recommendation: behavior.ai_recommendation
+        ai_recommendation: behavior.ai_recommendation,
+        metadata: { trade_sequence: behavior.trade_sequence }
       });
     }
 
