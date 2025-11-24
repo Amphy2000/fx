@@ -20,13 +20,16 @@ serve(async (req) => {
       });
     }
 
-    const supabaseClient = createClient(
+    // Use service role key to bypass RLS for admin operations
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    // Get user from JWT token
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
@@ -38,7 +41,7 @@ serve(async (req) => {
     const oneDayAgo = new Date();
     oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
-    const { data: recentTrades } = await supabaseClient
+    const { data: recentTrades } = await supabaseAdmin
       .from('trades')
       .select('*')
       .eq('user_id', user.id)
@@ -74,7 +77,7 @@ serve(async (req) => {
       behaviors.push({
         behavior_type: 'overtrading',
         severity: 'medium',
-        trade_sequence: recentTrades.slice(0, 10).map(t => t.id),
+        trade_sequence: recentTrades.slice(0, 10).map((t: any) => t.id),
         ai_recommendation: 'You\'ve taken too many trades in a short period. Stick to your trading plan with max 5 trades per session.'
       });
     }
@@ -90,11 +93,7 @@ serve(async (req) => {
       });
     }
 
-    // Save behaviors to database
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    // Save behaviors to database (supabaseAdmin already initialized above)
 
     for (const behavior of behaviors) {
       await supabaseAdmin.from('trading_behaviors').insert({
