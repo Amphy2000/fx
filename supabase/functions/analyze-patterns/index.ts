@@ -76,7 +76,7 @@ serve(async (req) => {
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
-    const { data: trades } = await supabaseClient
+    const { data: trades } = await supabaseAdmin
       .from('trades')
       .select('*')
       .eq('user_id', user.id)
