@@ -3,7 +3,7 @@ import { Brain, Twitter, Linkedin, Send } from "lucide-react";
 export const Footer = () => {
   return <footer className="border-t border-border/50 bg-background">
       <div className="container mx-auto px-4 py-12">
-        <div className="grid md:grid-cols-4 gap-8">
+        <div className="grid md:grid-cols-3 gap-8">
           {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -26,7 +26,7 @@ export const Footer = () => {
             </div>
           </div>
 
-          {/* Product */}
+          {/* Resources */}
           <div>
             <h4 className="font-semibold mb-4">Resources</h4>
             <ul className="space-y-3 text-sm">
@@ -52,9 +52,6 @@ export const Footer = () => {
               </li>
             </ul>
           </div>
-
-          {/* Resources */}
-          
 
           {/* Legal */}
           <div>
