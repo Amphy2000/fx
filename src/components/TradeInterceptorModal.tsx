@@ -37,14 +37,11 @@ export const TradeInterceptorModal = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [showAchievement, setShowAchievement] = useState(false);
 
-  if (!validationResult) return null;
-
-  const { risk_score, pattern_matched, suggested_action, similar_trades_count, win_rate, ai_insight } = validationResult;
-
-  const isLowRisk = risk_score >= 60;
-
+  // All hooks must be called before any early returns
   useEffect(() => {
-    if (open) {
+    if (open && validationResult) {
+      const isLowRisk = validationResult.risk_score >= 60;
+      
       // Award validation achievement
       trackValidationUsage();
       
@@ -59,7 +56,13 @@ export const TradeInterceptorModal = ({
         }, 300);
       }
     }
-  }, [open, isLowRisk]);
+  }, [open, validationResult]);
+
+  // Early return after all hooks
+  if (!validationResult) return null;
+
+  const { risk_score, pattern_matched, suggested_action, similar_trades_count, win_rate, ai_insight } = validationResult;
+  const isLowRisk = risk_score >= 60;
 
   const trackValidationUsage = async () => {
     const { data: { user } } = await supabase.auth.getUser();
