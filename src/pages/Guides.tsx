@@ -225,9 +225,22 @@ const Guides = () => {
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
               How to Master Trading Psychology with AI
             </h1>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-xl text-muted-foreground mb-8">
               Everything you need to know about using Amphy AI to overcome emotional trading and maximize performance
             </p>
+            
+            {/* YouTube Video Embed */}
+            <div className="max-w-3xl mx-auto mt-8">
+              <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                <iframe
+                  className="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg border border-border"
+                  src="https://www.youtube.com/embed/_SSQUJscCCk"
+                  title="Amphy AI Guide Video"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>
