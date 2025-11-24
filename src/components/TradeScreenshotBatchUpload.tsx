@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Upload, Loader2, Check, X, AlertCircle, CheckCircle, ArrowUpDown, Shield } from 'lucide-react';
+import { Upload, Loader2, Check, X, AlertCircle, CheckCircle, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -389,13 +389,12 @@ export const TradeScreenshotBatchUpload = () => {
       </Card>
 
       {trades.length > 0 && (
-        <ScrollArea className="h-[600px] w-full">
-          <div className="space-y-4 pr-4 pb-4">
-            {trades.map((trade) => (
-              <Card key={trade.id} className="p-4 min-w-[800px]">
-                <div className="flex gap-4 w-full">
+        <div className="space-y-4">
+          {trades.map((trade) => (
+            <Card key={trade.id} className="p-4">
+              <div className="flex flex-col lg:flex-row gap-4">
                   {/* Preview Image */}
-                  <div className="relative w-40 h-40 flex-shrink-0 rounded-lg overflow-hidden border bg-muted/30">
+                  <div className="relative w-full lg:w-40 h-40 flex-shrink-0 rounded-lg overflow-hidden border bg-muted/30">
                       <img 
                         src={trade.preview} 
                         alt={trade.fileName}
@@ -425,20 +424,11 @@ export const TradeScreenshotBatchUpload = () => {
 
                   {/* Trade Data - Editable Form */}
                   <div className="flex-1 min-w-0">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-muted-foreground truncate">{trade.fileName}</span>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-muted-foreground truncate">{trade.fileName}</span>
                         {trade.status === 'ready' && (
                           <div className="flex gap-2">
-                            <Button
-                              onClick={() => handleFlipDirection(trade.id)}
-                              variant="outline"
-                              size="sm"
-                              className="gap-1"
-                            >
-                              <ArrowUpDown className="w-3 h-3" />
-                              Flip
-                            </Button>
                             <Button
                               onClick={() => handleValidateTrade(trade.id)}
                               disabled={validatingTradeId === trade.id}
@@ -725,10 +715,9 @@ export const TradeScreenshotBatchUpload = () => {
               </Card>
             ))}
           </div>
-        </ScrollArea>
-      )}
+        )}
 
-      <TradeInterceptorModal
+        <TradeInterceptorModal
         open={showValidationModal}
         onOpenChange={setShowValidationModal}
         validationResult={validationResult}
