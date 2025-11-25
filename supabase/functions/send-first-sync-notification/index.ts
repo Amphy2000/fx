@@ -27,7 +27,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Sending first sync notification to ${email} for account ${accountNumber}`);
 
     const emailResponse = await resend.emails.send({
-      from: "Amphy AI <onboarding@resend.dev>",
+      from: "Amphy AI <amphyai@outlook.com>",
       to: [email],
       subject: "🎉 MT5 Account Successfully Connected!",
       html: `

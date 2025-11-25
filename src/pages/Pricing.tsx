@@ -288,7 +288,7 @@ const Pricing = () => {
         <div className="mt-12 text-center text-sm text-muted-foreground">
           <p>All plans include secure data encryption and privacy protection.</p>
           <p className="mt-2">
-            Questions? Contact us at support@amphyjournal.com
+            Questions? Contact us at amphyai@outlook.com
             {" | "}
             <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>
           </p>

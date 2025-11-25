@@ -68,7 +68,7 @@ const Terms = () => {
             <div>
               <h3 className="font-semibold mb-2">Refund Policy</h3>
               <p className="text-muted-foreground">
-                Refunds are handled on a case-by-case basis. Contact support@amphyjournal.com within 7 days of payment to request a refund. Lifetime subscriptions are non-refundable after 14 days.
+                Refunds are handled on a case-by-case basis. Contact amphyai@outlook.com within 7 days of payment to request a refund. Lifetime subscriptions are non-refundable after 14 days.
               </p>
             </div>
           </CardContent>
@@ -166,8 +166,8 @@ const Terms = () => {
             <p className="text-muted-foreground">
               If you have any questions about these Terms of Service, please contact us at:
               <br />
-              <a href="mailto:support@amphyjournal.com" className="text-primary hover:underline">
-                support@amphyjournal.com
+              <a href="mailto:amphyai@outlook.com" className="text-primary hover:underline">
+                amphyai@outlook.com
               </a>
             </p>
             <p className="text-muted-foreground mt-4 text-sm">
