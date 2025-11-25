@@ -432,11 +432,12 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
                   <label className="text-xs text-muted-foreground">Lot Size</label>
                   <Input
                     type="number"
-                    step="0.01"
+                    step="any"
+                    min="0"
                     value={extractedData.lot_size || ''}
                     onChange={(e) => handleFieldEdit('lot_size', e.target.value ? parseFloat(e.target.value) : undefined)}
                     className="h-8 text-sm"
-                    placeholder="Optional"
+                    placeholder="e.g., 0.01"
                   />
                 </div>
 
