@@ -19,7 +19,6 @@ interface ExtractedData {
   exit_price?: number;
   stop_loss?: number;
   take_profit?: number;
-  lot_size?: number;
   profit_loss?: number;
   setup_name?: string;
   timeframe?: string;
@@ -257,7 +256,6 @@ export const TradeScreenshotBatchUpload = () => {
         exit_price: trade.extractedData.exit_price ?? undefined,
         stop_loss: trade.extractedData.stop_loss ?? undefined,
         take_profit: trade.extractedData.take_profit ?? undefined,
-        volume: trade.extractedData.lot_size ?? undefined,
         result: trade.extractedData.result ?? 'open',
         profit_loss: trade.extractedData.profit_loss ?? undefined,
         session: trade.extractedData.session ?? undefined,
@@ -584,18 +582,6 @@ export const TradeScreenshotBatchUpload = () => {
 
                           {/* Broker Fields */}
                           <div className="grid grid-cols-3 gap-3">
-                            <div className="space-y-1">
-                              <Label className="text-xs">Lot Size</Label>
-                              <Input
-                                type="number"
-                                step="any"
-                                min="0"
-                                value={trade.extractedData.lot_size || ''}
-                                onChange={(e) => handleFieldEdit(trade.id, 'lot_size', e.target.value ? parseFloat(e.target.value) : undefined)}
-                                placeholder="e.g., 0.01"
-                                className="h-8 text-xs"
-                              />
-                            </div>
                             <div className="space-y-1">
                               <Label className="text-xs">P/L (for AI analytics)</Label>
                               <Input
