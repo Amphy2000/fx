@@ -300,7 +300,7 @@ const handler = async (req: Request): Promise<Response> => {
         htmlContent += trackingPixel;
 
         const emailResponse = await resend.emails.send({
-          from: "Amphy AI <onboarding@resend.dev>",
+          from: "Amphy AI <amphyai@outlook.com>",
           to: [recipient.email],
           subject: subject,
           html: htmlContent,

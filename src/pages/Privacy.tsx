@@ -111,8 +111,8 @@ const Privacy = () => {
             <p className="text-muted-foreground">
               If you have questions about this privacy policy or your data, contact us at:
               <br />
-              <a href="mailto:support@amphyjournal.com" className="text-primary hover:underline">
-                support@amphyjournal.com
+              <a href="mailto:amphyai@outlook.com" className="text-primary hover:underline">
+                amphyai@outlook.com
               </a>
             </p>
             <p className="text-muted-foreground mt-4 text-sm">

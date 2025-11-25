@@ -40,7 +40,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailHtml = generateWeeklySummaryEmail(mockData);
 
     const { error: emailError } = await resend.emails.send({
-      from: "Amphy AI <onboarding@resend.dev>",
+      from: "Amphy AI <amphyai@outlook.com>",
       to: [email],
       subject: `📊 Your Weekly Trading Summary - ${mockData.winRate}% Win Rate (TEST)`,
       html: emailHtml,

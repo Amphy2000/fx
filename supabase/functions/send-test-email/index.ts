@@ -23,7 +23,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Sending test email to ${email}`);
 
     const emailResponse = await resend.emails.send({
-      from: "Amphy AI <onboarding@resend.dev>",
+      from: "Amphy AI <amphyai@outlook.com>",
       to: [email],
       subject: "🚀 Test Email from Amphy AI",
       html: `
