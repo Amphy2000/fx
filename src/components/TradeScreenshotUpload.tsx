@@ -16,7 +16,6 @@ interface ExtractedData {
   exit_price?: number;
   stop_loss?: number;
   take_profit?: number;
-  lot_size?: number;
   profit_loss?: number;
   setup_name?: string;
   timeframe?: string;
@@ -201,7 +200,6 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
         exit_price: extractedData.exit_price ?? undefined,
         stop_loss: extractedData.stop_loss ?? undefined,
         take_profit: extractedData.take_profit ?? undefined,
-        volume: extractedData.lot_size ?? undefined,
         result: extractedData.result ?? 'open',
         profit_loss: extractedData.profit_loss ?? undefined,
         session: extractedData.session ?? undefined,
@@ -424,20 +422,6 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
                     onChange={(e) => handleFieldEdit('session', e.target.value || undefined)}
                     className="h-8 text-sm"
                     placeholder="e.g., London"
-                  />
-                </div>
-
-                {/* Lot Size */}
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Lot Size</label>
-                  <Input
-                    type="number"
-                    step="any"
-                    min="0"
-                    value={extractedData.lot_size || ''}
-                    onChange={(e) => handleFieldEdit('lot_size', e.target.value ? parseFloat(e.target.value) : undefined)}
-                    className="h-8 text-sm"
-                    placeholder="e.g., 0.01"
                   />
                 </div>
 
