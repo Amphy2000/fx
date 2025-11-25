@@ -588,10 +588,11 @@ export const TradeScreenshotBatchUpload = () => {
                               <Label className="text-xs">Lot Size</Label>
                               <Input
                                 type="number"
-                                step="0.01"
+                                step="any"
+                                min="0"
                                 value={trade.extractedData.lot_size || ''}
                                 onChange={(e) => handleFieldEdit(trade.id, 'lot_size', e.target.value ? parseFloat(e.target.value) : undefined)}
-                                placeholder="Optional"
+                                placeholder="e.g., 0.01"
                                 className="h-8 text-xs"
                               />
                             </div>
