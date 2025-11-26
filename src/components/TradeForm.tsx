@@ -13,6 +13,8 @@ import { VoiceTradeLogger } from "@/components/VoiceTradeLogger";
 import { TradeInterceptorModal } from "@/components/TradeInterceptorModal";
 import { PreTradeChecklist } from "@/components/PreTradeChecklist";
 import { awardCredits, CREDIT_REWARDS } from "@/utils/creditManager";
+import { QuickCheckInModal } from "@/components/QuickCheckInModal";
+import { format } from "date-fns";
 
 interface TradeFormProps {
   onTradeAdded: () => void;
@@ -28,6 +30,8 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
   const [showVoiceLogger, setShowVoiceLogger] = useState(false);
   const [preTradeRisk, setPreTradeRisk] = useState<'high' | 'medium' | 'low'>('medium');
   const [showPreTradeCheck, setShowPreTradeCheck] = useState(false);
+  const [showQuickCheckIn, setShowQuickCheckIn] = useState(false);
+  const [hasCheckedIn, setHasCheckedIn] = useState(true);
   const [formData, setFormData] = useState({
     pair: "",
     direction: "buy",
@@ -163,6 +167,24 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if user has completed daily check-in
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const { data } = await supabase
+        .from('daily_checkins')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('check_in_date', today)
+        .single();
+
+      if (!data) {
+        setHasCheckedIn(false);
+        setShowQuickCheckIn(true);
+        return;
+      }
+    }
     
     // Auto-trigger validation for high/medium risk trades
     if (preTradeRisk === 'high' || (preTradeRisk === 'medium' && Math.random() > 0.5)) {
@@ -575,6 +597,16 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
         validationResult={validationResult}
         onProceed={handleProceedWithTrade}
         onCancel={handleCancelTrade}
+      />
+
+      <QuickCheckInModal
+        open={showQuickCheckIn}
+        onOpenChange={setShowQuickCheckIn}
+        onComplete={() => {
+          setHasCheckedIn(true);
+          toast.success("Great! Now you can log your trade.");
+        }}
+        canSnooze={false}
       />
     </>
   );
