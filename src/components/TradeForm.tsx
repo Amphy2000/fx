@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Image as ImageIcon, X, Mic, Shield } from "lucide-react";
+import { Plus, Image as ImageIcon, X, Mic, Shield, Loader2, AlertTriangle } from "lucide-react";
 import { updateStreak, checkTradeAchievements } from "@/utils/streakManager";
 import { VoiceTradeLogger } from "@/components/VoiceTradeLogger";
 import { TradeInterceptorModal } from "@/components/TradeInterceptorModal";
@@ -32,6 +33,10 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
   const [showPreTradeCheck, setShowPreTradeCheck] = useState(false);
   const [showQuickCheckIn, setShowQuickCheckIn] = useState(false);
   const [hasCheckedIn, setHasCheckedIn] = useState(true);
+  const [showRiskWarning, setShowRiskWarning] = useState(false);
+  const [riskCheckResult, setRiskCheckResult] = useState<any>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [formData, setFormData] = useState({
     pair: "",
     direction: "buy",
@@ -45,6 +50,27 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
     emotion_before: "",
     emotion_after: "",
   });
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        
+        // Fetch user profile for validation preferences
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('trade_validation_mode, validation_min_credits_threshold, ai_credits')
+          .eq('id', user.id)
+          .single();
+        
+        if (profile) {
+          setUserProfile(profile);
+        }
+      }
+    };
+    fetchUser();
+  }, []);
 
   const handleVoiceData = (voiceData: any) => {
     setFormData(prev => ({
@@ -100,7 +126,30 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
     setScreenshotPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleValidate = async () => {
+  const handleRiskCheckAndValidate = async (autoValidate = false) => {
+    if (!userId) return;
+    
+    const { performLocalRiskCheck } = await import("@/utils/localRiskCheck");
+    
+    const riskCheck = await performLocalRiskCheck(userId, {
+      pair: formData.pair,
+      direction: formData.direction,
+      emotion: formData.emotion_before,
+    });
+
+    setRiskCheckResult(riskCheck);
+
+    // If high risk detected and not auto-validating, show risk warning first
+    if (riskCheck.hasWarnings && riskCheck.riskScore >= 50 && !autoValidate) {
+      setShowRiskWarning(true);
+      return;
+    }
+
+    // Proceed with validation
+    await performValidation();
+  };
+
+  const performValidation = async () => {
     try {
       setIsValidating(true);
 
@@ -168,38 +217,77 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check if user has completed daily check-in
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const today = format(new Date(), 'yyyy-MM-dd');
-      const { data } = await supabase
-        .from('daily_checkins')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('check_in_date', today)
-        .single();
+    if (!userId) {
+      toast.error("You must be logged in");
+      return;
+    }
 
-      if (!data) {
-        setHasCheckedIn(false);
-        setShowQuickCheckIn(true);
+    // Check if user has completed daily check-in
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const { data: todayCheckIn } = await supabase
+      .from('daily_checkins')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('check_in_date', today)
+      .single();
+
+    if (!todayCheckIn) {
+      setHasCheckedIn(false);
+      setShowQuickCheckIn(true);
+      return;
+    }
+
+    // Check validation mode
+    const validationMode = userProfile?.trade_validation_mode || 'manual';
+
+    if (validationMode === 'required') {
+      // Required mode: must validate before submitting
+      toast.info("Validation required before logging trade");
+      await handleRiskCheckAndValidate(true);
+      return;
+    }
+
+    if (validationMode === 'auto') {
+      // Auto mode: validate automatically if enough credits
+      const minCredits = userProfile?.validation_min_credits_threshold || 5;
+      const currentCredits = userProfile?.ai_credits || 0;
+
+      if (currentCredits >= minCredits) {
+        await handleRiskCheckAndValidate(true);
         return;
+      } else {
+        toast.error(`Auto-validation requires at least ${minCredits} credits. You have ${currentCredits}.`);
       }
     }
-    
-    // Auto-trigger validation for high/medium risk trades
-    if (preTradeRisk === 'high' || (preTradeRisk === 'medium' && Math.random() > 0.5)) {
-      await handleValidate();
-    } else {
-      await submitTrade();
+
+    // Manual mode or insufficient credits: perform risk check
+    const { performLocalRiskCheck } = await import("@/utils/localRiskCheck");
+    const riskCheck = await performLocalRiskCheck(userId, {
+      pair: formData.pair,
+      direction: formData.direction,
+      emotion: formData.emotion_before,
+    });
+
+    setRiskCheckResult(riskCheck);
+
+    // Show risk warning if high risk detected
+    if (riskCheck.hasWarnings && riskCheck.riskScore >= 50) {
+      setShowRiskWarning(true);
+      return;
     }
+
+    await submitTrade();
   };
 
   const submitTrade = async () => {
+    if (!userId) {
+      toast.error("You must be logged in");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
       const { data: { session } } = await supabase.auth.getSession();
 
       let screenshotUrls: string[] = [];
@@ -208,7 +296,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
       if (screenshots.length > 0) {
         for (const screenshot of screenshots) {
           const fileExt = screenshot.name.split('.').pop();
-          const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+          const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
           
           const { error: uploadError } = await supabase.storage
             .from('trade-screenshots')
@@ -236,7 +324,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
       }
 
       const tradeData = {
-        user_id: user.id,
+        user_id: userId,
         pair: formData.pair,
         direction: formData.direction,
         entry_price: parseFloat(formData.entry_price),
@@ -262,7 +350,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
       if (uploadedFiles.length > 0 && newTrade) {
         const screenshotMetadata = uploadedFiles.map((f) => ({
           trade_id: newTrade.id,
-          user_id: user.id,
+          user_id: userId,
           storage_path: f.path,
           file_name: f.name,
           file_size: f.size,
@@ -310,11 +398,11 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
       setScreenshots([]);
       setScreenshotPreviews([]);
       
-      await updateStreak(user.id, 'trade_journal');
-      await checkTradeAchievements(user.id);
+      await updateStreak(userId, 'trade_journal');
+      await checkTradeAchievements(userId);
       
       // Award credit for logging trade
-      await awardCredits(user.id, 'trade_logged', CREDIT_REWARDS.trade_logged, 'Logged a new trade');
+      await awardCredits(userId, 'trade_logged', CREDIT_REWARDS.trade_logged, 'Logged a new trade');
       
       onTradeAdded();
     } catch (error: any) {
@@ -573,12 +661,21 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={handleValidate} 
+                onClick={() => handleRiskCheckAndValidate(false)} 
                 disabled={isValidating || isLoading || !formData.pair || !formData.direction}
                 className="flex-1"
               >
-                <Shield className="w-4 h-4 mr-2" />
-                {isValidating ? "Validating..." : "Validate Trade"}
+                {isValidating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Validating...
+                  </>
+                ) : (
+                  <>
+                    <Shield className="w-4 h-4 mr-2" />
+                    Validate Trade
+                  </>
+                )}
               </Button>
               <Button type="submit" disabled={isLoading} className="flex-1">
                 {isLoading ? "Saving..." : "Log Trade"}
@@ -608,6 +705,61 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
         }}
         canSnooze={false}
       />
+
+      {/* Risk Warning Dialog */}
+      <Dialog open={showRiskWarning} onOpenChange={setShowRiskWarning}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" />
+              Risk Warning
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Our analysis detected potential risk factors for this trade:
+            </p>
+            <div className="space-y-2">
+              {riskCheckResult?.warnings.map((warning: string, idx: number) => (
+                <div key={idx} className="flex items-start gap-2 p-2 rounded-md bg-warning/10">
+                  <span className="text-sm">{warning}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-md bg-muted">
+              <span className="text-sm font-medium">Risk Score</span>
+              <span className={`text-lg font-bold ${
+                riskCheckResult?.riskScore >= 70 ? 'text-destructive' :
+                riskCheckResult?.riskScore >= 50 ? 'text-warning' :
+                'text-success'
+              }`}>
+                {riskCheckResult?.riskScore}/100
+              </span>
+            </div>
+          </div>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRiskWarning(false);
+                handleRiskCheckAndValidate(true);
+              }}
+              className="gap-2"
+            >
+              <Shield className="h-4 w-4" />
+              Validate First (2 credits)
+            </Button>
+            <Button
+              onClick={() => {
+                setShowRiskWarning(false);
+                submitTrade();
+              }}
+            >
+              Proceed Anyway
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
