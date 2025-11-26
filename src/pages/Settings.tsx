@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Loader2, Crown, Zap, Mail, Bell, Clock } from "lucide-react";
+import { Loader2, Crown, Zap, Mail, Bell, Clock, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -710,6 +710,76 @@ const Settings = () => {
                   <li>• Snooze up to 3 times (1 hour each) when busy</li>
                 </ul>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Trade Validation Preferences */}
+          <Card className="border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Trade Validation Settings
+              </CardTitle>
+              <CardDescription>
+                Configure automatic trade validation behavior
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Validation Mode</Label>
+                <Select
+                  value={profile?.trade_validation_mode || 'manual'}
+                  onValueChange={async (value) => {
+                    try {
+                      const { error } = await supabase
+                        .from('profiles')
+                        .update({ trade_validation_mode: value })
+                        .eq('id', profile?.id);
+                      if (error) throw error;
+                      setProfile({ ...profile, trade_validation_mode: value });
+                      toast.success("Validation mode updated");
+                    } catch (error: any) {
+                      toast.error("Failed to update validation mode");
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="manual">Manual - Validate when I choose</SelectItem>
+                    <SelectItem value="auto">Auto - Validate automatically (if credits available)</SelectItem>
+                    <SelectItem value="required">Required - Must validate every trade</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {profile?.trade_validation_mode === 'auto' && (
+                <div className="space-y-2">
+                  <Label>Minimum Credits for Auto-Validation</Label>
+                  <Input
+                    type="number"
+                    min="2"
+                    value={profile?.validation_min_credits_threshold || 5}
+                    onChange={async (e) => {
+                      const value = parseInt(e.target.value);
+                      try {
+                        const { error } = await supabase
+                          .from('profiles')
+                          .update({ validation_min_credits_threshold: value })
+                          .eq('id', profile?.id);
+                        if (error) throw error;
+                        setProfile({ ...profile, validation_min_credits_threshold: value });
+                      } catch (error: any) {
+                        toast.error("Failed to update threshold");
+                      }
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Auto-validation will pause when credits fall below this threshold
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

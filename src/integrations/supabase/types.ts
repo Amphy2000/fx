@@ -3035,8 +3035,10 @@ export type Database = {
           telegram_chat_id: string | null
           telegram_notifications_enabled: boolean | null
           theme: string | null
+          trade_validation_mode: string | null
           trades_count: number | null
           updated_at: string | null
+          validation_min_credits_threshold: number | null
         }
         Insert: {
           ai_credits?: number | null
@@ -3072,8 +3074,10 @@ export type Database = {
           telegram_chat_id?: string | null
           telegram_notifications_enabled?: boolean | null
           theme?: string | null
+          trade_validation_mode?: string | null
           trades_count?: number | null
           updated_at?: string | null
+          validation_min_credits_threshold?: number | null
         }
         Update: {
           ai_credits?: number | null
@@ -3109,8 +3113,10 @@ export type Database = {
           telegram_chat_id?: string | null
           telegram_notifications_enabled?: boolean | null
           theme?: string | null
+          trade_validation_mode?: string | null
           trades_count?: number | null
           updated_at?: string | null
+          validation_min_credits_threshold?: number | null
         }
         Relationships: []
       }
