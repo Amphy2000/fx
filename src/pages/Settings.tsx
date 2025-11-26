@@ -8,9 +8,10 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Loader2, Crown, Zap, Mail } from "lucide-react";
+import { Loader2, Crown, Zap, Mail, Bell, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AvatarUpload } from "@/components/AvatarUpload";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -536,6 +537,179 @@ const Settings = () => {
                   )}
                 </Button>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Daily Check-In Reminders */}
+          <Card className="border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground flex items-center gap-2">
+                <Bell className="h-5 w-5" />
+                Daily Check-In Reminders
+              </CardTitle>
+              <CardDescription>
+                Automate reminders to complete your mental check-in before trading
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="text-foreground">Enable Daily Reminders</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Get reminded if you haven't checked in
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    checked={profile?.checkin_reminder_enabled ?? true}
+                    onCheckedChange={async (enabled) => {
+                      try {
+                        const { error } = await supabase
+                          .from('profiles')
+                          .update({ checkin_reminder_enabled: enabled })
+                          .eq('id', profile?.id);
+                        if (error) throw error;
+                        setProfile({ ...profile, checkin_reminder_enabled: enabled });
+                        toast.success(enabled ? "Check-in reminders enabled" : "Check-in reminders disabled");
+                      } catch (error: any) {
+                        toast.error("Failed to update reminders");
+                      }
+                    }}
+                  />
+                  <Label className="text-muted-foreground">
+                    {profile?.checkin_reminder_enabled ?? true ? "Enabled" : "Disabled"}
+                  </Label>
+                </div>
+              </div>
+
+              {profile?.checkin_reminder_enabled && (
+                <>
+                  <div className="space-y-3">
+                    <Label className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Reminder Time
+                    </Label>
+                    <Select
+                      value={profile?.checkin_reminder_time || '08:00:00'}
+                      onValueChange={async (time) => {
+                        try {
+                          const { error } = await supabase
+                            .from('profiles')
+                            .update({ checkin_reminder_time: time })
+                            .eq('id', profile?.id);
+                          if (error) throw error;
+                          setProfile({ ...profile, checkin_reminder_time: time });
+                          toast.success("Reminder time updated");
+                        } catch (error: any) {
+                          toast.error("Failed to update reminder time");
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="06:00:00">6:00 AM</SelectItem>
+                        <SelectItem value="07:00:00">7:00 AM</SelectItem>
+                        <SelectItem value="08:00:00">8:00 AM (Default)</SelectItem>
+                        <SelectItem value="09:00:00">9:00 AM</SelectItem>
+                        <SelectItem value="10:00:00">10:00 AM</SelectItem>
+                        <SelectItem value="12:00:00">12:00 PM</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label>Notification Channels</Label>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <span className="text-sm">In-App Notifications</span>
+                        <Switch
+                          checked={(profile?.checkin_reminder_channels || ['in_app']).includes('in_app')}
+                          onCheckedChange={async (enabled) => {
+                            try {
+                              const currentChannels = profile?.checkin_reminder_channels || ['in_app'];
+                              const newChannels = enabled
+                                ? [...new Set([...currentChannels, 'in_app'])]
+                                : currentChannels.filter((c: string) => c !== 'in_app');
+                              
+                              const { error } = await supabase
+                                .from('profiles')
+                                .update({ checkin_reminder_channels: newChannels })
+                                .eq('id', profile?.id);
+                              if (error) throw error;
+                              setProfile({ ...profile, checkin_reminder_channels: newChannels });
+                              toast.success("Notification preferences updated");
+                            } catch (error: any) {
+                              toast.error("Failed to update preferences");
+                            }
+                          }}
+                        />
+                      </div>
+                      {profile?.telegram_chat_id && (
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <span className="text-sm">Telegram</span>
+                          <Switch
+                            checked={(profile?.checkin_reminder_channels || []).includes('telegram')}
+                            onCheckedChange={async (enabled) => {
+                              try {
+                                const currentChannels = profile?.checkin_reminder_channels || ['in_app'];
+                                const newChannels = enabled
+                                  ? [...new Set([...currentChannels, 'telegram'])]
+                                  : currentChannels.filter((c: string) => c !== 'telegram');
+                                
+                                const { error } = await supabase
+                                  .from('profiles')
+                                  .update({ checkin_reminder_channels: newChannels })
+                                  .eq('id', profile?.id);
+                                if (error) throw error;
+                                setProfile({ ...profile, checkin_reminder_channels: newChannels });
+                                toast.success("Notification preferences updated");
+                              } catch (error: any) {
+                                toast.error("Failed to update preferences");
+                              }
+                            }}
+                          />
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <span className="text-sm">Email</span>
+                        <Switch
+                          checked={(profile?.checkin_reminder_channels || []).includes('email')}
+                          onCheckedChange={async (enabled) => {
+                            try {
+                              const currentChannels = profile?.checkin_reminder_channels || ['in_app'];
+                              const newChannels = enabled
+                                ? [...new Set([...currentChannels, 'email'])]
+                                : currentChannels.filter((c: string) => c !== 'email');
+                              
+                              const { error } = await supabase
+                                .from('profiles')
+                                .update({ checkin_reminder_channels: newChannels })
+                                .eq('id', profile?.id);
+                              if (error) throw error;
+                              setProfile({ ...profile, checkin_reminder_channels: newChannels });
+                              toast.success("Notification preferences updated");
+                            } catch (error: any) {
+                              toast.error("Failed to update preferences");
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                <p className="text-sm text-foreground/90 mb-2">🎯 How it works:</p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>• Dashboard shows check-in modal if you haven't completed it today</li>
+                  <li>• Trade form requires check-in before logging trades</li>
+                  <li>• Get reminders at your preferred time via your chosen channels</li>
+                  <li>• Snooze up to 3 times (1 hour each) when busy</li>
+                </ul>
+              </div>
             </CardContent>
           </Card>
 

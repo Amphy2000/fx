@@ -3004,6 +3004,10 @@ export type Database = {
         Row: {
           ai_credits: number | null
           avatar_url: string | null
+          avg_first_trade_hour: number | null
+          checkin_reminder_channels: string[] | null
+          checkin_reminder_enabled: boolean | null
+          checkin_reminder_time: string | null
           consent_date: string | null
           created_at: string | null
           credits_reset_date: string | null
@@ -3037,6 +3041,10 @@ export type Database = {
         Insert: {
           ai_credits?: number | null
           avatar_url?: string | null
+          avg_first_trade_hour?: number | null
+          checkin_reminder_channels?: string[] | null
+          checkin_reminder_enabled?: boolean | null
+          checkin_reminder_time?: string | null
           consent_date?: string | null
           created_at?: string | null
           credits_reset_date?: string | null
@@ -3070,6 +3078,10 @@ export type Database = {
         Update: {
           ai_credits?: number | null
           avatar_url?: string | null
+          avg_first_trade_hour?: number | null
+          checkin_reminder_channels?: string[] | null
+          checkin_reminder_enabled?: boolean | null
+          checkin_reminder_time?: string | null
           consent_date?: string | null
           created_at?: string | null
           credits_reset_date?: string | null

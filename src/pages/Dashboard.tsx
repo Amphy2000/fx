@@ -34,6 +34,8 @@ import { PsychologyFirstBanner } from "@/components/PsychologyFirstBanner";
 import { SubscriptionBanner } from "@/components/SubscriptionBanner";
 import { FeatureUsageCard } from "@/components/FeatureUsageCard";
 import { ShareToTwitterButton } from "@/components/ShareToTwitterButton";
+import { QuickCheckInModal } from "@/components/QuickCheckInModal";
+import { format } from "date-fns";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -44,6 +46,7 @@ const Dashboard = () => {
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [mt5Accounts, setMt5Accounts] = useState<any[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+  const [showQuickCheckIn, setShowQuickCheckIn] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -103,6 +106,7 @@ const Dashboard = () => {
       fetchProfile(session.user.id);
       fetchTrades(session.user.id);
       fetchMT5Accounts(session.user.id);
+      checkDailyCheckIn(session.user.id);
     });
     const {
       data: {
@@ -116,6 +120,33 @@ const Dashboard = () => {
       subscription.unsubscribe();
     };
   }, [navigate]);
+
+  const checkDailyCheckIn = async (userId: string) => {
+    // Check if user has snoozed
+    const snoozeUntil = localStorage.getItem('checkin_snooze_until');
+    if (snoozeUntil && Date.now() < parseInt(snoozeUntil)) {
+      return; // Still snoozed
+    }
+
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const { data } = await supabase
+      .from('daily_checkins')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('check_in_date', today)
+      .single();
+
+    if (!data) {
+      // No check-in today, show modal after a short delay
+      setTimeout(() => {
+        setShowQuickCheckIn(true);
+      }, 1500);
+    } else {
+      // Reset snooze count when check-in is complete
+      localStorage.removeItem('checkin_snooze_count');
+      localStorage.removeItem('checkin_snooze_until');
+    }
+  };
   const fetchProfile = async (userId: string) => {
     const {
       data
@@ -430,6 +461,15 @@ const Dashboard = () => {
           <MilestoneNotification trades={trades} userId={user.id} />
           <GamificationOverlay />
           <ExportDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} />
+          <QuickCheckInModal
+            open={showQuickCheckIn}
+            onOpenChange={setShowQuickCheckIn}
+            onComplete={() => {
+              localStorage.removeItem('checkin_snooze_count');
+              localStorage.removeItem('checkin_snooze_until');
+            }}
+            canSnooze={true}
+          />
         </>}
     </Layout>;
 };
