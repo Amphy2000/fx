@@ -33,6 +33,7 @@ import { ValidationInsights } from "@/components/ValidationInsights";
 import { PsychologyFirstBanner } from "@/components/PsychologyFirstBanner";
 import { SubscriptionBanner } from "@/components/SubscriptionBanner";
 import { FeatureUsageCard } from "@/components/FeatureUsageCard";
+import { ShareToTwitterButton } from "@/components/ShareToTwitterButton";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -233,6 +234,15 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <ShareToTwitterButton 
+                stats={{
+                  totalTrades: stats.totalTrades,
+                  winRate: stats.winRate,
+                  totalPnL: stats.totalPnL,
+                  profitFactor: stats.profitFactor
+                }}
+                type="dashboard"
+              />
               <Button variant="outline" size="sm" onClick={() => setExportDialogOpen(true)} className="text-xs md:text-sm">
                 <FileDown className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                 Export

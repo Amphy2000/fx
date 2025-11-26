@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { CreditsGuard } from "@/components/CreditsGuard";
 import { CREDIT_COSTS } from "@/utils/creditManager";
 import { Badge } from "@/components/ui/badge";
+import { ShareToTwitterButton } from "@/components/ShareToTwitterButton";
 
 const WeeklySummary = () => {
   const navigate = useNavigate();
@@ -81,10 +82,24 @@ const WeeklySummary = () => {
                 {partnerId ? `${partnerName}'s performance over the last 7 days` : "Your performance over the last 7 days"}
               </p>
             </div>
-            <Badge variant="outline" className="gap-1 bg-primary/10 text-primary border-primary/20">
-              <Sparkles className="h-3 w-3" />
-              {CREDIT_COSTS.weekly_summary} credits
-            </Badge>
+            <div className="flex items-center gap-2">
+              {!partnerId && stats && (
+                <ShareToTwitterButton 
+                  stats={{
+                    totalTrades: stats.totalTrades,
+                    winRate: stats.winRate,
+                    wins: stats.wins,
+                    losses: stats.totalTrades - stats.wins,
+                    mostTradedPair: stats.mostTradedPair
+                  }}
+                  type="weekly"
+                />
+              )}
+              <Badge variant="outline" className="gap-1 bg-primary/10 text-primary border-primary/20">
+                <Sparkles className="h-3 w-3" />
+                {CREDIT_COSTS.weekly_summary} credits
+              </Badge>
+            </div>
           </div>
 
         {stats && (
