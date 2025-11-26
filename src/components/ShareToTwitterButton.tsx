@@ -23,7 +23,7 @@ export function ShareToTwitterButton({
   size = "sm" 
 }: ShareToTwitterButtonProps) {
   const formatTweet = () => {
-    const baseUrl = window.location.origin;
+    const baseUrl = "https://fx.lovable.app";
     
     if (type === "weekly") {
       return `📊 My Weekly Trading Report\n\n` +
