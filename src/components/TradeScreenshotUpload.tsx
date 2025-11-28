@@ -57,12 +57,21 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
     try {
       setUploading(true);
 
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => setPreview(e.target?.result as string);
-      reader.readAsDataURL(file);
+      // Read file as base64 for AI extraction AND create preview
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          setPreview(result);
+          resolve(result);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
 
-      // Upload to Supabase Storage
+      const base64Image = await base64Promise;
+
+      // Upload to Supabase Storage for permanent storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random()}.${fileExt}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -71,7 +80,7 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
+      // Get public URL for storage reference
       const { data: { publicUrl } } = supabase.storage
         .from('trade-screenshots')
         .getPublicUrl(fileName);
@@ -80,9 +89,9 @@ export const TradeScreenshotUpload = ({ onDataExtracted }: { onDataExtracted: (d
       setUploading(false);
       setExtracting(true);
 
-      // Call AI extraction function
+      // Call AI extraction function with base64 image (more reliable than URL)
       const { data, error } = await supabase.functions.invoke('extract-trade-data', {
-        body: { imageUrl: publicUrl }
+        body: { image: base64Image }
       });
 
       if (error) {

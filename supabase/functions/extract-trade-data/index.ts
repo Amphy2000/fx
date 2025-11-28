@@ -72,12 +72,30 @@ serve(async (req) => {
       });
     }
 
-    const { imageUrl } = await req.json();
+    const body = await req.json();
+    const { image, imageUrl } = body;
+    
+    // Support both base64 image and URL formats
+    const imageData = image || imageUrl;
+    
+    if (!imageData) {
+      console.error('No image provided in request');
+      return new Response(JSON.stringify({ error: 'No image provided' }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    
+    const isBase64 = imageData.startsWith('data:');
+    console.log('Processing image:', isBase64 ? 'base64 data' : imageData.substring(0, 100) + '...');
+    
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
+
+    console.log('Calling AI gateway...');
 
     // Use vision + structured output for extraction
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -213,7 +231,7 @@ SHORT/SELL Identification (Check ALL markers):
             {
               type: 'image_url',
               image_url: {
-                url: imageUrl
+                url: imageData
               }
             }
           ]
@@ -317,31 +335,47 @@ SHORT/SELL Identification (Check ALL markers):
       }),
     });
 
+    console.log('AI gateway response status:', response.status);
+
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('AI gateway error response:', response.status, errorText);
+      
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limits exceeded" }), {
+        return new Response(JSON.stringify({ error: "Rate limits exceeded. Please try again later." }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required" }), {
-          status: 402,
+        return new Response(JSON.stringify({ error: "AI service temporarily unavailable. Please try again." }), {
+          status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error("AI gateway error");
+      throw new Error(`AI gateway error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
+    console.log('AI gateway response received successfully');
+    
     const toolCall = data.choices[0].message.tool_calls?.[0];
     const extractedData = toolCall ? JSON.parse(toolCall.function.arguments) : null;
+    
+    if (!extractedData) {
+      console.error('No extracted data from AI response');
+      throw new Error('Failed to extract trade data from image');
+    }
+    
+    console.log('Extracted data:', JSON.stringify(extractedData).substring(0, 200));
     
     // Deduct credits
     await supabaseAdmin
       .from('profiles')
       .update({ ai_credits: profile.ai_credits - EXTRACTION_COST })
       .eq('id', user.id);
+
+    console.log('Credits deducted successfully');
 
     return new Response(JSON.stringify({ 
       extracted_data: extractedData,
