@@ -32,14 +32,17 @@ serve(async (req) => {
       });
     }
 
-    // Check AI credits
+    // Check AI credits and subscription tier
     const { data: profile } = await supabaseClient
       .from('profiles')
-      .select('ai_credits')
+      .select('ai_credits, subscription_tier')
       .eq('id', user.id)
       .single();
 
-    if (!profile || profile.ai_credits < VALIDATION_CREDIT_COST) {
+    // Premium users (pro, lifetime, monthly) get UNLIMITED AI features - no credit check
+    const isPremium = profile?.subscription_tier && ['pro', 'lifetime', 'monthly'].includes(profile.subscription_tier);
+
+    if (!isPremium && (!profile || profile.ai_credits < VALIDATION_CREDIT_COST)) {
       return new Response(
         JSON.stringify({ 
           error: 'Insufficient AI credits',
@@ -176,11 +179,15 @@ Provide a single, concise insight (max 2 sentences) about whether the trader sho
       }
     }
 
-    // Deduct credits
-    await supabaseClient
-      .from('profiles')
-      .update({ ai_credits: profile.ai_credits - VALIDATION_CREDIT_COST })
-      .eq('id', user.id);
+    // Only deduct credits for FREE users
+    let creditsRemaining = profile?.ai_credits || 0;
+    if (!isPremium) {
+      await supabaseClient
+        .from('profiles')
+        .update({ ai_credits: profile.ai_credits - VALIDATION_CREDIT_COST })
+        .eq('id', user.id);
+      creditsRemaining = profile.ai_credits - VALIDATION_CREDIT_COST;
+    }
 
     // Log the interception
     const { data: interception } = await supabaseClient
@@ -207,7 +214,7 @@ Provide a single, concise insight (max 2 sentences) about whether the trader sho
         similar_trades_count: totalTrades,
         win_rate: winRate.toFixed(1),
         ai_insight: aiInsight,
-        credits_remaining: profile.ai_credits - VALIDATION_CREDIT_COST
+        credits_remaining: isPremium ? 'unlimited' : creditsRemaining
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
