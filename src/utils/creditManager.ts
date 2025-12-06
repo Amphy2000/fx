@@ -74,7 +74,7 @@ export async function awardCredits(
 export async function deductCredits(
   userId: string,
   cost: number
-): Promise<{ success: boolean; error?: string; newBalance?: number }> {
+): Promise<{ success: boolean; error?: string; newBalance?: number; isPremium?: boolean }> {
   try {
     // Get current balance
     const { data: profile, error: fetchError } = await supabase
@@ -85,12 +85,14 @@ export async function deductCredits(
 
     if (fetchError) throw fetchError;
 
-    // Check tier - lifetime has unlimited credits
-    if (profile.subscription_tier === 'lifetime') {
-      return { success: true, newBalance: 999999 };
+    // Premium users (pro, lifetime, monthly) get UNLIMITED AI features - no deduction
+    const isPremium = profile.subscription_tier && ['pro', 'lifetime', 'monthly'].includes(profile.subscription_tier);
+    
+    if (isPremium) {
+      return { success: true, newBalance: 999999, isPremium: true };
     }
 
-    // Check if sufficient credits
+    // Check if sufficient credits for free users
     if ((profile.ai_credits || 0) < cost) {
       return { 
         success: false, 
@@ -98,7 +100,7 @@ export async function deductCredits(
       };
     }
 
-    // Deduct credits
+    // Deduct credits only for free users
     const newBalance = (profile.ai_credits || 0) - cost;
     const { error: updateError } = await supabase
       .from('profiles')
@@ -107,7 +109,7 @@ export async function deductCredits(
 
     if (updateError) throw updateError;
 
-    return { success: true, newBalance };
+    return { success: true, newBalance, isPremium: false };
   } catch (error) {
     console.error('Error deducting credits:', error);
     return { success: false, error: (error as Error).message };
@@ -130,8 +132,9 @@ export async function hasEnoughCredits(
 
     if (!profile) return false;
 
-    // Lifetime users have unlimited credits
-    if (profile.subscription_tier === 'lifetime') return true;
+    // Premium users (pro, lifetime, monthly) have unlimited credits
+    const isPremium = profile.subscription_tier && ['pro', 'lifetime', 'monthly'].includes(profile.subscription_tier);
+    if (isPremium) return true;
 
     return (profile.ai_credits || 0) >= cost;
   } catch (error) {

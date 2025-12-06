@@ -39,6 +39,44 @@ export const CreditDisplay = () => {
 
   if (credits === null) return null;
 
+  // Premium users show "Unlimited" badge
+  const isPremium = tier && ['pro', 'lifetime', 'monthly'].includes(tier);
+  
+  if (isPremium) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/pricing')}
+              className="gap-2 text-primary"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span className="font-semibold">∞</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <div className="space-y-2 p-2">
+              <p className="font-semibold text-primary">⚡ Unlimited AI Credits</p>
+              <p className="text-xs text-muted-foreground">
+                As a {tier === 'lifetime' ? 'Lifetime' : 'Pro'} member, you have unlimited access to all AI features:
+              </p>
+              <div className="space-y-1 text-xs text-muted-foreground">
+                <div>• Trade Validation</div>
+                <div>• AI Coach & Assistant</div>
+                <div>• Weekly AI Summaries</div>
+                <div>• Pattern Recognition</div>
+                <div>• Setup Analysis</div>
+              </div>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
   const isLow = credits < 10;
   const isCritical = credits < 5;
 
@@ -64,14 +102,17 @@ export const CreditDisplay = () => {
               <div>• Check-in Analysis: 2 credits</div>
               <div>• Trade Validation: 2 credits</div>
               <div>• Trade Analysis: 5 credits</div>
-              <div>• AI Coach Chat: 5 credits/msg</div>
+              <div>• AI Coach Chat: 3 credits/msg</div>
               <div>• Weekly Summary: 10 credits</div>
             </div>
             {isLow && (
               <p className="text-xs text-yellow-600 dark:text-yellow-500 pt-2 border-t">
-                ⚠️ Low credits! Upgrade for unlimited AI features.
+                ⚠️ Low credits! Upgrade for UNLIMITED AI features.
               </p>
             )}
+            <p className="text-xs text-primary pt-1">
+              💎 Pro/Lifetime = Unlimited AI
+            </p>
           </div>
         </TooltipContent>
       </Tooltip>

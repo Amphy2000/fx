@@ -24,13 +24,14 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 });
     }
 
-    // Credits check (shared with other AI tools) - ensure profile exists
+    // Credits check - ensure profile exists
     let profilePersisted = true;
     let profileCredits = 0;
+    let subscriptionTier = 'free';
 
     const { data: profileRow, error: profileError } = await supabase
       .from('profiles')
-      .select('ai_credits')
+      .select('ai_credits, subscription_tier')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -45,11 +46,12 @@ serve(async (req) => {
         const { data: created, error: createErr } = await supabase
           .from('profiles')
           .insert({ id: user.id, ai_credits: 50 })
-          .select('ai_credits')
+          .select('ai_credits, subscription_tier')
           .single();
         if (!createErr && created) {
           profilePersisted = true;
           profileCredits = created.ai_credits ?? 50;
+          subscriptionTier = created.subscription_tier ?? 'free';
         } else if (createErr) {
           console.error('ai-coach profile create error:', createErr);
         }
@@ -58,10 +60,14 @@ serve(async (req) => {
       }
     } else {
       profileCredits = profileRow.ai_credits ?? 0;
+      subscriptionTier = profileRow.subscription_tier ?? 'free';
     }
 
+    // Premium users (pro, lifetime, monthly) get UNLIMITED AI features
+    const isPremium = ['pro', 'lifetime', 'monthly'].includes(subscriptionTier);
+    
     const COACH_COST = 3;
-    if (profileCredits < COACH_COST) {
+    if (!isPremium && profileCredits < COACH_COST) {
       return new Response(JSON.stringify({ error: 'Insufficient credits' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 402 });
     }
 
@@ -153,13 +159,15 @@ Format the output EXACTLY as:
       return new Response(JSON.stringify({ ok: false, error: 'Empty report', fallback: 'AI Trade Coach is temporarily unavailable. Please try again later.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
     }
 
-    // Deduct credits
-    if (profilePersisted) {
+    // Only deduct credits for FREE users
+    let creditsRemaining = profileCredits;
+    if (!isPremium && profilePersisted) {
       const { error: creditError } = await supabase.from('profiles').update({ ai_credits: profileCredits - COACH_COST }).eq('id', user.id);
       if (creditError) console.error('ai-coach credit deduction error:', creditError);
+      creditsRemaining = profileCredits - COACH_COST;
     }
 
-    return new Response(JSON.stringify({ report, credits_remaining: profileCredits - COACH_COST }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ report, credits_remaining: isPremium ? 'unlimited' : creditsRemaining }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
     console.error('ai-coach error:', e);
     return new Response(JSON.stringify({ ok: false, error: e instanceof Error ? e.message : 'Unknown error', fallback: 'AI Trade Coach is temporarily unavailable. Please try again in a few minutes.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });

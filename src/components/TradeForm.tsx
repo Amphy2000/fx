@@ -682,7 +682,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
               </Button>
             </div>
             <p className="text-xs text-center text-muted-foreground">
-              💎 Trade validation costs 2 AI credits
+              💎 Trade validation: Free for Pro/Lifetime • 2 credits for Free tier
             </p>
           </form>
         </CardContent>
