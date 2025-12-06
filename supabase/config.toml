@@ -118,7 +118,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.send-test-email]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-email-campaign]
 verify_jwt = true
