@@ -35,6 +35,8 @@ import { SubscriptionBanner } from "@/components/SubscriptionBanner";
 import { FeatureUsageCard } from "@/components/FeatureUsageCard";
 import { ShareToTwitterButton } from "@/components/ShareToTwitterButton";
 import { QuickCheckInModal } from "@/components/QuickCheckInModal";
+import { QuickTradeCapture } from "@/components/QuickTradeCapture";
+import { DrawdownRecoveryBanner } from "@/components/DrawdownRecoveryBanner";
 import { format } from "date-fns";
 
 const Dashboard = () => {
@@ -401,6 +403,7 @@ const Dashboard = () => {
             className="touch-pan-y w-full"
           >
             <TabsContent value="overview" className="space-y-4 md:space-y-6 mt-4 md:mt-6 animate-fade-in w-full">
+              {user && <DrawdownRecoveryBanner userId={user.id} trades={trades} />}
               {profile && <SubscriptionBanner profile={profile} />}
               <PsychologyFirstBanner />
               <FreeTierLimitWarning />
@@ -471,6 +474,7 @@ const Dashboard = () => {
             canSnooze={true}
           />
         </>}
+      <QuickTradeCapture onTradeAdded={handleTradeAdded} />
     </Layout>;
 };
 export default Dashboard;
