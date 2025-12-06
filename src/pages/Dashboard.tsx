@@ -37,6 +37,7 @@ import { ShareToTwitterButton } from "@/components/ShareToTwitterButton";
 import { QuickCheckInModal } from "@/components/QuickCheckInModal";
 import { QuickTradeCapture } from "@/components/QuickTradeCapture";
 import { DrawdownRecoveryBanner } from "@/components/DrawdownRecoveryBanner";
+import { FreeVoiceMemo } from "@/components/FreeVoiceMemo";
 import { format } from "date-fns";
 
 const Dashboard = () => {
@@ -431,21 +432,24 @@ const Dashboard = () => {
             </TabsContent>
 
             <TabsContent value="trades" className="space-y-4 md:space-y-6 mt-4 md:mt-6 animate-fade-in w-full">
-              <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
-                <CardContent className="p-6 text-center space-y-4">
-                  <Brain className="h-12 w-12 mx-auto text-primary" />
-                  <div>
-                    <h3 className="text-xl font-semibold mb-2">AI-Powered Trade Logging</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Log trades faster with Voice or Screenshot AI - no manual forms needed!
-                    </p>
-                  </div>
-                  <Button onClick={() => navigate("/ai-features")} size="lg" className="gap-2">
-                    <Brain className="h-4 w-4" />
-                    Go to AI Features
-                  </Button>
-                </CardContent>
-              </Card>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+                  <CardContent className="p-6 text-center space-y-4">
+                    <Brain className="h-12 w-12 mx-auto text-primary" />
+                    <div>
+                      <h3 className="text-xl font-semibold mb-2">AI-Powered Trade Logging</h3>
+                      <p className="text-muted-foreground mb-4">
+                        Log trades faster with Voice or Screenshot AI - no manual forms needed!
+                      </p>
+                    </div>
+                    <Button onClick={() => navigate("/ai-features")} size="lg" className="gap-2">
+                      <Brain className="h-4 w-4" />
+                      Go to AI Features
+                    </Button>
+                  </CardContent>
+                </Card>
+                <FreeVoiceMemo onMemoSaved={() => toast({ title: "Memo saved!", description: "Your voice note has been recorded." })} />
+              </div>
               <TradesList trades={trades} onTradeDeleted={handleTradeAdded} />
             </TabsContent>
 
