@@ -3018,6 +3018,7 @@ export type Database = {
           email_notifications_enabled: boolean | null
           full_name: string | null
           id: string
+          is_in_recovery_mode: boolean | null
           last_credit_check: string | null
           last_login_ip: string | null
           last_manual_upload_at: string | null
@@ -3027,6 +3028,7 @@ export type Database = {
           monthly_trade_limit: number | null
           onboarding_completed: boolean | null
           onboarding_step: number | null
+          recovery_mode_started_at: string | null
           signup_fingerprint: string | null
           signup_ip_address: string | null
           subscription_expires_at: string | null
@@ -3057,6 +3059,7 @@ export type Database = {
           email_notifications_enabled?: boolean | null
           full_name?: string | null
           id: string
+          is_in_recovery_mode?: boolean | null
           last_credit_check?: string | null
           last_login_ip?: string | null
           last_manual_upload_at?: string | null
@@ -3066,6 +3069,7 @@ export type Database = {
           monthly_trade_limit?: number | null
           onboarding_completed?: boolean | null
           onboarding_step?: number | null
+          recovery_mode_started_at?: string | null
           signup_fingerprint?: string | null
           signup_ip_address?: string | null
           subscription_expires_at?: string | null
@@ -3096,6 +3100,7 @@ export type Database = {
           email_notifications_enabled?: boolean | null
           full_name?: string | null
           id?: string
+          is_in_recovery_mode?: boolean | null
           last_credit_check?: string | null
           last_login_ip?: string | null
           last_manual_upload_at?: string | null
@@ -3105,6 +3110,7 @@ export type Database = {
           monthly_trade_limit?: number | null
           onboarding_completed?: boolean | null
           onboarding_step?: number | null
+          recovery_mode_started_at?: string | null
           signup_fingerprint?: string | null
           signup_ip_address?: string | null
           subscription_expires_at?: string | null
@@ -4116,6 +4122,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      voice_memos: {
+        Row: {
+          created_at: string
+          duration: number
+          id: string
+          storage_path: string
+          trade_id: string | null
+          transcript: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration?: number
+          id?: string
+          storage_path: string
+          trade_id?: string | null
+          transcript?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration?: number
+          id?: string
+          storage_path?: string
+          trade_id?: string | null
+          transcript?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_memos_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
