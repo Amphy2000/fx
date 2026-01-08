@@ -6,262 +6,154 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+
+async function checkCache(supabase: any, cacheKey: string): Promise<any | null> {
+  try {
+    const { data } = await supabase.from("ai_response_cache").select("response, expires_at").eq("cache_key", cacheKey).single();
+    if (data && new Date(data.expires_at) > new Date()) return data.response;
+    return null;
+  } catch { return null; }
+}
+
+async function storeCache(supabase: any, cacheKey: string, response: any, ttlMinutes: number): Promise<void> {
+  try {
+    const expiresAt = new Date(Date.now() + ttlMinutes * 60 * 1000).toISOString();
+    await supabase.from("ai_response_cache").upsert({ cache_key: cacheKey, response, expires_at: expiresAt }, { onConflict: "cache_key" });
+  } catch (e) { console.error("Cache error:", e); }
+}
+
+async function callGemini(prompt: string, systemPrompt: string, apiKey: string): Promise<string> {
+  const contents = [
+    { role: "user", parts: [{ text: `Instructions: ${systemPrompt}` }] },
+    { role: "model", parts: [{ text: "Understood." }] },
+    { role: "user", parts: [{ text: prompt }] },
+  ];
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const response = await fetch(`${GEMINI_API_URL}/gemini-2.0-flash-lite:generateContent?key=${apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents, generationConfig: { temperature: 0.7, maxOutputTokens: 512 } }),
+      });
+
+      if (response.status === 429) {
+        await new Promise(r => setTimeout(r, Math.pow(2, attempt) * 10000));
+        continue;
+      }
+      if (!response.ok) throw new Error(`Gemini: ${response.status}`);
+
+      const data = await response.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    } catch (error) {
+      console.error(`Attempt ${attempt + 1} failed:`, error);
+      if (attempt < 2) await new Promise(r => setTimeout(r, 5000));
+    }
   }
+  throw new Error("Gemini unavailable");
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
     const authHeader = req.headers.get('Authorization');
-    
     if (!authHeader) {
-      return new Response(JSON.stringify({ 
-        error: "Oops! Our AI is feeling sleepy 😴. Please try logging in again!" 
-      }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(JSON.stringify({ error: "Please log in" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') ?? '', { global: { headers: { Authorization: authHeader } } });
+    const serviceClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !user) {
-      console.error("Auth error:", userError);
-      return new Response(JSON.stringify({ 
-        error: "Oops! Our AI is feeling sleepy 😴. Please try logging in again!" 
-      }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(JSON.stringify({ error: "Please log in" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Check credits (cost: 10 credits)
-    const { data: profile } = await supabaseClient
-      .from('profiles')
-      .select('ai_credits, subscription_tier')
-      .eq('id', user.id)
-      .single();
-      
-    const SUMMARY_COST = 10;
-    if (!profile || profile.ai_credits < SUMMARY_COST) {
-      return new Response(JSON.stringify({ 
-        error: 'Insufficient credits',
-        required: SUMMARY_COST,
-        available: profile?.ai_credits || 0,
-        message: 'You need more AI credits. Upgrade to get more!'
-      }), {
-        status: 402,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Check daily limit
+    const { data: profile } = await supabaseClient.from('profiles').select('subscription_tier, daily_ai_requests, last_ai_reset_date').eq('id', user.id).single();
+    const today = new Date().toISOString().split('T')[0];
+    let dailyRequests = profile?.daily_ai_requests || 0;
+    if (profile?.last_ai_reset_date !== today) dailyRequests = 0;
+
+    const isPremium = ['pro', 'lifetime', 'monthly'].includes(profile?.subscription_tier || 'free');
+    const dailyLimit = isPremium ? 100 : 10;
+
+    if (dailyRequests >= dailyLimit) {
+      return new Response(JSON.stringify({ error: 'Daily AI limit reached' }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Get trades from the last 7 days
+    // Get trades from last 7 days
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    // Check if user has MT5 accounts
-    const { data: mt5Accounts } = await supabaseClient
-      .from('mt5_accounts')
-      .select('id, account_name, broker_name')
-      .eq('user_id', user.id)
-      .eq('is_active', true);
-
-    const { data: trades, error } = await supabaseClient
-      .from('trades')
-      .select('*')
-      .eq('user_id', user.id)
-      .gte('created_at', sevenDaysAgo.toISOString())
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error("Trade fetch error:", error);
-      return new Response(JSON.stringify({ 
-        error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const { data: trades } = await supabaseClient.from('trades').select('*').eq('user_id', user.id).gte('created_at', sevenDaysAgo.toISOString()).order('created_at', { ascending: false });
 
     if (!trades || trades.length === 0) {
-      const hasMT5 = mt5Accounts && mt5Accounts.length > 0;
-      return new Response(JSON.stringify({ 
-        summary: hasMT5 
-          ? "No trades synced from your MT5 account this week. Make sure auto-sync is enabled in Integrations."
-          : "No trades recorded this week. Connect your MT5 account or manually log trades to get AI insights!",
-        stats: {
-          totalTrades: 0,
-          winRate: 0,
-          wins: 0,
-          losses: 0,
-          mostTradedPair: "N/A"
-        }
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(JSON.stringify({ summary: "No trades this week. Log some trades to get AI insights!", stats: { totalTrades: 0, winRate: 0, wins: 0, losses: 0, mostTradedPair: "N/A" } }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Cache key for weekly summary
+    const cacheKey = `weekly_${user.id}_${today}_${trades.length}`;
+    const cached = await checkCache(serviceClient, cacheKey);
+    if (cached?.summary) {
+      console.log("Returning cached weekly summary");
+      return new Response(JSON.stringify({ ...cached, cached: true, daily_requests_remaining: dailyLimit - dailyRequests }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Calculate statistics
     const wins = trades.filter(t => t.result === 'win').length;
     const losses = trades.filter(t => t.result === 'loss').length;
     const winRate = trades.length > 0 ? Math.round((wins / trades.length) * 100) : 0;
-    
+
     const pairCounts: Record<string, number> = {};
-    trades.forEach(t => {
-      pairCounts[t.pair] = (pairCounts[t.pair] || 0) + 1;
-    });
-    const mostTradedPair = Object.entries(pairCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
-
-    const emotionCounts: Record<string, number> = {};
-    const emotionWins: Record<string, { wins: number; total: number }> = {};
-    const lossEmotions: Record<string, number> = {};
-    
-    trades.forEach(t => {
-      if (t.emotion_before) {
-        emotionCounts[t.emotion_before] = (emotionCounts[t.emotion_before] || 0) + 1;
-        
-        if (!emotionWins[t.emotion_before]) {
-          emotionWins[t.emotion_before] = { wins: 0, total: 0 };
-        }
-        emotionWins[t.emotion_before].total++;
-        
-        if (t.result === 'win') {
-          emotionWins[t.emotion_before].wins++;
-        } else if (t.result === 'loss') {
-          lossEmotions[t.emotion_before] = (lossEmotions[t.emotion_before] || 0) + 1;
-        }
-      }
-    });
-
-    const mostCommonEmotion = Object.entries(emotionCounts).sort((a, b) => b[1] - a[1])[0];
-    const lossEmotion = Object.entries(lossEmotions).sort((a, b) => b[1] - a[1])[0];
-    const bestEmotion = Object.entries(emotionWins)
-      .map(([emotion, stats]) => ({
-        emotion,
-        winRate: (stats.wins / stats.total) * 100
-      }))
-      .sort((a, b) => b.winRate - a.winRate)[0];
+    trades.forEach(t => { pairCounts[t.pair] = (pairCounts[t.pair] || 0) + 1; });
+    const mostTradedPair = Object.entries(pairCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
 
     const totalPL = trades.reduce((sum, t) => sum + (Number(t.profit_loss) || 0), 0);
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY not configured");
-      return new Response(JSON.stringify({ 
-        error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const emotionCounts: Record<string, number> = {};
+    trades.forEach(t => { if (t.emotion_before) emotionCounts[t.emotion_before] = (emotionCounts[t.emotion_before] || 0) + 1; });
+
+    const geminiKey = Deno.env.get("GEMINI_API_KEY");
+    
+    let summary: string;
+    if (!geminiKey) {
+      summary = generateFallbackSummary(trades.length, wins, losses, winRate, totalPL, mostTradedPair);
+    } else {
+      const prompt = `Trader's week: ${trades.length} trades, ${wins} wins, ${losses} losses, ${winRate}% win rate, P/L: ${totalPL > 0 ? '+' : ''}${totalPL.toFixed(2)}, favorite pair: ${mostTradedPair}. Emotions: ${Object.keys(emotionCounts).join(', ') || 'not tracked'}. 
+
+Write a brief, personal weekly recap (under 100 words). Be conversational, specific, and give one actionable tip.`;
+
+      try {
+        summary = await callGemini(prompt, "You're a friendly trading mentor giving weekly feedback. Be genuine and specific.", geminiKey);
+      } catch (error) {
+        console.error("Gemini failed:", error);
+        summary = generateFallbackSummary(trades.length, wins, losses, winRate, totalPL, mostTradedPair);
+      }
     }
 
-    const emotionalInsight = bestEmotion ? 
-      `Best mindset: ${bestEmotion.emotion} (${Math.round(bestEmotion.winRate)}% win rate)` :
-      '';
-    
-    const emotionalWarning = lossEmotion && lossEmotion[1] >= 2 ?
-      `Watch out: ${lossEmotion[0]} emotion linked to ${lossEmotion[1]} losses` :
-      '';
+    const stats = { totalTrades: trades.length, winRate, wins, losses, mostTradedPair, totalPL };
 
-    const prompt = `Here's how this trader did this week:
+    // Cache for 6 hours
+    await storeCache(serviceClient, cacheKey, { summary, stats }, 360);
 
-This Week's Numbers:
-- ${trades.length} trades (${wins} wins, ${losses} losses) = ${winRate}% win rate
-- Total P/L: ${totalPL > 0 ? '+' : ''}${totalPL.toFixed(2)}
-- Favorite pair: ${mostTradedPair}
-- Trading emotions: ${Object.keys(emotionCounts).length > 0 ? Object.keys(emotionCounts).join(', ') : 'Not tracked'}
-${emotionalInsight ? `- ${emotionalInsight}` : ''}
-${emotionalWarning ? `- ${emotionalWarning}` : ''}
+    // Update daily usage
+    await serviceClient.from('profiles').update({ daily_ai_requests: dailyRequests + 1, last_ai_reset_date: today }).eq('id', user.id);
 
-Their Trades This Week:
-${trades.slice(0, 10).map(t => 
-  `${t.pair} ${t.direction} → ${t.result || 'still open'} ${t.profit_loss ? `(${t.profit_loss > 0 ? '+' : ''}${t.profit_loss})` : ''} ${t.emotion_before ? `[felt: ${t.emotion_before}]` : ''}`
-).join('\n')}
+    return new Response(JSON.stringify({ summary, stats, daily_requests_remaining: dailyLimit - dailyRequests - 1 }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-Write them a weekly recap that feels like it's from a real trading mentor. Be conversational and genuine. Start with how their week went, mention something specific they did well or a pattern you noticed. If they're tracking emotions, definitely comment on emotional patterns and how mindset affects their results. Give them one clear thing to work on next week. Make it personal and actionable, not generic. If they had a rough week, be supportive but honest. If they crushed it, celebrate with them! Keep it under 150 words.`;
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: "You're an experienced trading mentor who gives real, conversational feedback. Write like you're texting a friend, not writing a formal report. Be genuine, supportive, and specific - no generic motivational fluff. Point out actual patterns in their trading and give concrete advice they can use." },
-          { role: "user", content: prompt }
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429 || response.status === 402) {
-        return new Response(JSON.stringify({ 
-          error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      console.error("AI gateway error:", response.status);
-      return new Response(JSON.stringify({ 
-        error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const data = await response.json();
-    const summary = data.choices[0].message.content;
-    
-    // Deduct credits
-    await supabaseClient
-      .from('profiles')
-      .update({ ai_credits: profile.ai_credits - SUMMARY_COST })
-      .eq('id', user.id);
-
-    const emotionEmojis: Record<string, string> = {
-      calm: '😌', neutral: '😐', anxious: '😟', 
-      impatient: '😤', confident: '😎'
-    };
-
-    const emotionalOverview = mostCommonEmotion ? {
-      mostCommon: `${emotionEmojis[mostCommonEmotion[0]] || ''} ${mostCommonEmotion[0].charAt(0).toUpperCase() + mostCommonEmotion[0].slice(1)}`,
-      lossEmotion: lossEmotion ? `${emotionEmojis[lossEmotion[0]] || ''} ${lossEmotion[0].charAt(0).toUpperCase() + lossEmotion[0].slice(1)}` : "N/A",
-      bestEmotion: bestEmotion ? `${emotionEmojis[bestEmotion.emotion] || ''} ${bestEmotion.emotion.charAt(0).toUpperCase() + bestEmotion.emotion.slice(1)}` : "N/A",
-      insight: emotionalInsight || emotionalWarning || "Keep tracking emotions for insights"
-    } : null;
-
-    return new Response(JSON.stringify({ 
-      summary,
-      credits_remaining: profile.ai_credits - SUMMARY_COST,
-      stats: {
-        totalTrades: trades.length,
-        winRate,
-        wins,
-        losses,
-        mostTradedPair,
-        totalPL,
-        emotionalOverview
-      }
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
   } catch (error) {
-    console.error("Error in weekly-summary function:", error);
-    return new Response(JSON.stringify({ 
-      error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
-    }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("Error in weekly-summary:", error);
+    return new Response(JSON.stringify({ error: "Something went wrong. Try again?" }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
+
+function generateFallbackSummary(total: number, wins: number, losses: number, winRate: number, totalPL: number, pair: string): string {
+  if (winRate >= 60) return `Great week! ${wins} wins from ${total} trades (${winRate}% win rate). Your ${pair} setups are working. Keep this momentum but don't overtrade.`;
+  if (winRate >= 40) return `Solid effort with ${total} trades this week. ${winRate}% win rate shows room to grow. Focus on your entry timing and stick to your best setups.`;
+  return `Tough week with ${losses} losses. Take a step back, review what went wrong, and come back stronger. Every trader has these weeks.`;
+}

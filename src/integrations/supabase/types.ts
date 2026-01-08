@@ -455,6 +455,77 @@ export type Database = {
           },
         ]
       }
+      ai_request_queue: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          function_name: string
+          id: string
+          payload: Json
+          processed_at: string | null
+          result: Json | null
+          retry_count: number | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          function_name: string
+          id?: string
+          payload: Json
+          processed_at?: string | null
+          result?: Json | null
+          retry_count?: number | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          function_name?: string
+          id?: string
+          payload?: Json
+          processed_at?: string | null
+          result?: Json | null
+          retry_count?: number | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_request_queue_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_response_cache: {
+        Row: {
+          cache_key: string
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          response: Json
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          response: Json
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          response?: Json
+        }
+        Relationships: []
+      }
       campaign_logs: {
         Row: {
           campaign_id: string
@@ -3012,6 +3083,7 @@ export type Database = {
           created_at: string | null
           credits_reset_date: string | null
           current_streak: number | null
+          daily_ai_requests: number | null
           data_collection_consent: boolean | null
           display_name: string | null
           email: string | null
@@ -3019,6 +3091,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_in_recovery_mode: boolean | null
+          last_ai_reset_date: string | null
           last_credit_check: string | null
           last_login_ip: string | null
           last_manual_upload_at: string | null
@@ -3053,6 +3126,7 @@ export type Database = {
           created_at?: string | null
           credits_reset_date?: string | null
           current_streak?: number | null
+          daily_ai_requests?: number | null
           data_collection_consent?: boolean | null
           display_name?: string | null
           email?: string | null
@@ -3060,6 +3134,7 @@ export type Database = {
           full_name?: string | null
           id: string
           is_in_recovery_mode?: boolean | null
+          last_ai_reset_date?: string | null
           last_credit_check?: string | null
           last_login_ip?: string | null
           last_manual_upload_at?: string | null
@@ -3094,6 +3169,7 @@ export type Database = {
           created_at?: string | null
           credits_reset_date?: string | null
           current_streak?: number | null
+          daily_ai_requests?: number | null
           data_collection_consent?: boolean | null
           display_name?: string | null
           email?: string | null
@@ -3101,6 +3177,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_in_recovery_mode?: boolean | null
+          last_ai_reset_date?: string | null
           last_credit_check?: string | null
           last_login_ip?: string | null
           last_manual_upload_at?: string | null
@@ -4192,6 +4269,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      clean_expired_ai_cache: { Args: never; Returns: undefined }
       clean_old_typing_indicators: { Args: never; Returns: undefined }
       create_test_partner_for_user: {
         Args: { p_user_id: string }
