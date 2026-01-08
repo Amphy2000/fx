@@ -6,6 +6,98 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+
+// Simple hash for cache
+function hashString(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(36);
+}
+
+// Check cache
+async function checkCache(supabase: any, cacheKey: string): Promise<string | null> {
+  try {
+    const { data } = await supabase
+      .from("ai_response_cache")
+      .select("response, expires_at")
+      .eq("cache_key", cacheKey)
+      .single();
+    if (data && new Date(data.expires_at) > new Date()) {
+      return data.response?.reply;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// Store cache
+async function storeCache(supabase: any, cacheKey: string, reply: string): Promise<void> {
+  try {
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 min cache
+    await supabase
+      .from("ai_response_cache")
+      .upsert({ cache_key: cacheKey, response: { reply }, expires_at: expiresAt }, { onConflict: "cache_key" });
+  } catch (error) {
+    console.error("Cache error:", error);
+  }
+}
+
+// Call Gemini
+async function callGemini(messages: any[], apiKey: string): Promise<string> {
+  const contents = messages
+    .filter(m => m.role !== 'system')
+    .map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }]
+    }));
+
+  // Add system as first user message
+  const systemMsg = messages.find(m => m.role === 'system');
+  if (systemMsg) {
+    contents.unshift(
+      { role: 'user', parts: [{ text: `Instructions: ${systemMsg.content}` }] },
+      { role: 'model', parts: [{ text: 'Understood, I will follow these instructions.' }] }
+    );
+  }
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const response = await fetch(
+        `${GEMINI_API_URL}/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents,
+            generationConfig: { temperature: 0.8, maxOutputTokens: 512 },
+          }),
+        }
+      );
+
+      if (response.status === 429) {
+        const wait = Math.pow(2, attempt) * 10000;
+        console.log(`Rate limited, waiting ${wait}ms`);
+        await new Promise(r => setTimeout(r, wait));
+        continue;
+      }
+
+      if (!response.ok) throw new Error(`Gemini: ${response.status}`);
+
+      const data = await response.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm having trouble thinking right now. Try again?";
+    } catch (error) {
+      console.error(`Attempt ${attempt + 1} failed:`, error);
+      if (attempt < 2) await new Promise(r => setTimeout(r, 5000));
+    }
+  }
+  throw new Error("Gemini unavailable");
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -16,172 +108,138 @@ serve(async (req) => {
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {
-      return new Response(JSON.stringify({ 
-        error: "Oops! Our AI is feeling sleepy 😴. Please try logging in again!" 
-      }), {
+      return new Response(JSON.stringify({ error: "Please log in to chat." }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
+      supabaseUrl,
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: authHeader } } }
     );
 
+    const serviceClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !user) {
-      console.error("Auth error:", userError);
-      return new Response(JSON.stringify({ 
-        error: "Oops! Our AI is feeling sleepy 😴. Please try logging in again!" 
-      }), {
+      return new Response(JSON.stringify({ error: "Please log in again." }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Check credits (cost: 2 credits per message)
+    // Check daily limit
     const { data: profile } = await supabaseClient
       .from('profiles')
-      .select('ai_credits, subscription_tier')
+      .select('subscription_tier, daily_ai_requests, last_ai_reset_date')
       .eq('id', user.id)
       .single();
-      
-    const CHAT_COST = 2;
-    if (!profile || profile.ai_credits < CHAT_COST) {
+
+    const today = new Date().toISOString().split('T')[0];
+    let dailyRequests = profile?.daily_ai_requests || 0;
+    if (profile?.last_ai_reset_date !== today) dailyRequests = 0;
+
+    const isPremium = ['pro', 'lifetime', 'monthly'].includes(profile?.subscription_tier || 'free');
+    const dailyLimit = isPremium ? 100 : 10;
+
+    if (dailyRequests >= dailyLimit) {
       return new Response(JSON.stringify({ 
-        error: 'Insufficient credits',
-        required: CHAT_COST,
-        available: profile?.ai_credits || 0,
-        message: 'You need more AI credits. Upgrade to get more!'
+        error: 'Daily limit reached. Try again tomorrow!',
+        daily_requests_remaining: 0
       }), {
-        status: 402,
+        status: 429,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     // Get recent trades for context
-    const { data: trades, error } = await supabaseClient
+    const { data: trades } = await supabaseClient
       .from('trades')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(50);
-
-    if (error) {
-      console.error("Trade fetch error:", error);
-      return new Response(JSON.stringify({ 
-        error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+      .limit(20);
 
     const wins = trades?.filter(t => t.result === 'win').length || 0;
     const losses = trades?.filter(t => t.result === 'loss').length || 0;
     const totalTrades = trades?.length || 0;
     const winRate = totalTrades > 0 ? Math.round((wins / totalTrades) * 100) : 0;
 
-    const pairPerformance: Record<string, { wins: number, losses: number }> = {};
-    trades?.forEach(t => {
-      if (!pairPerformance[t.pair]) {
-        pairPerformance[t.pair] = { wins: 0, losses: 0 };
-      }
-      if (t.result === 'win') pairPerformance[t.pair].wins++;
-      if (t.result === 'loss') pairPerformance[t.pair].losses++;
-    });
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY not configured");
+    const geminiKey = Deno.env.get("GEMINI_API_KEY");
+    if (!geminiKey) {
       return new Response(JSON.stringify({ 
-        error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
+        reply: "I'm taking a quick break. Try again in a moment!",
+        daily_requests_remaining: dailyLimit - dailyRequests
       }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const totalPL = trades?.reduce((sum, t) => sum + (Number(t.profit_loss) || 0), 0) || 0;
-
-    const insightContext = `Internal trading context (do not quote numbers unless asked; use these only to inform advice):\n- Total trades: ${totalTrades}\n- Win rate: ${winRate}%\n- Wins: ${wins}, Losses: ${losses}\n- Total P/L: ${totalPL > 0 ? '+' : ''}${totalPL.toFixed(2)}\n- Pair performance: ${Object.entries(pairPerformance).map(([pair, perf]) => `${pair}: ${perf.wins}W/${perf.losses}L`).join(', ') || 'n/a'}`;
+    // Build context
+    const insightContext = `Context (use to inform, don't quote unless asked): ${totalTrades} trades, ${winRate}% win rate, ${wins}W/${losses}L.`;
 
     const historyNormalized = Array.isArray(history)
       ? history
-          .filter((m: any) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
-          .map((m: any) => ({ role: m.role, content: String(m.content).slice(0, 2000) }))
+          .filter((m: any) => m && (m.role === 'user' || m.role === 'assistant'))
+          .slice(-6) // Last 6 messages only to save tokens
+          .map((m: any) => ({ role: m.role, content: String(m.content).slice(0, 500) }))
       : [];
 
-    const chatMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
-      { role: "system", content: "You're a friendly, experienced trading buddy having an ongoing conversation. Be natural and conversational—don't repeat greetings or introductions if you've already said them. Read the conversation history and respond naturally to what was just said. Be supportive but honest. Don't regurgitate stats unless explicitly asked (keywords: win rate, stats, performance, analyze, P/L, history). Keep responses concise and human." },
-      { role: "system", content: insightContext },
-      ...historyNormalized,
-    ];
-
-    if (typeof message === 'string' && message.trim().length > 0) {
-      chatMessages.push({ role: "user", content: message });
-    }
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: chatMessages,
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ 
-          error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ 
-          error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      console.error("AI gateway error:", response.status);
+    // Check cache for similar recent messages
+    const cacheKey = `chat_${user.id}_${hashString(message || '')}`;
+    const cachedReply = await checkCache(serviceClient, cacheKey);
+    if (cachedReply) {
+      console.log("Returning cached chat reply");
       return new Response(JSON.stringify({ 
-        error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
+        reply: cachedReply,
+        cached: true,
+        daily_requests_remaining: dailyLimit - dailyRequests
       }), {
-        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const data = await response.json();
-    const reply = data.choices[0].message.content;
-    
-    // Deduct credits
-    await supabaseClient
+    const chatMessages = [
+      { role: "system", content: `You're a friendly trading buddy. Be natural and conversational. ${insightContext}` },
+      ...historyNormalized,
+    ];
+
+    if (message?.trim()) {
+      chatMessages.push({ role: "user", content: message });
+    }
+
+    let reply: string;
+    try {
+      reply = await callGemini(chatMessages, geminiKey);
+    } catch (error) {
+      console.error("Gemini failed:", error);
+      reply = "I'm having a quick coffee break ☕. Try again in a moment!";
+    }
+
+    // Cache the response
+    await storeCache(serviceClient, cacheKey, reply);
+
+    // Update daily usage
+    await serviceClient
       .from('profiles')
-      .update({ ai_credits: profile.ai_credits - CHAT_COST })
+      .update({ daily_ai_requests: dailyRequests + 1, last_ai_reset_date: today })
       .eq('id', user.id);
 
     return new Response(JSON.stringify({ 
       reply,
-      credits_remaining: profile.ai_credits - CHAT_COST
+      daily_requests_remaining: dailyLimit - dailyRequests - 1
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error in trade-chat function:", error);
+    console.error("Error in trade-chat:", error);
     return new Response(JSON.stringify({ 
-      error: "Oops! Our AI is feeling sleepy 😴. Please try again in a moment!" 
+      reply: "Oops! Something went wrong. Try again?"
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

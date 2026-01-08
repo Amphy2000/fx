@@ -7,48 +7,83 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const JOURNAL_INSIGHTS_COST = 5;
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+
+async function checkCache(supabase: any, cacheKey: string): Promise<any | null> {
+  try {
+    const { data } = await supabase.from("ai_response_cache").select("response, expires_at").eq("cache_key", cacheKey).single();
+    if (data && new Date(data.expires_at) > new Date()) return data.response;
+    return null;
+  } catch { return null; }
+}
+
+async function storeCache(supabase: any, cacheKey: string, response: any, ttlMinutes: number): Promise<void> {
+  try {
+    const expiresAt = new Date(Date.now() + ttlMinutes * 60 * 1000).toISOString();
+    await supabase.from("ai_response_cache").upsert({ cache_key: cacheKey, response, expires_at: expiresAt }, { onConflict: "cache_key" });
+  } catch (e) { console.error("Cache error:", e); }
+}
+
+async function callGemini(prompt: string, systemPrompt: string, apiKey: string): Promise<string> {
+  const contents = [
+    { role: "user", parts: [{ text: `Instructions: ${systemPrompt}` }] },
+    { role: "model", parts: [{ text: "Understood." }] },
+    { role: "user", parts: [{ text: prompt }] },
+  ];
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const response = await fetch(`${GEMINI_API_URL}/gemini-2.0-flash-lite:generateContent?key=${apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents, generationConfig: { temperature: 0.3, maxOutputTokens: 1024 } }),
+      });
+
+      if (response.status === 429) {
+        await new Promise(r => setTimeout(r, Math.pow(2, attempt) * 10000));
+        continue;
+      }
+      if (!response.ok) throw new Error(`Gemini: ${response.status}`);
+
+      const data = await response.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    } catch (error) {
+      console.error(`Attempt ${attempt + 1} failed:`, error);
+      if (attempt < 2) await new Promise(r => setTimeout(r, 5000));
+    }
+  }
+  throw new Error("Gemini unavailable");
+}
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') ?? '', { global: { headers: { Authorization: authHeader } } });
+    const supabaseAdmin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Check credits
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('ai_credits')
-      .eq('id', user.id)
-      .single();
-    
-    if (!profile || profile.ai_credits < JOURNAL_INSIGHTS_COST) {
-      return new Response(JSON.stringify({ error: 'Insufficient credits' }), {
-        status: 402,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    // Check daily limit
+    const { data: profile } = await supabase.from('profiles').select('subscription_tier, daily_ai_requests, last_ai_reset_date').eq('id', user.id).single();
+    const today = new Date().toISOString().split('T')[0];
+    let dailyRequests = profile?.daily_ai_requests || 0;
+    if (profile?.last_ai_reset_date !== today) dailyRequests = 0;
+
+    const isPremium = ['pro', 'lifetime', 'monthly'].includes(profile?.subscription_tier || 'free');
+    const dailyLimit = isPremium ? 100 : 10;
+
+    if (dailyRequests >= dailyLimit) {
+      return new Response(JSON.stringify({ error: 'Daily AI limit reached' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const { periodDays = 30 } = await req.json();
@@ -56,191 +91,83 @@ serve(async (req) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - periodDays);
 
-    // Fetch journal entries
-    const { data: journalEntries } = await supabase
-      .from('journal_entries')
-      .select('*')
-      .eq('user_id', user.id)
-      .gte('entry_date', startDate.toISOString().split('T')[0])
-      .lte('entry_date', endDate.toISOString().split('T')[0])
-      .order('entry_date', { ascending: true });
-
-    // Fetch daily check-ins
-    const { data: checkIns } = await supabase
-      .from('daily_checkins')
-      .select('*')
-      .eq('user_id', user.id)
-      .gte('check_in_date', startDate.toISOString().split('T')[0])
-      .lte('check_in_date', endDate.toISOString().split('T')[0])
-      .order('check_in_date', { ascending: true });
-
-    // Fetch trades with emotions
-    const { data: trades } = await supabase
-      .from('trades')
-      .select('*')
-      .eq('user_id', user.id)
-      .gte('created_at', startDate.toISOString())
-      .lte('created_at', endDate.toISOString())
-      .order('created_at', { ascending: true });
-
-    if (!trades || trades.length < 5) {
-      return new Response(JSON.stringify({ 
-        error: 'Not enough data',
-        message: 'You need at least 5 trades in the selected period for meaningful insights.'
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    // Cache key
+    const cacheKey = `journal_${user.id}_${periodDays}_${today}`;
+    const cached = await checkCache(supabaseAdmin, cacheKey);
+    if (cached?.insights) {
+      console.log("Returning cached journal insights");
+      return new Response(JSON.stringify({ insights: cached.insights, cached: true, daily_requests_remaining: dailyLimit - dailyRequests }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Prepare data summary for AI
+    // Fetch data
+    const { data: journalEntries } = await supabase.from('journal_entries').select('*').eq('user_id', user.id).gte('entry_date', startDate.toISOString().split('T')[0]).lte('entry_date', endDate.toISOString().split('T')[0]);
+    const { data: checkIns } = await supabase.from('daily_checkins').select('*').eq('user_id', user.id).gte('check_in_date', startDate.toISOString().split('T')[0]).lte('check_in_date', endDate.toISOString().split('T')[0]);
+    const { data: trades } = await supabase.from('trades').select('*').eq('user_id', user.id).gte('created_at', startDate.toISOString()).lte('created_at', endDate.toISOString());
+
+    if (!trades || trades.length < 5) {
+      return new Response(JSON.stringify({ error: 'Not enough data', message: 'Need at least 5 trades.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    const geminiKey = Deno.env.get('GEMINI_API_KEY');
+    if (!geminiKey) throw new Error('GEMINI_API_KEY not configured');
+
     const dataSummary = {
       totalTrades: trades.length,
       winningTrades: trades.filter(t => t.result === 'win').length,
       losingTrades: trades.filter(t => t.result === 'loss').length,
-      totalPnL: trades.reduce((sum, t) => sum + (t.profit_loss || 0), 0),
-      journalEntries: journalEntries?.map(j => ({
-        date: j.entry_date,
-        mood: j.mood,
-        energy: j.energy_level,
-        market: j.market_conditions,
-        mindset: j.trading_mindset,
-        lessons: j.lessons_learned
-      })) || [],
-      checkIns: checkIns?.map(c => ({
-        date: c.check_in_date,
-        mood: c.mood,
-        confidence: c.confidence,
-        stress: c.stress,
-        focus: c.focus_level,
-        sleep: c.sleep_hours
-      })) || [],
-      emotionalTrades: trades.filter(t => t.emotion_before || t.emotion_after).map(t => ({
-        date: new Date(t.created_at).toISOString().split('T')[0],
-        emotionBefore: t.emotion_before,
-        emotionAfter: t.emotion_after,
-        result: t.result,
-        profitLoss: t.profit_loss,
-        pair: t.pair
-      }))
+      journalCount: journalEntries?.length || 0,
+      checkInCount: checkIns?.length || 0,
+      emotionalTrades: trades.filter(t => t.emotion_before).map(t => ({ emotion: t.emotion_before, result: t.result }))
     };
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
-    }
+    const prompt = `Analyze trader data (${periodDays} days): ${JSON.stringify(dataSummary)}
 
-    // Call AI for analysis
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [{
-          role: 'system',
-          content: `You are an expert trading psychologist. Analyze the correlation between emotional states and trading performance. 
-          Identify patterns where certain emotions or mental states correlate with better or worse trading outcomes.
-          Provide actionable insights and recommendations. Be specific and data-driven.
-          
-          Return your analysis as a JSON object with this structure:
-          {
-            "emotionalPatterns": {
-              "positiveStates": ["state that correlates with wins"],
-              "negativeStates": ["state that correlates with losses"],
-              "neutral": ["states with no clear pattern"]
-            },
-            "performanceCorrelation": {
-              "bestMoods": ["moods when trading best"],
-              "worstMoods": ["moods when trading worst"],
-              "optimalConditions": ["ideal conditions for trading"]
-            },
-            "keyInsights": ["insight 1", "insight 2", "insight 3"],
-            "recommendations": ["recommendation 1", "recommendation 2", "recommendation 3"],
-            "confidenceScore": 85
-          }`
-        }, {
-          role: 'user',
-          content: `Analyze this trader's emotional and performance data over the past ${periodDays} days:\n\n${JSON.stringify(dataSummary, null, 2)}`
-        }],
-        temperature: 0.3
-      })
-    });
+Return JSON:
+{"emotionalPatterns":{"positiveStates":[],"negativeStates":[],"neutral":[]},"performanceCorrelation":{"bestMoods":[],"worstMoods":[],"optimalConditions":[]},"keyInsights":["..."],"recommendations":["..."],"confidenceScore":number}`;
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI API error:', aiResponse.status, errorText);
-      throw new Error(`AI analysis failed: ${aiResponse.status}`);
-    }
-
-    const aiResult = await aiResponse.json();
-    const analysisText = aiResult.choices?.[0]?.message?.content;
-    
     let analysis;
     try {
-      // Try to parse JSON from the response
-      const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
-      analysis = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(analysisText);
+      const result = await callGemini(prompt, "You are a trading psychologist. Return valid JSON only.", geminiKey);
+      const jsonMatch = result.match(/\{[\s\S]*\}/);
+      analysis = jsonMatch ? JSON.parse(jsonMatch[0]) : generateFallbackAnalysis(dataSummary);
     } catch (e) {
-      console.error('Failed to parse AI response as JSON:', e);
-      // Fallback to basic structure
-      analysis = {
-        emotionalPatterns: { positiveStates: [], negativeStates: [], neutral: [] },
-        performanceCorrelation: { bestMoods: [], worstMoods: [], optimalConditions: [] },
-        keyInsights: [analysisText.substring(0, 200)],
-        recommendations: ['Keep tracking your emotions and trading performance'],
-        confidenceScore: 50
-      };
+      console.error("Gemini failed:", e);
+      analysis = generateFallbackAnalysis(dataSummary);
     }
 
-    // Store insights in database
-    const { error: insertError } = await supabase
-      .from('journal_insights')
-      .insert({
-        user_id: user.id,
-        analysis_period_start: startDate.toISOString().split('T')[0],
-        analysis_period_end: endDate.toISOString().split('T')[0],
-        emotional_patterns: analysis.emotionalPatterns,
-        performance_correlation: analysis.performanceCorrelation,
-        key_insights: analysis.keyInsights,
-        recommendations: analysis.recommendations,
-        confidence_score: analysis.confidenceScore
-      });
+    // Store insights
+    await supabase.from('journal_insights').insert({
+      user_id: user.id,
+      analysis_period_start: startDate.toISOString().split('T')[0],
+      analysis_period_end: endDate.toISOString().split('T')[0],
+      emotional_patterns: analysis.emotionalPatterns,
+      performance_correlation: analysis.performanceCorrelation,
+      key_insights: analysis.keyInsights,
+      recommendations: analysis.recommendations,
+      confidence_score: analysis.confidenceScore
+    });
 
-    if (insertError) {
-      console.error('Failed to store insights:', insertError);
-    }
+    // Cache for 24 hours
+    await storeCache(supabaseAdmin, cacheKey, { insights: analysis }, 1440);
 
-    // Deduct credits
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
-    );
-    
-    await supabaseAdmin
-      .from('profiles')
-      .update({ ai_credits: profile.ai_credits - JOURNAL_INSIGHTS_COST })
-      .eq('id', user.id);
+    // Update daily usage
+    await supabaseAdmin.from('profiles').update({ daily_ai_requests: dailyRequests + 1, last_ai_reset_date: today }).eq('id', user.id);
 
-    return new Response(
-      JSON.stringify({ 
-        insights: analysis,
-        creditsRemaining: profile.ai_credits - JOURNAL_INSIGHTS_COST
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ insights: analysis, daily_requests_remaining: dailyLimit - dailyRequests - 1 }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (error: any) {
     console.error('Journal insights error:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });
+
+function generateFallbackAnalysis(data: any) {
+  const winRate = data.totalTrades > 0 ? (data.winningTrades / data.totalTrades) * 100 : 0;
+  return {
+    emotionalPatterns: { positiveStates: ["calm", "confident"], negativeStates: ["anxious", "impatient"], neutral: ["neutral"] },
+    performanceCorrelation: { bestMoods: ["calm"], worstMoods: ["anxious"], optimalConditions: ["well-rested", "prepared"] },
+    keyInsights: [winRate >= 50 ? "Your win rate shows solid execution" : "Focus on improving entry timing", "Emotional awareness is key to consistency"],
+    recommendations: ["Continue tracking emotions before trades", "Review losing trades for patterns"],
+    confidenceScore: Math.min(data.totalTrades * 5, 70)
+  };
+}
