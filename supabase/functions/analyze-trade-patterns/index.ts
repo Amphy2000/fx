@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.81.1';
+import { callGemini, generateFallbackResponse } from "../_shared/gemini-client.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -43,6 +44,15 @@ serve(async (req) => {
     }
 
     console.log('analyze-trade-patterns: User authenticated:', user.id);
+
+    // Get user's subscription tier
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_tier')
+      .eq('id', user.id)
+      .single();
+
+    const isPremium = profile?.subscription_tier && ['pro', 'lifetime', 'monthly'].includes(profile.subscription_tier);
 
     console.log('analyze-trade-patterns: Parsing request body...');
     let tradeIds: string[] = [];
@@ -102,19 +112,9 @@ serve(async (req) => {
     }
 
     const trades = tradesCombined;
-
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!lovableApiKey) {
-      console.error('LOVABLE_API_KEY not configured');
-      return new Response(JSON.stringify({ error: 'AI service unavailable' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
-      });
-    }
-
     const insights = [];
 
-    // Analyze each trade with AI
+    // Analyze each trade with Gemini
     for (const trade of trades) {
       try {
         // Check if insight already exists
@@ -152,33 +152,25 @@ COMMENT: [One sentence about execution quality]
 SUMMARY: [2-3 sentences analyzing the trade]
 RECOMMENDATIONS: [One specific actionable recommendation]`;
 
-        const aiPayload = {
-          model: 'google/gemini-2.5-flash',
-          messages: [
-            { role: 'system', content: 'You are an expert forex trading analyst. Provide concise, actionable trade analysis.' },
-            { role: 'user', content: prompt }
-          ],
-        };
+        console.log(`Calling Gemini for trade ${trade.id}`);
         
-        console.log(`Calling AI for trade ${trade.id} with model: ${aiPayload.model}`);
-        
-        const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-          method: 'POST',
-          headers: { 
-            Authorization: `Bearer ${lovableApiKey}`, 
-            'Content-Type': 'application/json' 
-          },
-          body: JSON.stringify(aiPayload),
-        });
-
-        if (!aiResp.ok) {
-          const errorText = await aiResp.text();
-          console.error(`AI analysis failed for trade ${trade.id}:`, aiResp.status, errorText);
+        let analysis: string;
+        try {
+          const result = await callGemini({
+            supabaseUrl: Deno.env.get('SUPABASE_URL') ?? '',
+            supabaseKey: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+            userId: user.id,
+            prompt,
+            systemPrompt: 'You are an expert forex trading analyst. Provide concise, actionable trade analysis.',
+            cacheKey: `trade-pattern-${trade.id}`,
+            cacheTtlMinutes: 1440, // 24 hours
+            skipUsageCheck: isPremium,
+          });
+          analysis = result.text;
+        } catch (error) {
+          console.error(`Gemini analysis failed for trade ${trade.id}:`, error);
           continue;
         }
-
-        const aiData = await aiResp.json();
-        const analysis = aiData.choices?.[0]?.message?.content || '';
 
         // Parse AI response
         const parseField = (field: string) => {

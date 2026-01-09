@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { callGemini, generateFallbackResponse } from "../_shared/gemini-client.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -139,10 +140,9 @@ serve(async (req) => {
       suggestedAction = 'STOP - High risk of repeating past mistakes. Consider skipping this trade.';
     }
 
-    // Use AI for deeper insight (only if we have enough data)
+    // Use Gemini for deeper insight (only if we have enough data)
     let aiInsight = '';
     if (totalTrades >= 5) {
-      const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
       const aiPrompt = `Analyze this trading pattern:
 - Pair: ${pair}
 - Direction: ${direction}
@@ -155,27 +155,20 @@ serve(async (req) => {
 Provide a single, concise insight (max 2 sentences) about whether the trader should proceed with this trade.`;
 
       try {
-        const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
-            messages: [
-              { role: 'system', content: 'You are a trading psychology coach. Provide brief, actionable insights.' },
-              { role: 'user', content: aiPrompt }
-            ],
-          }),
+        const result = await callGemini({
+          supabaseUrl: Deno.env.get('SUPABASE_URL') ?? '',
+          supabaseKey: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+          userId: user.id,
+          prompt: aiPrompt,
+          systemPrompt: 'You are a trading psychology coach. Provide brief, actionable insights.',
+          cacheKey: `validate-${pair}-${direction}-${winRate.toFixed(0)}`,
+          cacheTtlMinutes: 30,
+          skipUsageCheck: isPremium,
         });
-
-        if (aiResponse.ok) {
-          const aiData = await aiResponse.json();
-          aiInsight = aiData.choices[0]?.message?.content || '';
-        }
+        aiInsight = result.text;
       } catch (error) {
-        console.error('AI insight generation failed:', error);
+        console.error('Gemini insight generation failed:', error);
+        aiInsight = generateFallbackResponse(`${pair} trade validation`);
       }
     }
 

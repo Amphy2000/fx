@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.81.1';
+import { callGemini } from "../_shared/gemini-client.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -38,11 +39,13 @@ serve(async (req) => {
     // Check credits
     const { data: profile } = await supabase
       .from('profiles')
-      .select('ai_credits')
+      .select('ai_credits, subscription_tier')
       .eq('id', user.id)
       .single();
     
-    if (!profile || profile.ai_credits < PATTERN_ANALYSIS_COST) {
+    const isPremium = profile?.subscription_tier && ['pro', 'lifetime', 'monthly'].includes(profile.subscription_tier);
+    
+    if (!isPremium && (!profile || profile.ai_credits < PATTERN_ANALYSIS_COST)) {
       return new Response(JSON.stringify({ error: 'Insufficient credits' }), {
         status: 402,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -70,7 +73,6 @@ serve(async (req) => {
       setupGroups[setupName].push(trade);
     });
 
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     const patterns = [];
 
     for (const [setupName, setupTrades] of Object.entries(setupGroups)) {
@@ -96,22 +98,13 @@ serve(async (req) => {
       const trending = recentWR > prevWR + 0.1 ? 'up' : recentWR < prevWR - 0.1 ? 'down' : 'stable';
 
       let aiAnalysis = null;
-      if (lovableApiKey && winRate >= 40) { // Only analyze promising setups
+      if (winRate >= 40) { // Only analyze promising setups
         try {
-          const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${lovableApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'google/gemini-2.5-flash',
-              messages: [{
-                role: 'system',
-                content: 'You are a trading pattern analyst. Identify what makes this setup successful. Be specific and actionable.'
-              }, {
-                role: 'user',
-                content: `Analyze this trade setup pattern:
+          const result = await callGemini({
+            supabaseUrl: Deno.env.get('SUPABASE_URL') ?? '',
+            supabaseKey: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+            userId: user.id,
+            prompt: `Analyze this trade setup pattern:
 Setup: ${setupName}
 Trades: ${typedTrades.length}
 Win Rate: ${winRate}%
@@ -128,26 +121,23 @@ Format as JSON:
   "bestConditions": ["condition1", "condition2", "condition3"],
   "commonMistakes": ["mistake1", "mistake2"],
   "confidence": number
-}`
-              }]
-            }),
+}`,
+            systemPrompt: 'You are a trading pattern analyst. Identify what makes this setup successful. Be specific and actionable. Return ONLY valid JSON.',
+            cacheKey: `pattern-${setupName}-${winRate}`,
+            cacheTtlMinutes: 120,
+            skipUsageCheck: isPremium,
           });
 
-          if (aiResponse.ok) {
-            const aiData = await aiResponse.json();
-            const content = aiData.choices?.[0]?.message?.content || '';
-            
-            try {
-              const jsonMatch = content.match(/\{[\s\S]*\}/);
-              if (jsonMatch) {
-                aiAnalysis = JSON.parse(jsonMatch[0]);
-              }
-            } catch (e) {
-              console.error('Failed to parse AI JSON:', e);
+          try {
+            const jsonMatch = result.text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              aiAnalysis = JSON.parse(jsonMatch[0]);
             }
+          } catch (e) {
+            console.error('Failed to parse AI JSON:', e);
           }
         } catch (error) {
-          console.error('AI call failed:', error);
+          console.error('Gemini call failed:', error);
         }
       }
 
@@ -174,21 +164,23 @@ Format as JSON:
     // Sort by confidence and win rate
     patterns.sort((a, b) => (b.confidence * b.winRate) - (a.confidence * a.winRate));
 
-    // Deduct credits using service role
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
-    );
-    
-    await supabaseAdmin
-      .from('profiles')
-      .update({ ai_credits: profile.ai_credits - PATTERN_ANALYSIS_COST })
-      .eq('id', user.id);
+    // Deduct credits using service role (only for free users)
+    if (!isPremium) {
+      const supabaseAdmin = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+        { auth: { persistSession: false } }
+      );
+      
+      await supabaseAdmin
+        .from('profiles')
+        .update({ ai_credits: profile.ai_credits - PATTERN_ANALYSIS_COST })
+        .eq('id', user.id);
+    }
 
     return new Response(JSON.stringify({ 
       patterns: patterns.slice(0, 10),
-      creditsRemaining: profile.ai_credits - PATTERN_ANALYSIS_COST 
+      creditsRemaining: isPremium ? 'unlimited' : (profile.ai_credits - PATTERN_ANALYSIS_COST)
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
