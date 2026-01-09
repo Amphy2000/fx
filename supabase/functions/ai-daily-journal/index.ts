@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.81.1';
+import { callGemini, generateFallbackResponse } from "../_shared/gemini-client.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -33,6 +34,15 @@ serve(async (req) => {
       });
     }
 
+    // Get user's subscription tier
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_tier')
+      .eq('id', user.id)
+      .single();
+
+    const isPremium = profile?.subscription_tier && ['pro', 'lifetime', 'monthly'].includes(profile.subscription_tier);
+
     // Get last 30 days of trades grouped by date
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -58,7 +68,6 @@ serve(async (req) => {
       return acc;
     }, {});
 
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     const summaries = [];
 
     for (const [date, dayTrades] of Object.entries(tradesByDate)) {
@@ -69,22 +78,12 @@ serve(async (req) => {
       const pnl = typedTrades.reduce((sum, t) => sum + (t.profit_loss || 0), 0);
 
       let aiInsights = null;
-      if (lovableApiKey) {
-        try {
-          const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${lovableApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'google/gemini-2.5-flash',
-              messages: [{
-                role: 'system',
-                content: 'You are a trading coach analyzing a day of trading. Be direct, honest, and supportive. No asterisks or formatting.'
-              }, {
-                role: 'user',
-                content: `Analyze this trading day:
+      try {
+        const result = await callGemini({
+          supabaseUrl: Deno.env.get('SUPABASE_URL') ?? '',
+          supabaseKey: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+          userId: user.id,
+          prompt: `Analyze this trading day:
 Date: ${date}
 Trades: ${typedTrades.length}
 Wins: ${wins}, Losses: ${losses}
@@ -103,27 +102,23 @@ Format as JSON:
   "keyInsights": ["insight1", "insight2", "insight3"],
   "recommendations": ["rec1", "rec2", "rec3"],
   "tradingQuality": number
-}`
-              }]
-            }),
-          });
+}`,
+          systemPrompt: 'You are a trading coach analyzing a day of trading. Be direct, honest, and supportive. Return ONLY valid JSON.',
+          cacheKey: `journal-${date}-${winRate}`,
+          cacheTtlMinutes: 1440, // 24 hours
+          skipUsageCheck: isPremium,
+        });
 
-          if (aiResponse.ok) {
-            const aiData = await aiResponse.json();
-            const content = aiData.choices?.[0]?.message?.content || '';
-            
-            try {
-              const jsonMatch = content.match(/\{[\s\S]*\}/);
-              if (jsonMatch) {
-                aiInsights = JSON.parse(jsonMatch[0]);
-              }
-            } catch (e) {
-              console.error('Failed to parse AI JSON:', e);
-            }
+        try {
+          const jsonMatch = result.text.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            aiInsights = JSON.parse(jsonMatch[0]);
           }
-        } catch (error) {
-          console.error('AI call failed:', error);
+        } catch (e) {
+          console.error('Failed to parse AI JSON:', e);
         }
+      } catch (error) {
+        console.error('Gemini call failed:', error);
       }
 
       summaries.push({

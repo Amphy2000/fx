@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.1";
+import { callGemini, generateFallbackResponse } from "../_shared/gemini-client.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -31,11 +32,13 @@ serve(async (req) => {
     // Check AI credits
     const { data: profile } = await supabase
       .from('profiles')
-      .select('ai_credits')
+      .select('ai_credits, subscription_tier')
       .eq('id', user.id)
       .single();
 
-    if (!profile || profile.ai_credits < 2) {
+    const isPremium = profile?.subscription_tier && ['pro', 'lifetime', 'monthly'].includes(profile.subscription_tier);
+
+    if (!isPremium && (!profile || profile.ai_credits < 2)) {
       return new Response(
         JSON.stringify({ error: 'Insufficient AI credits. You need 2 credits for check-in analysis.' }),
         { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -62,17 +65,6 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .gte('created_at', thirtyDaysAgo.toISOString())
       .order('created_at', { ascending: false });
-
-    // Get today's check-ins to match with trades
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    
-    const { data: todayCheckin } = await supabase
-      .from('daily_checkins')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('check_in_date', new Date().toISOString().split('T')[0])
-      .single();
 
     // Calculate correlations
     const calculateCorrelations = () => {
@@ -179,48 +171,43 @@ Provide a concise, actionable 2-3 sentence insight that:
 
 Do not use generic advice. Use their actual numbers and patterns.`;
 
-    // Call Lovable AI
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: 'You are a professional trading psychology coach. Provide personalized, data-driven insights.' },
-          { role: 'user', content: prompt }
-        ],
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI API error:', aiResponse.status, errorText);
-      throw new Error('AI analysis failed');
+    // Call Gemini
+    let insight: string;
+    try {
+      const result = await callGemini({
+        supabaseUrl: Deno.env.get('SUPABASE_URL')!,
+        supabaseKey: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+        userId: user.id,
+        prompt,
+        systemPrompt: 'You are a professional trading psychology coach. Provide personalized, data-driven insights.',
+        cacheKey: `checkin-${checkInData.mood}-${checkInData.confidence}-${checkInData.stress}`,
+        cacheTtlMinutes: 60,
+        skipUsageCheck: isPremium,
+      });
+      insight = result.text;
+    } catch (error) {
+      console.error('Gemini analysis failed:', error);
+      insight = generateFallbackResponse('daily check-in analysis');
     }
 
-    const aiData = await aiResponse.json();
-    const insight = aiData.choices[0]?.message?.content || 'Unable to generate insight at this time.';
+    // Deduct credits (only for free users)
+    if (!isPremium) {
+      const supabaseAdmin = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      );
 
-    // Deduct credits
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
-
-    await supabaseAdmin
-      .from('profiles')
-      .update({ ai_credits: profile.ai_credits - 2 })
-      .eq('id', user.id);
+      await supabaseAdmin
+        .from('profiles')
+        .update({ ai_credits: profile.ai_credits - 2 })
+        .eq('id', user.id);
+    }
 
     return new Response(
       JSON.stringify({
         insight,
         correlations,
-        credits_remaining: profile.ai_credits - 2
+        credits_remaining: isPremium ? 'unlimited' : (profile.ai_credits - 2)
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

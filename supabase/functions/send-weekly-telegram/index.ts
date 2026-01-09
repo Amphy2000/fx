@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { callGemini, generateFallbackResponse } from "../_shared/gemini-client.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,7 +21,7 @@ serve(async (req) => {
     // Get users who have consented and enabled Telegram
     const { data: users, error: usersError } = await supabaseClient
       .from('profiles')
-      .select('id, telegram_chat_id, full_name')
+      .select('id, telegram_chat_id, full_name, subscription_tier')
       .eq('telegram_notifications_enabled', true)
       .eq('data_collection_consent', true)
       .not('telegram_chat_id', 'is', null);
@@ -28,7 +29,6 @@ serve(async (req) => {
     if (usersError) throw usersError;
 
     const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     let summariesSent = 0;
 
     for (const user of users || []) {
@@ -75,32 +75,32 @@ serve(async (req) => {
         });
         const mostTradedPair = Object.entries(pairCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
 
-        // Generate AI insight using Lovable AI
-        const prompt = `Generate a brief (2-3 sentences) personalized weekly trading insight for a trader with these stats:
+        const isPremium = user.subscription_tier && ['pro', 'lifetime', 'monthly'].includes(user.subscription_tier);
+
+        // Generate AI insight using Gemini
+        let insight = 'Keep up the great work!';
+        try {
+          const result = await callGemini({
+            supabaseUrl: Deno.env.get('SUPABASE_URL') ?? '',
+            supabaseKey: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+            userId: user.id,
+            prompt: `Generate a brief (2-3 sentences) personalized weekly trading insight for a trader with these stats:
 - This week: ${currentTrades.length} trades, ${currentWinRate.toFixed(1)}% win rate
 - Last week: ${previousTrades?.length || 0} trades, ${previousWinRate.toFixed(1)}% win rate
 - Change: ${winRateDiff > 0 ? '+' : ''}${winRateDiff.toFixed(1)}%
 - Most traded: ${mostTradedPair}
 
-Be encouraging and specific. Mention the trend and give one actionable tip.`;
-
-        const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
-            messages: [
-              { role: "system", content: "You're a supportive trading mentor. Be brief, encouraging, and specific." },
-              { role: "user", content: prompt }
-            ],
-          }),
-        });
-
-        const aiData = await aiResponse.json();
-        const insight = aiData.choices?.[0]?.message?.content || "Keep up the great work!";
+Be encouraging and specific. Mention the trend and give one actionable tip.`,
+            systemPrompt: "You're a supportive trading mentor. Be brief, encouraging, and specific.",
+            cacheKey: `telegram-${user.id}-${currentWinRate.toFixed(0)}`,
+            cacheTtlMinutes: 1440, // 24 hours
+            skipUsageCheck: isPremium,
+          });
+          insight = result.text;
+        } catch (error) {
+          console.error('Gemini call failed:', error);
+          insight = generateFallbackResponse('weekly trading summary');
+        }
 
         // Format message
         const message = `📊 *Weekly Trading Summary*
