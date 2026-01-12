@@ -8,9 +8,6 @@ const corsHeaders = {
 
 const ANALYSIS_COST = 5;
 
-// Gemini API for vision - direct call since gemini-client doesn't support images
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -72,12 +69,12 @@ serve(async (req) => {
       throw new Error('No image provided');
     }
 
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-    if (!GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    console.log('Analyzing setup image with Gemini Vision...');
+    console.log('Analyzing setup image with Lovable AI...');
 
     const analysisPrompt = `You are a professional trading analyst with 15+ years of experience. Analyze this trading chart with extreme precision.
 
@@ -124,65 +121,84 @@ Double-check all numerical calculations. Verify price levels match chart marking
 
 Remember: Write in natural, flowing sentences. No markdown, no asterisks, no special formatting. Just clear, honest analysis.`;
 
-    // Determine if image is base64 or URL
-    const isBase64 = image.startsWith('data:');
-    let imageData: { inline_data?: { mime_type: string; data: string }; file_data?: { file_uri: string } };
-
-    if (isBase64) {
+    // Prepare image content for Lovable AI (supports base64 images)
+    let imageContent: any;
+    
+    if (image.startsWith('data:')) {
+      // Base64 image
       const matches = image.match(/^data:(.+);base64,(.+)$/);
       if (matches) {
-        imageData = {
-          inline_data: {
-            mime_type: matches[1],
-            data: matches[2]
+        imageContent = {
+          type: "image_url",
+          image_url: {
+            url: image
           }
         };
       } else {
         throw new Error('Invalid base64 image format');
       }
     } else {
-      // For URL, we need to fetch and convert to base64
-      const imageResponse = await fetch(image);
-      const imageBlob = await imageResponse.blob();
-      const arrayBuffer = await imageBlob.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-      
-      imageData = {
-        inline_data: {
-          mime_type: imageBlob.type || 'image/png',
-          data: base64
+      // URL image
+      imageContent = {
+        type: "image_url",
+        image_url: {
+          url: image
         }
       };
     }
 
-    const response = await fetch(`${GEMINI_API_URL}/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: analysisPrompt },
-            imageData
-          ]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 2048,
-        }
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: analysisPrompt },
+              imageContent
+            ]
+          }
+        ],
+        max_tokens: 2048,
       })
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Gemini API error:', response.status, errorText);
-      throw new Error(`Gemini analysis failed: ${response.status}`);
+      console.error('Lovable AI error:', response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ 
+          error: 'AI service is busy. Please try again in a moment.',
+          retryAfter: 30
+        }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ 
+          error: 'AI service quota exceeded. Please try again later.'
+        }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      throw new Error(`AI analysis failed: ${response.status}`);
     }
 
     const result = await response.json();
-    const analysis = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    const analysis = result.choices?.[0]?.message?.content;
 
     if (!analysis) {
-      throw new Error('No analysis returned from Gemini');
+      throw new Error('No analysis returned from AI');
     }
 
     console.log('Analysis complete');
