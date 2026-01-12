@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,12 +11,15 @@ import { CreditsGuard } from "@/components/CreditsGuard";
 import { CREDIT_COSTS } from "@/utils/creditManager";
 
 const ANALYSIS_COST = CREDIT_COSTS.setup_analysis;
+const MAX_AUTO_RETRIES = 5;
 
 export default function AISetupAnalyzer() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<string | null>(null);
+  const [retryIn, setRetryIn] = useState<number | null>(null);
+  const retryAttemptsRef = useRef(0);
   const navigate = useNavigate();
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,22 +32,47 @@ export default function AISetupAnalyzer() {
       };
       reader.readAsDataURL(file);
       setAnalysis(null);
+      setRetryIn(null);
+      retryAttemptsRef.current = 0;
+      setAnalyzing(false);
     }
   };
 
-  const analyzeSetup = async () => {
+  const runAnalysis = useCallback(async () => {
     if (!selectedImage) {
-      toast.error("Please upload an image first");
+      setAnalyzing(false);
       return;
     }
 
-    setAnalyzing(true);
+    let pendingRetry = false;
+
     try {
       const { data, error } = await supabase.functions.invoke('analyze-setup-image', {
         body: { image: selectedImage }
       });
 
       if (error) {
+        const status = (error as any)?.context?.status;
+        const body = (error as any)?.context?.body;
+
+        if (status === 429) {
+          let retryAfter = 30;
+          try {
+            const parsed = typeof body === 'string' ? JSON.parse(body) : body;
+            if (typeof parsed?.retryAfter === 'number') retryAfter = parsed.retryAfter;
+          } catch {
+            // ignore
+          }
+
+          if (retryAttemptsRef.current < MAX_AUTO_RETRIES) {
+            retryAttemptsRef.current += 1;
+            pendingRetry = true;
+            setRetryIn(retryAfter);
+            toast.message(`Gemini rate limited. Retrying in ${retryAfter}s...`);
+            return;
+          }
+        }
+
         if (error.message?.includes('Insufficient credits')) {
           toast.error("Insufficient credits. Please upgrade your plan.", {
             action: {
@@ -52,27 +80,60 @@ export default function AISetupAnalyzer() {
               onClick: () => navigate("/pricing")
             }
           });
-        } else {
-          throw error;
+          return;
         }
-        return;
+
+        throw error;
       }
 
+      setRetryIn(null);
+      retryAttemptsRef.current = 0;
+
       // Clean up the analysis text: remove asterisks and excessive formatting
-      const cleanedAnalysis = data.analysis
+      const cleanedAnalysis = (data.analysis as string)
         .replace(/\*\*/g, '') // Remove bold markdown
         .replace(/\*/g, '') // Remove remaining asterisks
         .replace(/#{1,6}\s/g, '') // Remove markdown headers
         .trim();
-      
+
       setAnalysis(cleanedAnalysis);
       toast.success(`Analysis complete! ${data.creditsRemaining} credits remaining`);
     } catch (error: any) {
       console.error('Analysis error:', error);
       toast.error(error.message || "Failed to analyze setup");
     } finally {
-      setAnalyzing(false);
+      if (!pendingRetry) {
+        setAnalyzing(false);
+      }
     }
+  }, [navigate, selectedImage]);
+
+  useEffect(() => {
+    if (retryIn === null) return;
+
+    if (retryIn <= 0) {
+      setRetryIn(null);
+      void runAnalysis();
+      return;
+    }
+
+    const t = window.setTimeout(() => {
+      setRetryIn((prev) => (prev === null ? null : prev - 1));
+    }, 1000);
+
+    return () => window.clearTimeout(t);
+  }, [retryIn, runAnalysis]);
+
+  const analyzeSetup = async () => {
+    if (!selectedImage) {
+      toast.error("Please upload an image first");
+      return;
+    }
+
+    retryAttemptsRef.current = 0;
+    setRetryIn(null);
+    setAnalyzing(true);
+    void runAnalysis();
   };
 
   return (
@@ -152,7 +213,7 @@ export default function AISetupAnalyzer() {
                   {analyzing ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Analyzing...
+                      {retryIn !== null ? `Rate limited — retrying in ${retryIn}s...` : "Analyzing..."}
                     </>
                   ) : (
                     <>
