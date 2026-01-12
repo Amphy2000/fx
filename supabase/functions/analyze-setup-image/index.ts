@@ -59,20 +59,62 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Call Gemini with retries and exponential backoff
+class RateLimitError extends Error {
+  retryAfterSeconds: number;
+
+  constructor(message: string, retryAfterSeconds: number) {
+    super(message);
+    this.name = 'RateLimitError';
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+function parseRetryAfterSeconds(res: Response, body: any, fallbackSeconds: number): number {
+  // 1) Standard header
+  const retryAfterHeader = res.headers.get('retry-after');
+  if (retryAfterHeader) {
+    const asNumber = Number(retryAfterHeader);
+    if (Number.isFinite(asNumber) && asNumber > 0) return Math.min(Math.ceil(asNumber), 600);
+
+    const asDate = Date.parse(retryAfterHeader);
+    if (!Number.isNaN(asDate)) {
+      const seconds = Math.ceil((asDate - Date.now()) / 1000);
+      if (seconds > 0) return Math.min(seconds, 600);
+    }
+  }
+
+  // 2) Gemini error details sometimes include google.rpc.RetryInfo
+  const details = body?.error?.details;
+  if (Array.isArray(details)) {
+    const retryInfo = details.find((d: any) => typeof d?.retryDelay === 'string');
+    const retryDelay = retryInfo?.retryDelay as string | undefined;
+    const m = retryDelay?.match(/^([0-9]+)(?:\.[0-9]+)?s$/);
+    if (m?.[1]) return Math.min(parseInt(m[1], 10), 600);
+  }
+
+  // 3) Heuristic fallback
+  const msg = String(body?.error?.message ?? '').toLowerCase();
+  if (msg.includes('per minute') || msg.includes('rate limit')) return 60;
+  if (msg.includes('per day') || msg.includes('daily')) return 60 * 60; // still capped by client UX
+
+  return fallbackSeconds;
+}
+
+// Call Gemini with minimal retries.
+// IMPORTANT: Avoid retrying 429 in a tight loop (it makes rate limiting worse).
 async function callGeminiWithRetry(
   apiKey: string,
   imageData: any,
   prompt: string
 ): Promise<string> {
+  const FALLBACK_RETRY_AFTER_SECONDS = 90;
   let lastError: Error | null = null;
-  
+
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      // Add jitter to avoid thundering herd
       if (attempt > 0) {
         const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
-        console.log(`Retry attempt ${attempt + 1}, waiting ${delay}ms`);
+        console.log(`Retry attempt ${attempt + 1}, waiting ${Math.round(delay)}ms`);
         await sleep(delay);
       }
 
@@ -83,32 +125,41 @@ async function callGeminiWithRetry(
           contents: [{
             parts: [
               { text: prompt },
-              imageData
-            ]
+              imageData,
+            ],
           }],
           generationConfig: {
             temperature: 0.7,
             maxOutputTokens: 2048,
-          }
-        })
+          },
+        }),
       });
 
+      const bodyText = await response.text();
+      let body: any = null;
+      try {
+        body = bodyText ? JSON.parse(bodyText) : null;
+      } catch {
+        body = null;
+      }
+
       if (response.status === 429) {
-        console.log('Rate limited, will retry...');
-        lastError = new Error('Rate limited');
-        continue;
+        const retryAfter = parseRetryAfterSeconds(response, body, FALLBACK_RETRY_AFTER_SECONDS);
+        const msg = body?.error?.message
+          ? String(body.error.message)
+          : 'Gemini rate limited.';
+
+        console.warn('Gemini 429:', msg.slice(0, 300));
+        throw new RateLimitError(msg, retryAfter);
       }
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Gemini API error:', response.status, errorText);
+        console.error('Gemini API error:', response.status, bodyText.slice(0, 500));
         lastError = new Error(`Gemini API error: ${response.status}`);
         continue;
       }
 
-      const result = await response.json();
-      const analysis = result.candidates?.[0]?.content?.parts?.[0]?.text;
-
+      const analysis = body?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!analysis) {
         lastError = new Error('No analysis in response');
         continue;
@@ -116,6 +167,9 @@ async function callGeminiWithRetry(
 
       return analysis;
     } catch (e: any) {
+      // Pass through rate limit errors (the caller handles retry-after)
+      if (e?.name === 'RateLimitError') throw e;
+
       console.error('Gemini call error:', e);
       lastError = e;
     }
@@ -313,12 +367,27 @@ Remember: Write in natural, flowing sentences. No markdown, no asterisks.`;
   } catch (error: any) {
     console.error('Setup analysis error:', error);
     
-    // Check if it's a rate limit error
-    if (error.message?.includes('Rate limited') || error.message?.includes('429')) {
+    // Handle rate limiting in a structured way
+    if (error?.name === 'RateLimitError') {
+      const retryAfter = Number((error as any).retryAfterSeconds ?? 90);
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
+          error: error.message || 'Gemini rate limited.',
+          retryAfter: Number.isFinite(retryAfter) ? retryAfter : 90,
+        }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Legacy fallback
+    if (error.message?.includes('429')) {
+      return new Response(
+        JSON.stringify({
           error: 'AI service is busy. Please try again in a moment.',
-          retryAfter: 30
+          retryAfter: 90,
         }),
         {
           status: 429,
