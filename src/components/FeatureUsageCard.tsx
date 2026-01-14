@@ -57,5 +57,45 @@ export const FeatureUsageCard = () => {
         </CardContent>
       </Card>;
   }
-  return;
+  
+  return (
+    <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-primary" />
+          AI Feature Usage
+        </CardTitle>
+        <CardDescription>
+          Your AI-powered trading insights
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">Credits Used</span>
+          <span className="font-bold text-lg">{totalCreditsUsed}</span>
+        </div>
+        
+        {mostUsed && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Most Used</span>
+              <span className="font-medium">{mostUsed.featureName}</span>
+            </div>
+            <Progress value={Math.min((mostUsed.creditsSpent / totalCreditsUsed) * 100, 100)} className="h-2" />
+          </div>
+        )}
+        
+        <div className="pt-2 border-t border-border/50">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Crown className="h-4 w-4 text-primary" />
+            <span>{usage.length} features explored</span>
+          </div>
+        </div>
+        
+        <Button onClick={() => navigate('/ai-features')} variant="outline" className="w-full">
+          View All Features
+        </Button>
+      </CardContent>
+    </Card>
+  );
 };
