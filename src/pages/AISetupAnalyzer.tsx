@@ -68,7 +68,7 @@ export default function AISetupAnalyzer() {
             retryAttemptsRef.current += 1;
             pendingRetry = true;
             setRetryIn(retryAfter);
-            toast.message(`Gemini rate limited. Retrying in ${retryAfter}s...`);
+            toast.message(`AI rate limited. Retrying in ${retryAfter}s...`);
             return;
           }
         }
