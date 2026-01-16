@@ -44,9 +44,9 @@ serve(async (req) => {
       );
     }
 
-    const paystackSecret = Deno.env.get('PAYSTACK_SECRET_KEY');
-    if (!paystackSecret) {
-      throw new Error('PAYSTACK_SECRET_KEY not configured');
+    const flutterwaveSecret = Deno.env.get('FLUTTERWAVE_SECRET_KEY');
+    if (!flutterwaveSecret) {
+      throw new Error('FLUTTERWAVE_SECRET_KEY not configured');
     }
 
     // Validate promo code if provided
@@ -73,11 +73,11 @@ serve(async (req) => {
 
     switch (planType) {
       case 'pro':
-        amount = 750000; // ₦7,500 in kobo
+        amount = 7500; // ₦7,500
         planName = 'Pro Plan';
         break;
       case 'lifetime':
-        amount = 3000000; // ₦30,000 in kobo
+        amount = 30000; // ₦30,000
         planName = 'Lifetime Access';
         break;
       default:
@@ -92,43 +92,51 @@ serve(async (req) => {
       amount = Math.floor(amount * (1 - discount));
     }
 
-    const callbackUrl = `${req.headers.get('origin')}/dashboard?payment=success`;
+    const txRef = `FX-${user.id.slice(0, 8)}-${Date.now()}`;
+    const redirectUrl = `${req.headers.get('origin')}/dashboard?payment=success`;
 
-    const paystackResponse = await fetch('https://api.paystack.co/transaction/initialize', {
+    const flutterwaveResponse = await fetch('https://api.flutterwave.com/v3/payments', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${paystackSecret}`,
+        'Authorization': `Bearer ${flutterwaveSecret}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        email,
+        tx_ref: txRef,
         amount: amount,
         currency: 'NGN',
-        callback_url: callbackUrl,
-        metadata: {
+        redirect_url: redirectUrl,
+        customer: {
+          email: email,
+        },
+        meta: {
           user_id: user.id,
           plan_type: planType,
           plan_name: planName,
           affiliate_id: affiliateId,
           promo_code: promoCode?.toUpperCase() || null,
         },
+        customizations: {
+          title: 'FX Trading Journal',
+          description: `Payment for ${planName}`,
+          logo: 'https://fx.lovable.app/favicon.png',
+        },
       }),
     });
 
-    const paystackData = await paystackResponse.json();
+    const flutterwaveData = await flutterwaveResponse.json();
 
-    if (!paystackResponse.ok) {
-      console.error('Paystack error:', paystackData);
-      throw new Error(paystackData.message || 'Failed to initialize payment');
+    if (!flutterwaveResponse.ok || flutterwaveData.status !== 'success') {
+      console.error('Flutterwave error:', flutterwaveData);
+      throw new Error(flutterwaveData.message || 'Failed to initialize payment');
     }
 
-    console.log(`Payment initialized for user ${user.id}, plan: ${planType}`);
+    console.log(`Payment initialized for user ${user.id}, plan: ${planType}, tx_ref: ${txRef}`);
 
     return new Response(
       JSON.stringify({
-        authorization_url: paystackData.data.authorization_url,
-        access_code: paystackData.data.access_code,
-        reference: paystackData.data.reference,
+        authorization_url: flutterwaveData.data.link,
+        tx_ref: txRef,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
