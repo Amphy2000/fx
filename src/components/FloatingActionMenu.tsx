@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Plus,
@@ -16,11 +17,14 @@ import { toast } from "sonner";
 import { QuickTradeCapture } from "./QuickTradeCapture";
 
 export const FloatingActionMenu = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
   const [showQuickLog, setShowQuickLog] = useState(false);
-  const navigate = useNavigate();
+
+  if (location.pathname === "/bundle") return null;
 
   const quickActions = [
     {

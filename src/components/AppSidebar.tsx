@@ -175,7 +175,7 @@ export function AppSidebar() {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
-                onClick={() => window.open("https://smscourse.lovable.app/", "_blank")}
+                onClick={() => window.open("https://smscourse.lovable.app/dashboard", "_blank")}
                 className="text-yellow-500 font-semibold"
               >
                 <BookOpen className="h-4 w-4" />
