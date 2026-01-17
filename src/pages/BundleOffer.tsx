@@ -219,6 +219,16 @@ const BundleOffer = () => {
                                         <span className="text-6xl md:text-7xl font-extrabold text-white">₦15,000</span>
                                         <span className="text-gray-500 ml-4 font-medium italic text-lg hover:text-yellow-500 transition-colors cursor-pointer" onClick={() => toast("Fastest finger gets it for ₦12,500? Contact us!")}>Special Deal</span>
                                     </div>
+                                    {/* Scarcity Counter */}
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ delay: 0.8 }}
+                                        className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/30"
+                                    >
+                                        <Sparkles className="w-4 h-4 text-red-400" />
+                                        <span className="text-sm font-semibold text-red-400">Limited to first 10 traders • 6 slots remaining</span>
+                                    </motion.div>
                                 </div>
 
                                 <div className="w-full md:w-auto flex flex-col items-center gap-6">
@@ -234,9 +244,16 @@ const BundleOffer = () => {
                                         {loading ? "Initializing..." : isOwned ? "YOU OWN THIS" : "CLAIM NOW"}
                                         {!loading && <ArrowRight className="w-6 h-6" />}
                                     </Button>
-                                    <div className="flex items-center gap-2 text-gray-500 text-sm">
-                                        <ShieldCheck className="w-4 h-4" />
-                                        Secure Payment via Flutterwave
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2 text-gray-500 text-sm">
+                                            <ShieldCheck className="w-4 h-4" />
+                                            Secure Payment via Flutterwave
+                                        </div>
+                                        {/* Instant Access Reassurance */}
+                                        <div className="flex items-center gap-2 text-green-400 text-sm font-medium">
+                                            <Zap className="w-3 h-3" />
+                                            Instant automated access • Start learning 30 seconds after payment
+                                        </div>
                                     </div>
                                 </div>
                             </div>

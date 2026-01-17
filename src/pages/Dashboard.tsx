@@ -35,7 +35,6 @@ import { SubscriptionBanner } from "@/components/SubscriptionBanner";
 import { FeatureUsageCard } from "@/components/FeatureUsageCard";
 import { ShareToTwitterButton } from "@/components/ShareToTwitterButton";
 import { QuickCheckInModal } from "@/components/QuickCheckInModal";
-import { QuickTradeCapture } from "@/components/QuickTradeCapture";
 import { DrawdownRecoveryBanner } from "@/components/DrawdownRecoveryBanner";
 import { FreeVoiceMemo } from "@/components/FreeVoiceMemo";
 import { format } from "date-fns";
