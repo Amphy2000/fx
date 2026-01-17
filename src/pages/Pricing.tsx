@@ -80,13 +80,13 @@ const Pricing = () => {
         user
       }
     } = await supabase.auth.getUser();
-    
+
     if (!user) {
       toast.error("Please sign in to upgrade your plan.");
       navigate("/auth");
       return;
     }
-    
+
     try {
       const {
         data,
@@ -98,9 +98,9 @@ const Pricing = () => {
           promoCode: promoValidated ? promoCode.toUpperCase() : null,
         }
       });
-      
+
       if (error) throw error;
-      
+
       if (data?.authorization_url) {
         window.location.href = data.authorization_url;
       }
@@ -124,12 +124,12 @@ const Pricing = () => {
     description: "Start building the habit",
     icon: <Sparkles className="h-6 w-6" />,
     features: [
-      "Unlimited trade logging", 
+      "Unlimited trade logging",
       "Unlimited daily check-ins",
       "Free local risk warnings",
-      "50 AI credits/month for AI features", 
-      "Basic trade tracking", 
-      "Emotion & mental state tracking", 
+      "50 AI credits/month for AI features",
+      "Basic trade tracking",
+      "Emotion & mental state tracking",
       "Performance analytics",
       "Trade calendar",
       "Achievements & streaks",
@@ -148,10 +148,10 @@ const Pricing = () => {
     icon: <Zap className="h-6 w-6" />,
     features: [
       "Everything in Free",
-      "⚡ UNLIMITED AI Trade Validation", 
+      "⚡ UNLIMITED AI Trade Validation",
       "⚡ UNLIMITED AI Coach & Assistant",
       "⚡ UNLIMITED Weekly AI Summaries",
-      "Advanced analytics", 
+      "Advanced analytics",
       "Mental state correlation",
       "AI Journal insights",
       "Pattern recognition",
@@ -174,14 +174,14 @@ const Pricing = () => {
     icon: <Crown className="h-6 w-6" />,
     badge: "🔥 Best Value",
     features: [
-      "All Pro features", 
-      "⚡ UNLIMITED everything forever", 
-      "Lifetime access", 
-      "No recurring fees", 
-      "Future updates included", 
+      "All Pro features",
+      "⚡ UNLIMITED everything forever",
+      "Lifetime access",
+      "No recurring fees",
+      "Future updates included",
       "All future AI features",
       "Premium community access",
-      "Early adopter perks", 
+      "Early adopter perks",
       "VIP support",
       "Priority feature requests"
     ],
@@ -192,107 +192,135 @@ const Pricing = () => {
   }];
 
   return <Layout>
-      <div className="container mx-auto px-4 py-12">
-        <div className="text-center mb-8">
-          <span className="inline-block px-4 py-1 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-4">
-            🚀 Beta Launch Special
-          </span>
-          <h1 className="text-4xl font-bold mb-4">Choose Your Plan</h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Start free and upgrade anytime. Lock in lifetime access during our beta phase.
-          </p>
-        </div>
+    <div className="container mx-auto px-4 py-12">
+      <div className="text-center mb-8">
+        <span className="inline-block px-4 py-1 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-4">
+          🚀 Beta Launch Special
+        </span>
+        <h1 className="text-4xl font-bold mb-4">Choose Your Plan</h1>
+        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          Start free and upgrade anytime. Lock in lifetime access during our beta phase.
+        </p>
+      </div>
 
-        {searchParams.get("ref") && (
-          <div className="max-w-md mx-auto mb-6 p-4 bg-primary/10 border border-primary/20 rounded-lg text-center">
-            <p className="text-sm font-medium">
-              🎉 You've been referred! Your promo code <span className="font-mono font-bold">{searchParams.get("ref")}</span> has been applied
+      {/* Bundle Promo Banner */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="max-w-4xl mx-auto mb-16 relative group cursor-pointer"
+        onClick={() => navigate("/bundle")}
+      >
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-yellow-500 via-purple-500 to-yellow-500 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-1000"></div>
+        <div className="relative bg-card border border-primary/20 p-6 md:p-8 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 text-yellow-500 font-bold text-sm uppercase tracking-wider mb-2">
+              <Sparkles className="h-4 w-4" />
+              Limited Time Offer
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold mb-2">The Ultimate Trader Bundle 🚀</h2>
+            <p className="text-muted-foreground">
+              Get <span className="text-foreground font-semibold">SMS Course</span> + <span className="text-foreground font-semibold">AI Journal Lifetime</span> for just <span className="text-yellow-500 font-bold text-lg">₦15,000</span>
             </p>
           </div>
-        )}
-
-        <Card className="max-w-md mx-auto mb-12 bg-gradient-to-br from-primary/5 to-purple-500/5 border-primary/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Tag className="h-5 w-5" />
-              Have a Promo Code?
-            </CardTitle>
-            <CardDescription>Enter your referral or promo code to get 10% off</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <div className="flex-1 space-y-2">
-                <Label htmlFor="promo">Promo Code</Label>
-                <Input
-                  id="promo"
-                  placeholder="Enter code"
-                  value={promoCode}
-                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                  disabled={promoValidated}
-                />
-              </div>
-              {!promoValidated && (
-                <Button 
-                  onClick={validatePromoCode} 
-                  className="mt-8"
-                  disabled={!promoCode}
-                >
-                  Apply
-                </Button>
-              )}
-            </div>
-            {promoValidated && (
-              <div className="flex items-center gap-2 text-sm text-green-600">
-                <Check className="h-4 w-4" />
-                <span>Promo code applied! {promoDiscount}% off</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {plans.map(plan => <Card key={plan.name} className={`relative ${plan.highlight ? "border-primary shadow-lg scale-105" : ""}`}>
-              {plan.badge && <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary text-primary-foreground text-xs font-semibold rounded-full">
-                  {plan.badge}
-                </div>}
-              <CardHeader>
-                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
-                  {plan.icon}
-                </div>
-                <CardTitle>{plan.name}</CardTitle>
-                <CardDescription>{plan.description}</CardDescription>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold">{plan.price}</span>
-                  {plan.originalPrice && (
-                    <div className="text-lg text-muted-foreground line-through">{plan.originalPrice}</div>
-                  )}
-                  <span className="text-muted-foreground ml-1">{plan.period}</span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Button variant={plan.variant} onClick={plan.onClick} disabled={loading === plan.planType} className="w-full mb-6 bg-yellow-500 hover:bg-yellow-400 text-black">
-                  {loading === plan.planType ? "Processing..." : plan.cta}
-                </Button>
-                <ul className="space-y-3">
-                  {plan.features.map(feature => <li key={feature} className="flex items-start gap-2">
-                      <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-sm">{feature}</span>
-                    </li>)}
-                </ul>
-              </CardContent>
-            </Card>)}
+          <div className="flex flex-col items-center md:items-end gap-2">
+            <div className="text-sm text-muted-foreground line-through">Value: ₦40,000</div>
+            <Button size="lg" className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-8">
+              View Bundle Deal
+            </Button>
+          </div>
         </div>
+      </motion.div>
 
-        <div className="mt-12 text-center text-sm text-muted-foreground">
-          <p>All plans include secure data encryption and privacy protection.</p>
-          <p className="mt-2">
-            Questions? Contact us at amphyai@outlook.com
-            {" | "}
-            <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>
+      {searchParams.get("ref") && (
+        <div className="max-w-md mx-auto mb-6 p-4 bg-primary/10 border border-primary/20 rounded-lg text-center">
+          <p className="text-sm font-medium">
+            🎉 You've been referred! Your promo code <span className="font-mono font-bold">{searchParams.get("ref")}</span> has been applied
           </p>
         </div>
+      )}
+
+      <Card className="max-w-md mx-auto mb-12 bg-gradient-to-br from-primary/5 to-purple-500/5 border-primary/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Tag className="h-5 w-5" />
+            Have a Promo Code?
+          </CardTitle>
+          <CardDescription>Enter your referral or promo code to get 10% off</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="promo">Promo Code</Label>
+              <Input
+                id="promo"
+                placeholder="Enter code"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                disabled={promoValidated}
+              />
+            </div>
+            {!promoValidated && (
+              <Button
+                onClick={validatePromoCode}
+                className="mt-8"
+                disabled={!promoCode}
+              >
+                Apply
+              </Button>
+            )}
+          </div>
+          {promoValidated && (
+            <div className="flex items-center gap-2 text-sm text-green-600">
+              <Check className="h-4 w-4" />
+              <span>Promo code applied! {promoDiscount}% off</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        {plans.map(plan => <Card key={plan.name} className={`relative ${plan.highlight ? "border-primary shadow-lg scale-105" : ""}`}>
+          {plan.badge && <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary text-primary-foreground text-xs font-semibold rounded-full">
+            {plan.badge}
+          </div>}
+          <CardHeader>
+            <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-4">
+              {plan.icon}
+            </div>
+            <CardTitle>{plan.name}</CardTitle>
+            <CardDescription>{plan.description}</CardDescription>
+            <div className="mt-4">
+              <span className="text-4xl font-bold">{plan.price}</span>
+              {plan.originalPrice && (
+                <div className="text-lg text-muted-foreground line-through">{plan.originalPrice}</div>
+              )}
+              <span className="text-muted-foreground ml-1">{plan.period}</span>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Button variant={plan.variant} onClick={plan.onClick} disabled={loading === plan.planType} className="w-full mb-6 bg-yellow-500 hover:bg-yellow-400 text-black">
+              {loading === plan.planType ? "Processing..." : plan.cta}
+            </Button>
+            <ul className="space-y-3">
+              {plan.features.map(feature => <li key={feature} className="flex items-start gap-2">
+                <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                <span className="text-sm">{feature}</span>
+              </li>)}
+            </ul>
+          </CardContent>
+        </Card>)}
       </div>
-    </Layout>;
+
+      <div className="mt-12 text-center text-sm text-muted-foreground">
+        <p>All plans include secure data encryption and privacy protection.</p>
+        <p className="mt-2">
+          Questions? Contact us at amphyai@outlook.com
+          {" | "}
+          <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>
+        </p>
+      </div>
+    </div>
+  </Layout>;
 };
 
 export default Pricing;

@@ -33,7 +33,9 @@ const Auth = () => {
         // Only redirect if not in password reset flow
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          navigate("/dashboard");
+          const searchParams = new URLSearchParams(window.location.search);
+          const redirect = searchParams.get("redirect");
+          navigate(redirect || "/dashboard");
         }
       }
     };
@@ -48,7 +50,7 @@ const Auth = () => {
     ctx!.font = '14px Arial';
     ctx!.fillText('fingerprint', 2, 2);
     const canvasData = canvas.toDataURL();
-    
+
     const fingerprint = {
       userAgent: navigator.userAgent,
       language: navigator.language,
@@ -58,7 +60,7 @@ const Auth = () => {
       canvas: canvasData.substring(0, 50),
       plugins: Array.from(navigator.plugins || []).map(p => p.name).join(','),
     };
-    
+
     // Create a hash of the fingerprint
     return btoa(JSON.stringify(fingerprint)).substring(0, 100);
   };
@@ -141,7 +143,9 @@ const Auth = () => {
           navigate("/onboarding");
         } else {
           toast.success("Logged in successfully!");
-          navigate("/dashboard");
+          const params = new URLSearchParams(window.location.search);
+          const redirect = params.get("redirect");
+          navigate(redirect || "/dashboard");
         }
       }
     } catch (error: any) {
@@ -262,13 +266,13 @@ const Auth = () => {
               <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full" 
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
                   onClick={handleGoogleSignIn}
                 >
                   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -291,7 +295,7 @@ const Auth = () => {
                   </svg>
                   Continue with Google
                 </Button>
-                
+
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
                     <Separator />
@@ -361,13 +365,13 @@ const Auth = () => {
                 </Dialog>
               </form>
             </TabsContent>
-            
+
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full" 
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
                   onClick={handleGoogleSignIn}
                 >
                   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -390,7 +394,7 @@ const Auth = () => {
                   </svg>
                   Continue with Google
                 </Button>
-                
+
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
                     <Separator />

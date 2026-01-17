@@ -43,6 +43,7 @@ import PsychologyGuide from "./pages/PsychologyGuide";
 import MentalStateCorrelation from "./pages/MentalStateCorrelation";
 import AffiliateApply from "./pages/AffiliateApply";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
+import BundleOffer from "./pages/BundleOffer";
 import { FloatingActionMenu } from "./components/FloatingActionMenu";
 
 const queryClient = new QueryClient();
@@ -60,43 +61,44 @@ const AppContent = () => {
           <Route path="/calculators" element={<Calculators />} />
           <Route path="/weekly-summary" element={<WeeklySummary />} />
           <Route path="/partner-summary" element={<WeeklySummary />} />
-        <Route path="/ai-journal" element={<AIJournal />} />
-        <Route path="/ai-setup-analyzer" element={<AISetupAnalyzer />} />
-        <Route path="/ai-features" element={<AIFeatures />} />
-        
-        <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/integrations" element={<Integrations />} />
-        <Route path="/integrations/mt5-setup" element={<MT5Setup />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/admin/abuse-prevention" element={<AbusePreventionAdmin />} />
-        <Route path="/targets" element={<Targets />} />
-        <Route path="/trade-calendar" element={<TradeCalendar />} />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="/feedback" element={<Feedback />} />
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/terms" element={<Terms />} />
-        <Route path="/check-in" element={<CheckIn />} />
-        <Route path="/routine" element={<Routine />} />
-        <Route path="/setups" element={<Setups />} />
-        <Route path="/analytics/advanced" element={<AdvancedAnalytics />} />
-        <Route path="/analytics/mental-state" element={<MentalStateCorrelation />} />
-        <Route path="/streaks" element={<Streaks />} />
-        <Route path="/onboarding" element={<OnboardingOptimized />} />
-        <Route path="/onboarding-full" element={<Onboarding />} />
-        <Route path="/achievements" element={<Achievements />} />
-        <Route path="/accountability-partners" element={<AccountabilityPartners />} />
-        <Route path="/affiliate/apply" element={<AffiliateApply />} />
-        <Route path="/affiliate/dashboard" element={<AffiliateDashboard />} />
-        <Route path="/install" element={<Install />} />
-        <Route path="/psychology-guide" element={<PsychologyGuide />} />
-        <Route path="/guides" element={<Guides />} />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      <FloatingActionMenu />
-      <PWAUpdatePrompt />
-    </BrowserRouter>
+          <Route path="/ai-journal" element={<AIJournal />} />
+          <Route path="/ai-setup-analyzer" element={<AISetupAnalyzer />} />
+          <Route path="/ai-features" element={<AIFeatures />} />
+
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/integrations" element={<Integrations />} />
+          <Route path="/integrations/mt5-setup" element={<MT5Setup />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/abuse-prevention" element={<AbusePreventionAdmin />} />
+          <Route path="/targets" element={<Targets />} />
+          <Route path="/trade-calendar" element={<TradeCalendar />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/feedback" element={<Feedback />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/check-in" element={<CheckIn />} />
+          <Route path="/routine" element={<Routine />} />
+          <Route path="/setups" element={<Setups />} />
+          <Route path="/analytics/advanced" element={<AdvancedAnalytics />} />
+          <Route path="/analytics/mental-state" element={<MentalStateCorrelation />} />
+          <Route path="/streaks" element={<Streaks />} />
+          <Route path="/onboarding" element={<OnboardingOptimized />} />
+          <Route path="/onboarding-full" element={<Onboarding />} />
+          <Route path="/achievements" element={<Achievements />} />
+          <Route path="/accountability-partners" element={<AccountabilityPartners />} />
+          <Route path="/affiliate/apply" element={<AffiliateApply />} />
+          <Route path="/affiliate/dashboard" element={<AffiliateDashboard />} />
+          <Route path="/bundle" element={<BundleOffer />} />
+          <Route path="/install" element={<Install />} />
+          <Route path="/psychology-guide" element={<PsychologyGuide />} />
+          <Route path="/guides" element={<Guides />} />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <FloatingActionMenu />
+        <PWAUpdatePrompt />
+      </BrowserRouter>
     </>
   );
 };

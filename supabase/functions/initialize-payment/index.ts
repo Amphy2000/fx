@@ -55,7 +55,7 @@ serve(async (req) => {
     if (promoCode) {
       const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const adminSupabase = createClient(supabaseUrl, serviceRoleKey);
-      
+
       const { data: affiliate, error: affiliateError } = await adminSupabase
         .from("affiliate_profiles")
         .select("id, status")
@@ -79,6 +79,10 @@ serve(async (req) => {
       case 'lifetime':
         amount = 30000; // ₦30,000
         planName = 'Lifetime Access';
+        break;
+      case 'bundle':
+        amount = 15000; // ₦15,000
+        planName = 'Flash Sale Bundle';
         break;
       default:
         return new Response(

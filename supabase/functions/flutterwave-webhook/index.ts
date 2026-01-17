@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
     // Verify webhook signature
     const secretHash = Deno.env.get('FLUTTERWAVE_WEBHOOK_HASH');
     const signature = req.headers.get('verif-hash');
-    
+
     if (secretHash && signature !== secretHash) {
       console.error('Invalid webhook signature');
       return new Response(
@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     if (payload.event === 'charge.completed' && payload.data.status === 'successful') {
       const data = payload.data;
       const meta = data.meta || {};
-      
+
       const userId = meta.user_id;
       const planType = meta.plan_type;
       const affiliateId = meta.affiliate_id;
@@ -58,9 +58,9 @@ Deno.serve(async (req) => {
           'Authorization': `Bearer ${flutterwaveSecret}`,
         },
       });
-      
+
       const verifyData = await verifyResponse.json();
-      
+
       if (verifyData.status !== 'success' || verifyData.data.status !== 'successful') {
         console.error('Transaction verification failed:', verifyData);
         return new Response(
@@ -73,10 +73,10 @@ Deno.serve(async (req) => {
 
       // Calculate subscription details
       const now = new Date();
-      const expiresAt = planType === 'lifetime' 
-        ? null 
+      const expiresAt = planType === 'lifetime'
+        ? null
         : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
-      
+
       const aiCredits = planType === 'lifetime' ? 999999 : 200;
 
       // Create subscription record
@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
-          subscription_tier: planType === 'lifetime' ? 'lifetime' : 'pro',
+          subscription_tier: (planType === 'lifetime' || planType === 'bundle') ? 'lifetime' : 'pro',
           subscription_status: 'active',
           subscription_expires_at: expiresAt,
           ai_credits: aiCredits,
@@ -120,6 +120,39 @@ Deno.serve(async (req) => {
       if (profileError) {
         console.error('Error updating profile:', profileError);
         throw profileError;
+      }
+
+      // If it's a bundle, also update the smscourse database
+      if (planType === 'bundle') {
+        const bundleToken = Deno.env.get('BUNDLE_AUTH_TOKEN');
+        const smscourseUrl = 'https://pjlpuyexlhicacsalzvm.supabase.co'; // Your SMS Course URL
+
+        if (bundleToken) {
+          try {
+            const userEmail = data.customer.email;
+            console.log(`Sending bundle activation for ${userEmail} to SMS Course...`);
+
+            const response = await fetch(`${smscourseUrl}/functions/v1/activate-bundle`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: userEmail,
+                bundleToken: bundleToken
+              })
+            });
+
+            if (!response.ok) {
+              const errData = await response.json();
+              console.error('Failed to activate SMS Course:', errData);
+            } else {
+              console.log(`Successfully activated SMS Course for ${userEmail}`);
+            }
+          } catch (e) {
+            console.error('Error calling SMS Course activation:', e);
+          }
+        } else {
+          console.warn('BUNDLE_AUTH_TOKEN not configured. Skipping SMS Course activation.');
+        }
       }
 
       // Record affiliate referral if applicable
