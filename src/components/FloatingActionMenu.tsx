@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { GlobalVoiceAssistant } from "./GlobalVoiceAssistant";
 import { FeedbackModal } from "./FeedbackModal";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { QuickTradeCapture } from "./QuickTradeCapture";
 
