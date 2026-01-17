@@ -56,6 +56,7 @@ const BundleOffer = () => {
 
             if (error) {
                 console.error('Edge Function invocation error:', error);
+                let errorMessage = error.message || "Edge Function failed";
 
                 // If it's a 400 error, try to extract the message from the response
                 try {
@@ -63,14 +64,16 @@ const BundleOffer = () => {
                     if (errorContext && typeof errorContext.json === 'function') {
                         const errorBody = await errorContext.json();
                         if (errorBody && errorBody.error) {
-                            throw new Error(errorBody.error);
+                            errorMessage = errorBody.error;
                         }
                     }
-                } catch (jsonErr) {
-                    console.error('Could not parse error body:', jsonErr);
+                } catch (jsonErr: any) {
+                    console.error('Error parsing response body:', jsonErr);
+                    // If we threw a new Error above, we'd catch it here, so checking if it's the one we want
+                    if (jsonErr?.message) errorMessage = jsonErr.message;
                 }
 
-                throw new Error(error.message || "Edge Function failed");
+                throw new Error(errorMessage);
             }
 
             if (data?.authorization_url) {
