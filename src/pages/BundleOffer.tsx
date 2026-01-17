@@ -223,7 +223,7 @@ const BundleOffer = () => {
 
                                 <div className="w-full md:w-auto flex flex-col items-center gap-6">
                                     <Button
-                                        size="xl"
+                                        size="lg"
                                         onClick={handlePurchase}
                                         disabled={loading}
                                         className={`w-full md:w-64 h-20 text-xl font-bold rounded-2xl transition-all flex items-center justify-center gap-3 active:scale-95 ${isOwned
