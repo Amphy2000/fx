@@ -55,10 +55,22 @@ const BundleOffer = () => {
             });
 
             if (error) {
-                // Try to get a more descriptive error from the response
-                const errorMsg = error.message || (typeof error === 'object' ? JSON.stringify(error) : String(error));
-                console.error('Function error:', error);
-                throw new Error(errorMsg);
+                console.error('Edge Function invocation error:', error);
+
+                // If it's a 400 error, try to extract the message from the response
+                try {
+                    const errorContext = error.context;
+                    if (errorContext && typeof errorContext.json === 'function') {
+                        const errorBody = await errorContext.json();
+                        if (errorBody && errorBody.error) {
+                            throw new Error(errorBody.error);
+                        }
+                    }
+                } catch (jsonErr) {
+                    console.error('Could not parse error body:', jsonErr);
+                }
+
+                throw new Error(error.message || "Edge Function failed");
             }
 
             if (data?.authorization_url) {
