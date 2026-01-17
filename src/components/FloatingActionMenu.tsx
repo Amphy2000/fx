@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { 
-  Plus, 
-  Mic, 
-  MessageSquare, 
+import {
+  Plus,
+  Mic,
+  MessageSquare,
   X,
   TrendingUp,
   Sparkles,
@@ -13,11 +13,13 @@ import { GlobalVoiceAssistant } from "./GlobalVoiceAssistant";
 import { FeedbackModal } from "./FeedbackModal";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { QuickTradeCapture } from "./QuickTradeCapture";
 
 export const FloatingActionMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
+  const [showQuickLog, setShowQuickLog] = useState(false);
   const navigate = useNavigate();
 
   const quickActions = [
@@ -33,9 +35,9 @@ export const FloatingActionMenu = () => {
     },
     {
       icon: TrendingUp,
-      label: "Log Trade",
+      label: "Quick Log",
       action: () => {
-        navigate("/ai-features");
+        setShowQuickLog(true);
         setIsOpen(false);
       },
       color: "bg-green-600 hover:bg-green-700"
@@ -117,6 +119,14 @@ export const FloatingActionMenu = () => {
       {/* Modals */}
       <GlobalVoiceAssistant isOpen={showVoiceAssistant} onOpenChange={setShowVoiceAssistant} />
       <FeedbackModal open={showFeedback} onOpenChange={setShowFeedback} />
+      <QuickTradeCapture
+        isOpenExternal={showQuickLog}
+        onOpenChangeExternal={setShowQuickLog}
+        onTradeAdded={() => {
+          setShowQuickLog(false);
+          // Data refresh is handled by the page where this is rendered
+        }}
+      />
     </>
   );
 };

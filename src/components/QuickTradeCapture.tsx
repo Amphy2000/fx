@@ -9,15 +9,19 @@ import { motion, AnimatePresence } from "framer-motion";
 
 interface QuickTradeCaptureProps {
   onTradeAdded: () => void;
+  isOpenExternal?: boolean;
+  onOpenChangeExternal?: (open: boolean) => void;
 }
 
 const COMMON_PAIRS = [
-  "EURUSD", "GBPUSD", "USDJPY", "XAUUSD", "BTCUSD", 
+  "EURUSD", "GBPUSD", "USDJPY", "XAUUSD", "BTCUSD",
   "AUDUSD", "USDCAD", "NZDUSD", "GBPJPY", "EURJPY"
 ];
 
-export const QuickTradeCapture = ({ onTradeAdded }: QuickTradeCaptureProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+export const QuickTradeCapture = ({ onTradeAdded, isOpenExternal, onOpenChangeExternal }: QuickTradeCaptureProps) => {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = isOpenExternal !== undefined ? isOpenExternal : internalOpen;
+  const setIsOpen = onOpenChangeExternal || setInternalOpen;
   const [isLoading, setIsLoading] = useState(false);
   const [pair, setPair] = useState("");
   const [result, setResult] = useState<"win" | "loss" | "open" | null>(null);
@@ -95,27 +99,29 @@ export const QuickTradeCapture = ({ onTradeAdded }: QuickTradeCaptureProps) => {
     setIsOpen(false);
   };
 
-  const displayPairs = recentPairs.length > 0 
+  const displayPairs = recentPairs.length > 0
     ? [...new Set([...recentPairs, ...COMMON_PAIRS])].slice(0, 6)
     : COMMON_PAIRS.slice(0, 6);
 
   return (
     <>
-      {/* Floating Action Button */}
-      <motion.div
-        className="fixed bottom-6 right-6 z-50"
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 260, damping: 20 }}
-      >
-        <Button
-          onClick={() => setIsOpen(true)}
-          size="lg"
-          className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+      {/* Floating Action Button - Only show if not controlled externally */}
+      {isOpenExternal === undefined && (
+        <motion.div
+          className="fixed bottom-6 right-6 z-50"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", stiffness: 260, damping: 20 }}
         >
-          <Zap className="h-6 w-6" />
-        </Button>
-      </motion.div>
+          <Button
+            onClick={() => setIsOpen(true)}
+            size="lg"
+            className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+          >
+            <Zap className="h-6 w-6" />
+          </Button>
+        </motion.div>
+      )}
 
       {/* Quick Capture Modal */}
       <AnimatePresence>
