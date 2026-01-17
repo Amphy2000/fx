@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
       // If it's a bundle, also update the smscourse database
       if (planType === 'bundle') {
         const bundleToken = Deno.env.get('BUNDLE_AUTH_TOKEN');
-        const smscourseUrl = 'https://pjlpuyexlhicacsalzvm.supabase.co'; // Your SMS Course URL
+        const smscourseUrl = 'https://smscourse.lovable.app';
 
         if (bundleToken) {
           try {
