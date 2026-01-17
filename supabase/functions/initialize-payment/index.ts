@@ -46,25 +46,36 @@ serve(async (req) => {
 
     const flutterwaveSecret = Deno.env.get('FLUTTERWAVE_SECRET_KEY');
     if (!flutterwaveSecret) {
-      throw new Error('FLUTTERWAVE_SECRET_KEY not configured');
+      console.error('Config Error: FLUTTERWAVE_SECRET_KEY is missing');
+      return new Response(
+        JSON.stringify({ error: 'System configuration error: Flutterwave key is missing. Please set it in Lovable secrets.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Validate promo code if provided
     let affiliateId = null;
     let discount = 0;
     if (promoCode) {
+      console.log(`Validating promo code: ${promoCode}`);
       const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const adminSupabase = createClient(supabaseUrl, serviceRoleKey);
+      if (!serviceRoleKey) {
+        console.error('Config Error: SUPABASE_SERVICE_ROLE_KEY is missing');
+      } else {
+        const adminSupabase = createClient(supabaseUrl, serviceRoleKey);
+        const { data: affiliate, error: affiliateError } = await adminSupabase
+          .from("affiliate_profiles")
+          .select("id, status")
+          .eq("promo_code", promoCode.toUpperCase())
+          .single();
 
-      const { data: affiliate, error: affiliateError } = await adminSupabase
-        .from("affiliate_profiles")
-        .select("id, status")
-        .eq("promo_code", promoCode.toUpperCase())
-        .single();
-
-      if (affiliate && affiliate.status === "active") {
-        affiliateId = affiliate.id;
-        discount = 0.10; // 10% discount for using promo code
+        if (affiliate && affiliate.status === "active") {
+          affiliateId = affiliate.id;
+          discount = 0.10; // 10% discount for using promo code
+          console.log(`Promo code valid. Affiliate ID: ${affiliateId}`);
+        } else {
+          console.warn(`Promo code invalid or inactive: ${promoCode}`);
+        }
       }
     }
 
@@ -85,6 +96,7 @@ serve(async (req) => {
         planName = 'Flash Sale Bundle';
         break;
       default:
+        console.error(`Invalid plan type: ${planType}`);
         return new Response(
           JSON.stringify({ error: 'Invalid plan type' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -97,7 +109,10 @@ serve(async (req) => {
     }
 
     const txRef = `FX-${user.id.slice(0, 8)}-${Date.now()}`;
-    const redirectUrl = `${req.headers.get('origin')}/dashboard?payment=success`;
+    const origin = req.headers.get('origin') || 'https://amphyai.vercel.app';
+    const redirectUrl = `${origin}/dashboard?payment=success`;
+
+    console.log(`Requesting payment from Flutterwave for ${email}, amount: ${amount}`);
 
     const flutterwaveResponse = await fetch('https://api.flutterwave.com/v3/payments', {
       method: 'POST',
@@ -131,11 +146,14 @@ serve(async (req) => {
     const flutterwaveData = await flutterwaveResponse.json();
 
     if (!flutterwaveResponse.ok || flutterwaveData.status !== 'success') {
-      console.error('Flutterwave error:', flutterwaveData);
-      throw new Error(flutterwaveData.message || 'Failed to initialize payment');
+      console.error('Flutterwave error response:', flutterwaveData);
+      return new Response(
+        JSON.stringify({ error: flutterwaveData.message || 'Payment provider error. Check your Flutterwave keys.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    console.log(`Payment initialized for user ${user.id}, plan: ${planType}, tx_ref: ${txRef}`);
+    console.log(`Payment initialized successfully. tx_ref: ${txRef}`);
 
     return new Response(
       JSON.stringify({
@@ -145,7 +163,7 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Unhandled error in initialize-payment:', error);
     return new Response(
       JSON.stringify({ error: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
