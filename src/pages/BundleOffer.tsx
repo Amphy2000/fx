@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ThemeProvider } from "@/components/ThemeProvider";
+import { useBundleAnalytics } from "@/hooks/useBundleAnalytics";
 
 const BundleOffer = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [isOwned, setIsOwned] = useState(false);
+    const { trackButtonClick, trackPaymentInitiated } = useBundleAnalytics();
 
     useEffect(() => {
         const checkStatus = async () => {
@@ -32,6 +33,9 @@ const BundleOffer = () => {
     }, []);
 
     const handlePurchase = async () => {
+        // Track button click
+        trackButtonClick();
+
         if (isOwned) {
             navigate("/dashboard");
             return;
@@ -45,6 +49,9 @@ const BundleOffer = () => {
             navigate("/auth?redirect=/bundle");
             return;
         }
+
+        // Track payment initiated
+        trackPaymentInitiated();
 
         try {
             const { data, error } = await supabase.functions.invoke('initialize-payment', {
