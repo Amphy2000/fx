@@ -194,6 +194,26 @@ Deno.serve(async (req) => {
 
       console.log(`Successfully processed payment for user ${userId}`);
 
+      // Track successful payment in analytics (for bundle page)
+      if (planType === 'bundle') {
+        const { error: analyticsError } = await supabase
+          .from('bundle_analytics')
+          .insert({
+            event_type: 'payment_success',
+            user_id: userId,
+            metadata: {
+              amount: amount,
+              plan_type: planType,
+              tx_ref: txRef,
+              flw_ref: flwRef,
+            }
+          });
+
+        if (analyticsError) {
+          console.error('Failed to track analytics:', analyticsError);
+        }
+      }
+
       return new Response(
         JSON.stringify({ success: true }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
