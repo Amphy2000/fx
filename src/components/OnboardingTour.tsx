@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, ChevronLeft, X, Sparkles, Brain, Zap, BookOpen, BarChart3 } from "lucide-react";
+import { ChevronRight, ChevronLeft, X, Sparkles, Brain, Zap, BookOpen, BarChart3, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSidebar } from "@/components/ui/sidebar";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Step {
@@ -14,37 +16,43 @@ interface Step {
 const steps: Step[] = [
     {
         title: "Welcome to Amphy AI!",
-        description: "I'm your AI Trading Companion. Let me show you how to master your trading workflow in 60 seconds.",
-        icon: <Sparkles className="w-8 h-8 text-yellow-500" />,
+        description: "Your personal AI Trading Companion is ready. Let's master your trading psychology together.",
+        icon: <Sparkles className="w-12 h-12 text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]" />,
     },
     {
-        title: "The Trading Dashboard",
-        description: "This is your control center. Track your win rate, profit factor, and daily progress at a glance.",
+        title: "Trading Dashboard",
+        description: "Your command center. Track win rates, profit factors, and emotional performance in real-time.",
         targetId: "tour-dashboard",
-        icon: <BarChart3 className="w-8 h-8 text-blue-500" />,
+        icon: <BarChart3 className="w-12 h-12 text-blue-500" />,
+    },
+    {
+        title: "Trade Calendar",
+        description: "Review your journey. Identify which days your mind is sharpest and your trades are cleanest.",
+        targetId: "tour-trade-calendar",
+        icon: <Calendar className="w-12 h-12 text-green-500" />,
     },
     {
         title: "AI Daily Journal",
-        description: "The heart of your growth. Use your voice or text to record trades. Our AI will automatically analyze your psychology and setup quality.",
+        description: "Record your trades via voice or text. Our AI analyzes your setup quality and psychological triggers.",
         targetId: "tour-ai-journal",
-        icon: <Brain className="w-8 h-8 text-purple-500" />,
+        icon: <Brain className="w-12 h-12 text-purple-500" />,
     },
     {
         title: "AI Setup Analyzer",
-        description: "Not sure about a trade? Upload your chart here. Our AI scans for SMS (Smart Money) criteria and gives you a probability score.",
+        description: "Upload charts before you enter. AI scans for SMS criteria to give you a clinical probability score.",
         targetId: "tour-ai-setup-analyzer",
-        icon: <Zap className="w-8 h-8 text-yellow-500" />,
+        icon: <Zap className="w-12 h-12 text-yellow-500" />,
     },
     {
         title: "Exclusive SMS Course",
-        description: "Bundle owners get direct access to the Execution Mastery playbook. Learn the exact strategies the AI uses to grade your trades.",
+        description: "Unlock the Execution Mastery playbook. Learn the exact logic our AI uses to grade your trades.",
         targetId: "tour-sms-course",
-        icon: <BookOpen className="w-8 h-8 text-green-500" />,
+        icon: <BookOpen className="w-12 h-12 text-amber-500" />,
     },
     {
-        title: "You're All Set!",
-        description: "The more you journal, the smarter your AI analysis becomes. Ready to take your first trade?",
-        icon: <Sparkles className="w-8 h-8 text-yellow-400" />,
+        title: "Ready to Dominate?",
+        description: "The more you journal, the smarter your AI becomes. Log your first trade and let AI handle the heavy lifting!",
+        icon: <Sparkles className="w-12 h-12 text-yellow-400 animate-pulse" />,
     }
 ];
 
@@ -52,37 +60,81 @@ export const OnboardingTour = () => {
     const [currentStep, setCurrentStep] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
     const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+    const { setOpen } = useSidebar();
+    const location = useLocation();
+    const navigate = useNavigate();
 
+    // 1. Trigger Login/Start Logic
     useEffect(() => {
-        const checkStatus = () => {
-            const hasSeen = localStorage.getItem('amphy_onboarding_completed');
-            if (hasSeen !== 'true') {
-                // Small delay to let page load
-                setTimeout(() => setIsVisible(true), 1500);
+        const checkStatus = async () => {
+            const hasSeenLocal = localStorage.getItem('amphy_onboarding_completed');
+            const searchParams = new URLSearchParams(location.search);
+            const forceStart = searchParams.get('startTour') === 'true';
+
+            if (forceStart) {
+                navigate(location.pathname, { replace: true });
+                setIsVisible(true);
+                setCurrentStep(0);
+                return;
+            }
+
+            if (hasSeenLocal === 'true') return;
+
+            // Verify with DB as fallback
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('onboarding_completed')
+                    .eq('id', user.id)
+                    .single();
+
+                if (profile && !profile.onboarding_completed) {
+                    setTimeout(() => setIsVisible(true), 2000);
+                }
+            } else if (!hasSeenLocal) {
+                setTimeout(() => setIsVisible(true), 2000);
             }
         };
         checkStatus();
-    }, []);
+    }, [location.pathname, location.search, navigate]);
 
-    useEffect(() => {
-        if (isVisible && steps[currentStep].targetId) {
-            const element = document.getElementById(steps[currentStep].targetId!);
-            if (element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                setTargetRect(element.getBoundingClientRect());
-                element.classList.add('tour-highlight');
-            } else {
-                setTargetRect(null);
-            }
-        } else {
+    const updateTargetRect = useCallback(() => {
+        if (!isVisible) return;
+        const targetId = steps[currentStep].targetId;
+        if (!targetId) {
             setTargetRect(null);
+            return;
         }
 
-        return () => {
-            // Cleanup highlight
-            document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+        const element = document.getElementById(targetId);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const rect = element.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+                setTargetRect(rect);
+            }
         }
     }, [currentStep, isVisible]);
+
+    useEffect(() => {
+        if (isVisible) {
+            const targetId = steps[currentStep].targetId;
+            if (targetId && (targetId.startsWith('tour-') || targetId.includes('course'))) {
+                setOpen(true);
+            }
+            const timer = setTimeout(updateTargetRect, 600);
+            window.addEventListener('resize', updateTargetRect);
+            window.addEventListener('scroll', updateTargetRect, true);
+            const poll = setInterval(updateTargetRect, 1000);
+            return () => {
+                clearTimeout(timer);
+                clearInterval(poll);
+                window.removeEventListener('resize', updateTargetRect);
+                window.removeEventListener('scroll', updateTargetRect, true);
+            };
+        }
+    }, [currentStep, isVisible, setOpen, updateTargetRect]);
 
     const handleNext = () => {
         if (currentStep < steps.length - 1) {
@@ -93,112 +145,92 @@ export const OnboardingTour = () => {
     };
 
     const handleBack = () => {
-        if (currentStep > 0) {
-            setCurrentStep(curr => curr - 1);
-        }
+        if (currentStep > 0) setCurrentStep(curr => curr - 1);
     };
 
-    const completeTour = () => {
+    const completeTour = async () => {
         setIsVisible(false);
         localStorage.setItem('amphy_onboarding_completed', 'true');
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            await supabase.from('profiles').update({ onboarding_completed: true }).eq('id', user.id);
+        }
     };
 
     if (!isVisible) return null;
 
-    return (
-        <div className="fixed inset-0 z-[9999] pointer-events-none">
-            {/* Dimmed Background Overlay with cutout */}
-            <div className="absolute inset-0 bg-black/70 pointer-events-auto" />
+    const step = steps[currentStep];
 
-            {/* Spotlight cutout effect */}
+    return (
+        <div className="fixed inset-0 z-[999999] pointer-events-none">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] pointer-events-auto" onClick={completeTour} />
+
             {targetRect && (
                 <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="absolute border-[2px] border-yellow-500 rounded-lg shadow-[0_0_50px_rgba(234,179,8,0.5)] z-[10000]"
-                    style={{
-                        top: targetRect.top - 8,
-                        left: targetRect.left - 8,
-                        width: targetRect.width + 16,
-                        height: targetRect.height + 16,
+                    className="absolute z-[1000000] border-2 border-yellow-500 rounded-xl shadow-[0_0_0_9999px_rgba(0,0,0,0.5),0_0_40px_rgba(234,179,8,0.4)]"
+                    initial={false}
+                    animate={{
+                        top: targetRect.top - 12,
+                        left: targetRect.left - 12,
+                        width: targetRect.width + 24,
+                        height: targetRect.height + 24,
                     }}
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                 />
             )}
 
-            {/* Tour Card */}
             <AnimatePresence mode="wait">
                 <motion.div
                     key={currentStep}
-                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className={`absolute pointer-events-auto z-[10001] w-[90%] max-w-md bg-[#0a0a0a] border border-white/10 rounded-2xl shadow-2xl p-6 overflow-hidden
-            ${targetRect ? 'md:top-1/2 md:-translate-y-1/2 md:right-10' : 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'}`}
+                    initial={{ opacity: 0, scale: 0.9, y: 30 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                    className={`fixed pointer-events-auto z-[1000001] w-[92%] max-w-sm bg-[#0C0C0C]/95 border border-white/10 rounded-3xl shadow-2xl p-8 backdrop-blur-xl
+            ${targetRect
+                            ? (targetRect.left < window.innerWidth / 2 ? 'left-[300px]' : 'right-[40px]')
+                            : 'left-1/2 -translate-x-1/2'
+                        }
+            ${targetRect
+                            ? (targetRect.top < window.innerHeight / 2 ? 'top-[120px]' : 'bottom-[120px]')
+                            : 'top-1/2 -translate-y-1/2'
+                        }`}
                 >
-                    {/* Background Decorative Gradients */}
-                    <div className="absolute -top-10 -right-10 w-32 h-32 bg-yellow-500/10 rounded-full blur-3xl" />
-                    <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl" />
+                    {/* Shine effect */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-3xl pointer-events-none" />
 
-                    <div className="relative z-10">
-                        <button
-                            onClick={completeTour}
-                            className="absolute -top-2 -right-2 p-2 text-gray-500 hover:text-white transition-colors"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
+                    <button onClick={completeTour} className="absolute top-6 right-6 text-white/40 hover:text-white transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
 
-                        <div className="mb-6 flex justify-center">{steps[currentStep].icon}</div>
+                    <div className="flex justify-center mb-8">{step.icon}</div>
 
-                        <h2 className="text-2xl font-bold text-white mb-3 text-center">
-                            {steps[currentStep].title}
-                        </h2>
+                    <h3 className="text-3xl font-bold text-center mb-4 text-white tracking-tight">
+                        {step.title}
+                    </h3>
+                    <p className="text-white/60 text-center text-lg leading-relaxed mb-10 font-light">
+                        {step.description}
+                    </p>
 
-                        <p className="text-gray-400 text-center text-lg leading-relaxed mb-8">
-                            {steps[currentStep].description}
-                        </p>
+                    <div className="flex items-center justify-between gap-6">
+                        <div className="flex gap-1.5">
+                            {steps.map((_, i) => (
+                                <div key={i} className={`h-1.5 rounded-full transition-all duration-500 ${i === currentStep ? 'w-8 bg-yellow-500' : 'w-1.5 bg-white/10'}`} />
+                            ))}
+                        </div>
 
-                        <div className="flex items-center justify-between gap-4">
-                            <div className="flex gap-1">
-                                {steps.map((_, i) => (
-                                    <div
-                                        key={i}
-                                        className={`h-1 rounded-full transition-all duration-300 ${i === currentStep ? 'w-4 bg-yellow-500' : 'w-1 bg-white/20'}`}
-                                    />
-                                ))}
-                            </div>
-
-                            <div className="flex gap-2">
-                                {currentStep > 0 && (
-                                    <Button
-                                        variant="ghost"
-                                        onClick={handleBack}
-                                        className="text-gray-400 hover:text-white"
-                                    >
-                                        <ChevronLeft className="w-4 h-4 mr-1" />
-                                        Back
-                                    </Button>
-                                )}
-                                <Button
-                                    onClick={handleNext}
-                                    className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-6 shadow-[0_0_20px_rgba(234,179,8,0.3)] transition-all"
-                                >
-                                    {currentStep === steps.length - 1 ? "Let's Go!" : "Next"}
-                                    {currentStep < steps.length - 1 && <ChevronRight className="w-4 h-4 ml-1" />}
+                        <div className="flex gap-3">
+                            {currentStep > 0 && (
+                                <Button variant="ghost" size="sm" onClick={handleBack} className="text-white/40 hover:text-white hover:bg-white/5 font-medium">
+                                    Back
                                 </Button>
-                            </div>
+                            )}
+                            <Button onClick={handleNext} className="bg-yellow-500 hover:bg-yellow-400 text-black font-black px-8 h-12 rounded-2xl shadow-[0_10px_20px_-5px_rgba(234,179,8,0.3)] transition-all active:scale-95">
+                                {currentStep === steps.length - 1 ? "LET'S GO!" : "NEXT"}
+                            </Button>
                         </div>
                     </div>
                 </motion.div>
             </AnimatePresence>
-
-            <style dangerouslySetInnerHTML={{
-                __html: `
-        .tour-highlight {
-          position: relative !important;
-          z-index: 10001 !important;
-          transition: all 0.3s ease-in-out;
-        }
-      `}} />
         </div>
     );
 };

@@ -51,18 +51,18 @@ const Settings = () => {
 
   const handleConnectTelegram = async () => {
     if (!profile) return;
-    
+
     setTelegramConnecting(true);
     try {
       // Use the actual bot username for Amphy Trade Journal
       const botUsername = "AmphyJournalBot";
-      
+
       // Create deep link with user ID
       const deepLink = `https://t.me/${botUsername}?start=${profile.id}`;
-      
+
       // Open Telegram
       window.open(deepLink, '_blank');
-      
+
       toast.success("Opening Telegram... Click 'Start' to connect!");
     } catch (error) {
       console.error("Error connecting Telegram:", error);
@@ -134,7 +134,7 @@ const Settings = () => {
 
   const handleResetAccount = async () => {
     if (!profile) return;
-    
+
     const confirmed = window.confirm(
       "⚠️ WARNING: This will permanently delete ALL your data including:\n\n" +
       "• All trades\n" +
@@ -146,51 +146,51 @@ const Settings = () => {
       "Your achievements will be PRESERVED as earned milestones.\n\n" +
       "This action CANNOT be undone. Are you absolutely sure?"
     );
-    
+
     if (!confirmed) return;
-    
+
     try {
       toast.info("Deleting data... This may take a minute for large accounts.");
-      
+
       // Helper function to delete in batches to avoid timeout
       const deleteBatch = async (table: string, batchSize = 500): Promise<void> => {
         let hasMore = true;
         let totalDeleted = 0;
-        
+
         while (hasMore) {
           const { data: items, error: fetchError } = await (supabase as any)
             .from(table)
             .select('id')
             .eq('user_id', profile.id)
             .limit(batchSize);
-          
+
           if (fetchError) throw fetchError;
-          
+
           if (!items || items.length === 0) {
             hasMore = false;
             break;
           }
-          
+
           const ids = items.map((item: any) => item.id);
           const { error: deleteError } = await (supabase as any)
             .from(table)
             .delete()
             .in('id', ids);
-          
+
           if (deleteError) throw deleteError;
-          
+
           totalDeleted += items.length;
           hasMore = items.length === batchSize;
-          
+
           // Small delay to avoid overwhelming the database
           if (hasMore) {
             await new Promise(resolve => setTimeout(resolve, 100));
           }
         }
-        
+
         console.log(`Deleted ${totalDeleted} records from ${table}`);
       };
-      
+
       // Delete dependent records first
       toast.info("Deleting trade-related data...");
       await deleteBatch('trade_tags');
@@ -198,11 +198,11 @@ const Settings = () => {
       await deleteBatch('trade_insights');
       await deleteBatch('chat_messages');
       await deleteBatch('sync_logs');
-      
+
       // Delete trades (most data-heavy table)
       toast.info("Deleting trades... This is the slowest part.");
       await deleteBatch('trades', 300); // Smaller batch for trades
-      
+
       // Delete other main records
       toast.info("Deleting journal and analytics...");
       await deleteBatch('journal_entries');
@@ -212,13 +212,13 @@ const Settings = () => {
       await deleteBatch('routine_entries');
       await deleteBatch('targets');
       await deleteBatch('journal_insights');
-      
+
       toast.info("Deleting performance data...");
       await deleteBatch('performance_metrics');
       await deleteBatch('equity_snapshots');
       await deleteBatch('setup_performance');
       await deleteBatch('setups');
-      
+
       toast.info("Cleaning up remaining data...");
       await deleteBatch('mt5_accounts');
       await deleteBatch('mt5_connections');
@@ -227,12 +227,12 @@ const Settings = () => {
       await deleteBatch('leaderboard_profiles');
       await deleteBatch('subscriptions');
       await deleteBatch('feedback');
-      
+
       // Reset profile to fresh free tier account
       toast.info("Resetting profile...");
       const { error: profileError } = await supabase
         .from("profiles")
-        .update({ 
+        .update({
           trades_count: 0,
           current_streak: 0,
           longest_streak: 0,
@@ -251,9 +251,9 @@ const Settings = () => {
         console.error("Profile reset error:", profileError);
         throw profileError;
       }
-      
+
       toast.success("Account reset successfully! Signing out for fresh start...");
-      
+
       // Sign out to clear all session data and caches
       setTimeout(async () => {
         await supabase.auth.signOut();
@@ -267,20 +267,21 @@ const Settings = () => {
 
   const restartOnboarding = async () => {
     if (!profile) return;
-    
+
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ 
-          onboarding_completed: false,
-          onboarding_step: 0
+        .update({
+          onboarding_completed: false
         })
         .eq("id", profile.id);
 
       if (error) throw error;
-      
-      toast.success("Restarting onboarding...");
-      navigate("/onboarding");
+
+      localStorage.removeItem('amphy_onboarding_completed');
+
+      toast.success("Restarting interactive tour...");
+      navigate("/dashboard?startTour=true");
     } catch (error) {
       console.error("Error restarting onboarding:", error);
       toast.error("Failed to restart onboarding");
@@ -289,10 +290,10 @@ const Settings = () => {
 
   const handleExportData = async (format: 'json' | 'csv') => {
     if (!profile) return;
-    
+
     try {
       toast.info(`Preparing ${format.toUpperCase()} export...`);
-      
+
       const { data, error } = await supabase.functions.invoke('export-user-data', {
         body: { format }
       });
@@ -300,10 +301,10 @@ const Settings = () => {
       if (error) throw error;
 
       // Create blob and download
-      const blob = format === 'json' 
+      const blob = format === 'json'
         ? new Blob([data], { type: 'application/json' })
         : new Blob([data], { type: 'text/csv' });
-      
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -312,7 +313,7 @@ const Settings = () => {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-      
+
       toast.success(`${format.toUpperCase()} export complete!`);
     } catch (error) {
       console.error("Error exporting data:", error);
@@ -414,31 +415,31 @@ const Settings = () => {
                     <Label className="text-muted-foreground">Plan Type</Label>
                     <div className="flex items-center gap-2 mt-1">
                       <Badge className={
-                        profile?.subscription_tier === 'lifetime' 
+                        profile?.subscription_tier === 'lifetime'
                           ? 'bg-amber-500/20 text-amber-700 dark:text-amber-400'
                           : profile?.subscription_tier === 'pro'
-                          ? 'bg-primary/20 text-primary'
-                          : 'bg-gray-500/20 text-gray-700 dark:text-gray-400'
+                            ? 'bg-primary/20 text-primary'
+                            : 'bg-gray-500/20 text-gray-700 dark:text-gray-400'
                       }>
-                        {profile?.subscription_tier === 'lifetime' ? 'Lifetime Access' : 
-                         profile?.subscription_tier === 'pro' ? 'Pro Plan' : 
-                         'Free Plan'}
+                        {profile?.subscription_tier === 'lifetime' ? 'Lifetime Access' :
+                          profile?.subscription_tier === 'pro' ? 'Pro Plan' :
+                            'Free Plan'}
                       </Badge>
                     </div>
                   </div>
-                  
+
                   <div>
                     <Label className="text-muted-foreground">AI Credits</Label>
                     <p className="text-foreground font-medium">
-                      {profile?.subscription_tier === 'lifetime' ? 'Unlimited' : 
-                       `${profile?.ai_credits || 0} credits`}
+                      {profile?.subscription_tier === 'lifetime' ? 'Unlimited' :
+                        `${profile?.ai_credits || 0} credits`}
                     </p>
                   </div>
-                  
+
                   <div>
                     <Label className="text-muted-foreground">Monthly Trade Limit</Label>
                     <p className="text-foreground font-medium">
-                      {profile?.subscription_tier === 'free' 
+                      {profile?.subscription_tier === 'free'
                         ? `${profile?.monthly_trade_limit || 10} trades/month`
                         : 'Unlimited'}
                     </p>
@@ -453,9 +454,9 @@ const Settings = () => {
                     </div>
                   )}
                 </div>
-                
+
                 {profile?.subscription_tier === 'free' && (
-                  <Button 
+                  <Button
                     onClick={() => navigate('/pricing')}
                     className="bg-primary hover:bg-primary/90"
                   >
@@ -463,9 +464,9 @@ const Settings = () => {
                     Upgrade
                   </Button>
                 )}
-                
+
                 {profile?.subscription_tier === 'pro' && (
-                  <Button 
+                  <Button
                     onClick={() => navigate('/pricing')}
                     variant="outline"
                   >
@@ -520,9 +521,9 @@ const Settings = () => {
                       Disconnect
                     </Button>
                   </div>
-                 </>
+                </>
               ) : (
-                <Button 
+                <Button
                   onClick={handleConnectTelegram}
                   disabled={telegramConnecting}
                   className="w-full"
@@ -632,7 +633,7 @@ const Settings = () => {
                               const newChannels = enabled
                                 ? [...new Set([...currentChannels, 'in_app'])]
                                 : currentChannels.filter((c: string) => c !== 'in_app');
-                              
+
                               const { error } = await supabase
                                 .from('profiles')
                                 .update({ checkin_reminder_channels: newChannels })
@@ -657,7 +658,7 @@ const Settings = () => {
                                 const newChannels = enabled
                                   ? [...new Set([...currentChannels, 'telegram'])]
                                   : currentChannels.filter((c: string) => c !== 'telegram');
-                                
+
                                 const { error } = await supabase
                                   .from('profiles')
                                   .update({ checkin_reminder_channels: newChannels })
@@ -682,7 +683,7 @@ const Settings = () => {
                               const newChannels = enabled
                                 ? [...new Set([...currentChannels, 'email'])]
                                 : currentChannels.filter((c: string) => c !== 'email');
-                              
+
                               const { error } = await supabase
                                 .from('profiles')
                                 .update({ checkin_reminder_channels: newChannels })
@@ -812,7 +813,7 @@ const Settings = () => {
                   </Label>
                 </div>
               </div>
-              
+
               <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
                 <p className="text-sm text-foreground/90 mb-2">📊 Your weekly email includes:</p>
                 <ul className="text-xs text-muted-foreground space-y-1">

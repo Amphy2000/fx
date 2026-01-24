@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
 import { useSessionTracking } from "@/hooks/useSessionTracking";
@@ -83,8 +83,8 @@ const AppContent = () => {
           <Route path="/analytics/advanced" element={<AdvancedAnalytics />} />
           <Route path="/analytics/mental-state" element={<MentalStateCorrelation />} />
           <Route path="/streaks" element={<Streaks />} />
-          <Route path="/onboarding" element={<OnboardingOptimized />} />
-          <Route path="/onboarding-full" element={<Onboarding />} />
+          <Route path="/onboarding" element={<Navigate to="/dashboard?startTour=true" replace />} />
+          <Route path="/onboarding-full" element={<Navigate to="/dashboard?startTour=true" replace />} />
           <Route path="/achievements" element={<Achievements />} />
           <Route path="/accountability-partners" element={<AccountabilityPartners />} />
           <Route path="/affiliate/apply" element={<AffiliateApply />} />

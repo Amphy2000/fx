@@ -105,7 +105,7 @@ const Auth = () => {
       // If email confirmation is disabled, user is immediately signed in
       if (data.session) {
         toast.success("Account created! Let's get you started!");
-        navigate("/onboarding");
+        navigate("/dashboard?startTour=true");
       } else {
         toast.success("Account created! Please check your email to confirm.", {
           description: "Once confirmed, you'll be able to sign in."
@@ -140,7 +140,7 @@ const Auth = () => {
 
         if (profile && !profile.onboarding_completed) {
           toast.success("Welcome back! Let's continue your onboarding.");
-          navigate("/onboarding");
+          navigate("/dashboard?startTour=true");
         } else {
           toast.success("Logged in successfully!");
           const params = new URLSearchParams(window.location.search);

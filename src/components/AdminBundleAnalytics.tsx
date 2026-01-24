@@ -387,7 +387,7 @@ export function AdminBundleAnalytics() {
               </div>
             </div>
 
-            {diagnostics.userTier !== 'admin' && (
+            {diagnostics.userTier !== 'admin' && !diagnostics.isSuperAdmin && (
               <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded text-yellow-600">
                 <p className="font-bold">⚠️ Security Role Mismatch</p>
                 <p className="mt-1">The analytics policy requires your <b>profile tier</b> to be 'admin'. Yours is currently '{diagnostics.userTier}'.</p>
@@ -438,10 +438,31 @@ export function AdminBundleAnalytics() {
                 }}>
                 Fix My Role Automatically
               </Button>
-              <Button variant="outline" size="sm" className="h-7 text-[10px]"
-                onClick={() => {
-                  localStorage.removeItem('amphy_onboarding_completed');
-                  toast.success("Tour reset! Refresh to start.");
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-[10px] bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-600 border-yellow-500/20"
+                onClick={async () => {
+                  try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) return;
+
+                    // 1. Reset in Database
+                    const { error } = await supabase
+                      .from('profiles')
+                      .update({ onboarding_completed: false })
+                      .eq('id', user.id);
+
+                    if (error) throw error;
+
+                    // 2. Clear Local Memory
+                    localStorage.removeItem('amphy_onboarding_completed');
+
+                    toast.success("Tour reset! Go to Dashboard to start.");
+                    setTimeout(() => window.location.href = "/dashboard?startTour=true", 1000);
+                  } catch (err: any) {
+                    toast.error("Reset failed: " + err.message);
+                  }
                 }}>
                 Reset Tour (Local Memory)
               </Button>
