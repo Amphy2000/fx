@@ -39,11 +39,13 @@ export function AdminBundleAnalytics() {
   const [diagnostics, setDiagnostics] = useState<{
     tableExists: boolean | null;
     totalRecords: number | null;
+    totalSales: number | null;
     userTier: string | null;
     error: string | null;
   }>({
     tableExists: null,
     totalRecords: null,
+    totalSales: null,
     userTier: null,
     error: null,
   });
@@ -141,9 +143,16 @@ export function AdminBundleAnalytics() {
         .from("bundle_analytics")
         .select("*", { count: 'exact', head: true });
 
+      // 3. Count "Real Sales" from profiles table (Lifetime accounts)
+      const { count: salesCount } = await supabase
+        .from("profiles")
+        .select("*", { count: 'exact', head: true })
+        .eq("subscription_tier", "lifetime");
+
       setDiagnostics({
         tableExists: !tableError || tableError.code !== 'PGRST116',
         totalRecords: count,
+        totalSales: salesCount,
         userTier: profile?.subscription_tier || 'none',
         error: tableError?.message || null,
       });
@@ -244,7 +253,22 @@ export function AdminBundleAnalytics() {
           <CardContent className="px-4 pb-4">
             <p className="text-2xl font-bold text-green-500">{analytics.payments_success}</p>
             <p className="text-xs text-muted-foreground">
-              ₦{(analytics.payments_success * 15000).toLocaleString()} revenue
+              Confirmed sales
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+              <TrendingUp className="h-3.5 w-3.5" />
+              Total Revenue Users
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <p className="text-2xl font-bold text-emerald-500">{diagnostics.totalSales ?? '...'}</p>
+            <p className="text-[10px] text-muted-foreground">
+              Direct from Profiles
             </p>
           </CardContent>
         </Card>
@@ -386,11 +410,19 @@ export function AdminBundleAnalytics() {
                       body: { userId: user.id, tier: 'admin' }
                     });
 
-                    if (error) throw error;
+                    if (error) {
+                      let detailedError = error.message;
+                      try {
+                        const response = await error.context?.json();
+                        detailedError = response?.error || detailedError;
+                      } catch { }
+                      throw new Error(detailedError);
+                    }
                     toast.success("Account fixed! Refreshing stats...");
                     setTimeout(() => window.location.reload(), 1500);
                   } catch (err: any) {
                     console.error('One-click fix failed:', err);
+                    toast.dismiss(); // Remove the loading toast
                     toast.error(`Fix failed: ${err.message || 'Unknown error'}`);
                   }
                 }}>

@@ -34,10 +34,11 @@ export function useBundleAnalytics() {
         event_type: eventType,
         user_id: user?.id || null,
         session_id: getSessionId(),
-        referrer: document.referrer || null,
-        user_agent: navigator.userAgent,
+        // Move potentially missing columns into metadata for safety
         metadata: {
           ...metadata,
+          referrer: document.referrer || null,
+          user_agent: navigator.userAgent,
           url: window.location.href,
           timestamp: new Date().toISOString(),
         },
