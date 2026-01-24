@@ -26,6 +26,7 @@ import { WeeklySummaryEmailManager } from "@/components/WeeklySummaryEmailManage
 import AdminAffiliateManager from "@/components/AdminAffiliateManager";
 import { AdminNotificationSender } from "@/components/AdminNotificationSender";
 import { AdminAIInsights } from "@/components/AdminAIInsights";
+import BundleAnalytics from "./BundleAnalytics";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -111,7 +112,7 @@ const Admin = () => {
       return;
     }
 
-    const filtered = users.filter(user => 
+    const filtered = users.filter(user =>
       user.email?.toLowerCase().includes(query.toLowerCase()) ||
       user.full_name?.toLowerCase().includes(query.toLowerCase())
     );
@@ -242,6 +243,10 @@ const Admin = () => {
               <TabsTrigger value="ai-insights" className="text-xs px-3 py-1.5">
                 <Brain className="h-3 w-3 mr-1" />
                 AI Insights
+              </TabsTrigger>
+              <TabsTrigger value="bundle" className="text-xs px-3 py-1.5">
+                <BarChart3 className="h-3 w-3 mr-1" />
+                Bundle
               </TabsTrigger>
             </TabsList>
           </div>
@@ -499,8 +504,8 @@ const Admin = () => {
                     <li>Flagging suspicious signup attempts for admin review</li>
                     <li>Allowing manual overrides for legitimate cases</li>
                   </ul>
-                  <Button 
-                    onClick={() => navigate('/admin/abuse-prevention')} 
+                  <Button
+                    onClick={() => navigate('/admin/abuse-prevention')}
                     variant="outline"
                     className="w-full"
                   >
@@ -514,6 +519,10 @@ const Admin = () => {
 
           <TabsContent value="ai-insights">
             <AdminAIInsights />
+          </TabsContent>
+
+          <TabsContent value="bundle">
+            <BundleAnalytics />
           </TabsContent>
         </Tabs>
 

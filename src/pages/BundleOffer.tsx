@@ -12,6 +12,45 @@ const BundleOffer = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [isOwned, setIsOwned] = useState(false);
+    const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+
+    // Analytics tracking helper
+    const trackEvent = async (eventType: string, metadata: any = {}) => {
+        try {
+            let userId = null;
+            try {
+                const { data } = await supabase.auth.getUser();
+                userId = data.user?.id || null;
+            } catch (authError) {
+                console.warn('[BundleAnalytics] Auth check failed, tracking as anonymous', authError);
+            }
+
+            console.log(`[BundleAnalytics] Tracking ${eventType}`, { user_id: userId, session_id: sessionId });
+
+            const { error } = await supabase.from('bundle_analytics').insert({
+                event_type: eventType,
+                user_id: userId,
+                session_id: sessionId,
+                metadata: {
+                    ...metadata,
+                    url: window.location.href,
+                    timestamp: new Date().toISOString()
+                }
+            });
+
+            if (error) {
+                console.error('[BundleAnalytics] Tracking error:', error);
+                // Only show error toast to admins or during debug
+                if (window.location.hostname === 'localhost') {
+                    toast.error(`Tracking failed: ${error.message}`);
+                }
+            } else {
+                console.log(`[BundleAnalytics] ${eventType} tracked successfully`);
+            }
+        } catch (error) {
+            console.error('[BundleAnalytics] Tracking failed:', error);
+        }
+    };
 
     useEffect(() => {
         const checkStatus = async () => {
@@ -29,6 +68,12 @@ const BundleOffer = () => {
             }
         };
         checkStatus();
+
+        // Track page view
+        trackEvent('page_view', {
+            referrer: document.referrer,
+            user_agent: navigator.userAgent
+        });
     }, []);
 
     const handlePurchase = async () => {
@@ -45,6 +90,9 @@ const BundleOffer = () => {
             navigate("/auth?redirect=/bundle");
             return;
         }
+
+        // Track claim button click
+        await trackEvent('claim_click', { has_account: true });
 
         try {
             const { data, error } = await supabase.functions.invoke('initialize-payment', {
@@ -77,6 +125,11 @@ const BundleOffer = () => {
             }
 
             if (data?.authorization_url) {
+                // Track successful payment initialization
+                await trackEvent('payment_init', {
+                    plan_type: 'bundle',
+                    amount: 15000
+                });
                 window.location.href = data.authorization_url;
             } else if (data?.error) {
                 throw new Error(data.error);
