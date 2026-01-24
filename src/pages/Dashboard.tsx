@@ -149,6 +149,38 @@ const Dashboard = () => {
       localStorage.removeItem('checkin_snooze_until');
     }
   };
+
+  // Track payment success from redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success') {
+      const trackPaymentSuccess = async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            // Track in bundle analytics
+            await supabase.from('bundle_analytics').insert({
+              event_type: 'payment_success',
+              user_id: user.id,
+              metadata: { plan: 'bundle', tracked_at: new Date().toISOString() }
+            });
+
+            // Show success message
+            toast({
+              title: "Payment successful!",
+              description: "Your bundle access has been activated."
+            });
+
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        } catch (err) {
+          console.error("Error tracking payment success:", err);
+        }
+      };
+      trackPaymentSuccess();
+    }
+  }, []);
   const fetchProfile = async (userId: string) => {
     const {
       data
