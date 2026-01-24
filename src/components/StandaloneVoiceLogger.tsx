@@ -6,6 +6,7 @@ import { Mic, MicOff, Loader2, Sparkles, CheckCircle2, Shield } from "lucide-rea
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { callAI } from "@/utils/ai-bridge";
 import { TradeInterceptorModal } from './TradeInterceptorModal';
 
 // Extend Window interface for Speech Recognition
@@ -223,11 +224,11 @@ export const StandaloneVoiceLogger = () => {
       });
 
       // Trigger AI analysis in background (don't await to avoid blocking)
-      supabase.functions.invoke('analyze-trade', {
-        body: { tradeId: trade.id }
+      // Trigger AI analysis in background
+      callAI('analyze-trade', {
+        tradeId: trade.id
       }).catch((error) => {
         console.error("AI analysis error:", error);
-        // Don't show error to user - analysis is optional and runs in background
       });
 
     } catch (error: any) {
@@ -311,7 +312,7 @@ export const StandaloneVoiceLogger = () => {
                   Just speak naturally! Include the pair, direction (buy/sell/long/short), and any prices or results you remember.
                 </p>
               </div>
-              
+
               <div>
                 <p className="text-xs font-semibold mb-2 text-foreground">Example phrases:</p>
                 <ul className="text-xs space-y-2 text-muted-foreground">
@@ -333,7 +334,7 @@ export const StandaloneVoiceLogger = () => {
                   </li>
                 </ul>
               </div>
-              
+
               <div className="pt-2 border-t border-border/30">
                 <p className="text-xs font-medium text-primary mb-1">💡 Pro Tips:</p>
                 <ul className="text-xs space-y-1 text-muted-foreground">

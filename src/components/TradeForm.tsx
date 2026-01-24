@@ -16,6 +16,7 @@ import { PreTradeChecklist } from "@/components/PreTradeChecklist";
 import { awardCredits, CREDIT_REWARDS } from "@/utils/creditManager";
 import { QuickCheckInModal } from "@/components/QuickCheckInModal";
 import { format } from "date-fns";
+import { callAI } from "@/utils/ai-bridge";
 
 interface TradeFormProps {
   onTradeAdded: () => void;
@@ -56,14 +57,14 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
-        
+
         // Fetch user profile for validation preferences
         const { data: profile } = await supabase
           .from('profiles')
           .select('trade_validation_mode, validation_min_credits_threshold, ai_credits')
           .eq('id', user.id)
           .single();
-        
+
         if (profile) {
           setUserProfile(profile);
         }
@@ -92,7 +93,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    
+
     if (screenshots.length + files.length > 5) {
       toast.error("Maximum 5 images allowed");
       return;
@@ -108,7 +109,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
 
     if (validFiles.length > 0) {
       setScreenshots(prev => [...prev, ...validFiles]);
-      
+
       validFiles.forEach(file => {
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -128,9 +129,9 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
 
   const handleRiskCheckAndValidate = async (autoValidate = false) => {
     if (!userId) return;
-    
+
     const { performLocalRiskCheck } = await import("@/utils/localRiskCheck");
-    
+
     const riskCheck = await performLocalRiskCheck(userId, {
       pair: formData.pair,
       direction: formData.direction,
@@ -190,20 +191,20 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
 
   const handleProceedWithTrade = async () => {
     setShowInterceptorModal(false);
-    
+
     if (validationResult?.interception_id) {
       await supabase
         .from('trade_interceptions')
         .update({ user_action: 'logged_anyway' })
         .eq('id', validationResult.interception_id);
     }
-    
+
     await submitTrade();
   };
 
   const handleCancelTrade = async () => {
     setShowInterceptorModal(false);
-    
+
     if (validationResult?.interception_id) {
       await supabase
         .from('trade_interceptions')
@@ -216,7 +217,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!userId) {
       toast.error("You must be logged in");
       return;
@@ -297,7 +298,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
         for (const screenshot of screenshots) {
           const fileExt = screenshot.name.split('.').pop();
           const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-          
+
           const { error: uploadError } = await supabase.storage
             .from('trade-screenshots')
             .upload(fileName, screenshot);
@@ -362,8 +363,8 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
       toast.success("Trade logged successfully! Getting AI feedback...");
 
       try {
-        const { data: aiData, error: aiError } = await supabase.functions.invoke('analyze-trade', {
-          body: { tradeId: newTrade.id }
+        const { data: aiData, error: aiError } = await callAI('analyze-trade', {
+          tradeId: newTrade.id
         });
 
         if (aiError) throw aiError;
@@ -397,13 +398,13 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
       });
       setScreenshots([]);
       setScreenshotPreviews([]);
-      
+
       await updateStreak(userId, 'trade_journal');
       await checkTradeAchievements(userId);
-      
+
       // Award credit for logging trade
       await awardCredits(userId, 'trade_logged', CREDIT_REWARDS.trade_logged, 'Logged a new trade');
-      
+
       onTradeAdded();
     } catch (error: any) {
       toast.error(error.message || "Failed to log trade");
@@ -439,7 +440,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
               <VoiceTradeLogger onTradeDataParsed={handleVoiceData} />
             </div>
           )}
-          
+
           <div className="mb-6">
             <PreTradeChecklist onRiskAssessed={setPreTradeRisk} />
           </div>
@@ -562,7 +563,7 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
               <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 🧘 Emotional Tracking
               </h3>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="emotion_before">Emotion Before Trade</Label>
                 <Select
@@ -658,10 +659,10 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
             </div>
 
             <div className="flex gap-2">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => handleRiskCheckAndValidate(false)} 
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleRiskCheckAndValidate(false)}
                 disabled={isValidating || isLoading || !formData.pair || !formData.direction}
                 className="flex-1"
               >
@@ -728,11 +729,10 @@ const TradeForm = ({ onTradeAdded }: TradeFormProps) => {
             </div>
             <div className="flex items-center justify-between p-3 rounded-md bg-muted">
               <span className="text-sm font-medium">Risk Score</span>
-              <span className={`text-lg font-bold ${
-                riskCheckResult?.riskScore >= 70 ? 'text-destructive' :
-                riskCheckResult?.riskScore >= 50 ? 'text-warning' :
-                'text-success'
-              }`}>
+              <span className={`text-lg font-bold ${riskCheckResult?.riskScore >= 70 ? 'text-destructive' :
+                  riskCheckResult?.riskScore >= 50 ? 'text-warning' :
+                    'text-success'
+                }`}>
                 {riskCheckResult?.riskScore}/100
               </span>
             </div>

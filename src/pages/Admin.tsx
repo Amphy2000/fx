@@ -256,6 +256,10 @@ const Admin = () => {
                 <TrendingUp className="h-3 w-3 mr-1" />
                 Bundle
               </TabsTrigger>
+              <TabsTrigger value="ai-config" className="text-xs px-3 py-1.5">
+                <Brain className="h-3 w-3 mr-1" />
+                AI Config
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -531,6 +535,59 @@ const Admin = () => {
 
           <TabsContent value="bundle-analytics">
             <AdminBundleAnalytics />
+          </TabsContent>
+
+          <TabsContent value="ai-config" className="space-y-3">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-primary" />
+                  Gemini AI Configuration
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Move your AI usage from Lovable to your own free Gemini API to bypass all credit limits.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                <div className="bg-muted p-4 rounded-lg space-y-3">
+                  <h3 className="font-bold flex items-center gap-2 text-foreground">
+                    <Shield className="h-4 w-4 text-green-500" />
+                    How to keep your app AI 100% free:
+                  </h3>
+                  <ol className="list-decimal pl-5 space-y-2 text-muted-foreground">
+                    <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-primary underline">Google AI Studio</a>.</li>
+                    <li>Create a free <b>Gemini 1.5 Flash</b> or <b>2.0 Flash</b> API key.</li>
+                    <li>Log in to your <b>Vercel Project Dashboard</b>.</li>
+                    <li>Go to <b>Settings &rarr; Environment Variables</b>.</li>
+                    <li>Add a new variable:<br />
+                      <code className="bg-background px-2 py-1 rounded mt-1 inline-block border text-foreground font-mono">GEMINI_API_KEY = your_key_here</code>
+                    </li>
+                    <li>Redeploy your Vercel project.</li>
+                  </ol>
+                </div>
+
+                <div className="flex flex-col gap-3 pt-2">
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-background shadow-sm hover:border-primary/50 transition-colors">
+                    <div>
+                      <p className="font-bold text-foreground">Vercel AI Bridge Status</p>
+                      <p className="text-xs text-muted-foreground">This bridge automatically handles Gemini rate-limits.</p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={async () => {
+                      try {
+                        const res = await fetch('/api/analyze-trade', { method: 'OPTIONS' });
+                        if (res.ok) toast.success("Vercel AI Bridge is Active!");
+                        else toast.error("Bridge not found. Did you push the code?");
+                      } catch {
+                        toast.error("Bridge unreachable.");
+                      }
+                    }}>Test Bridge</Button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground italic text-center">
+                    Note: The app will now automatically retry calls if Google's free tier hits its 15 RPM limit.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 
