@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Eye, MousePointerClick, CreditCard, CheckCircle, TrendingUp, Calendar } from "lucide-react";
+import { Loader2, Eye, MousePointerClick, CreditCard, CheckCircle, TrendingUp, Calendar, Shield } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 
 interface AnalyticsData {
@@ -367,10 +368,10 @@ export function AdminBundleAnalytics() {
             )}
 
             <div className="mt-4 flex gap-2">
-              <Button variant="outline" size="xs" className="h-7 text-[10px]" onClick={fetchAnalytics}>
+              <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={fetchAnalytics}>
                 Retry Connection
               </Button>
-              <Button variant="outline" size="xs" className="h-7 text-[10px]"
+              <Button variant="outline" size="sm" className="h-7 text-[10px]"
                 onClick={() => {
                   const email = "your@email.com";
                   const sql = `UPDATE profiles SET subscription_tier = 'admin' WHERE email = '${email}';`;
