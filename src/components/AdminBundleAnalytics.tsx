@@ -34,6 +34,17 @@ export function AdminBundleAnalytics() {
     click_to_payment_rate: 0,
   });
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
+  const [diagnostics, setDiagnostics] = useState<{
+    tableExists: boolean | null;
+    totalRecords: number | null;
+    userTier: string | null;
+    error: string | null;
+  }>({
+    tableExists: null,
+    totalRecords: null,
+    userTier: null,
+    error: null,
+  });
 
   useEffect(() => {
     fetchAnalytics();
@@ -76,7 +87,7 @@ export function AdminBundleAnalytics() {
 
       // Group by day for trend data
       const dailyMap = new Map<string, DailyData>();
-      
+
       for (let i = 0; i <= days; i++) {
         const date = format(subDays(new Date(), days - i), "yyyy-MM-dd");
         dailyMap.set(date, {
@@ -100,10 +111,48 @@ export function AdminBundleAnalytics() {
       });
 
       setDailyData(Array.from(dailyMap.values()));
-    } catch (error) {
+
+      // Run diagnostics in parallel
+      checkDiagnostics();
+    } catch (error: any) {
       console.error("Error fetching bundle analytics:", error);
+      setDiagnostics(prev => ({ ...prev, error: error.message }));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkDiagnostics = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // 1. Check user tier in profiles
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("subscription_tier")
+        .eq("id", user.id)
+        .single();
+
+      // 2. Check table existence and total count (ignoring time range)
+      const { count, error: tableError } = await supabase
+        .from("bundle_analytics")
+        .select("*", { count: 'exact', head: true });
+
+      setDiagnostics({
+        tableExists: !tableError || tableError.code !== 'PGRST116',
+        totalRecords: count,
+        userTier: profile?.subscription_tier || 'none',
+        error: tableError?.message || null,
+      });
+
+      console.log('[Analytics Diagnostics]', {
+        profile_tier: profile?.subscription_tier,
+        table_count: count,
+        error: tableError
+      });
+    } catch (err) {
+      console.error("Diagnostics failed:", err);
     }
   };
 
@@ -268,6 +317,68 @@ export function AdminBundleAnalytics() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Diagnostics Panel (Visible if stats are zero) */}
+      {(analytics.page_views === 0 || diagnostics.error) && (
+        <Card className="border-red-500/20 bg-red-500/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-red-500">
+              <Shield className="h-4 w-4" />
+              Debug Analytics Connection
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-xs space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="p-2 bg-background rounded border">
+                <p className="text-muted-foreground">Database Table</p>
+                <p className="font-mono">{diagnostics.tableExists === null ? 'Checking...' : diagnostics.tableExists ? '✅ Exists' : '❌ Missing'}</p>
+              </div>
+              <div className="p-2 bg-background rounded border">
+                <p className="text-muted-foreground">Total Records</p>
+                <p className="font-mono">{diagnostics.totalRecords ?? 0} total</p>
+              </div>
+              <div className="p-2 bg-background rounded border">
+                <p className="text-muted-foreground">Your Tier (Profiles)</p>
+                <p className="font-mono">{diagnostics.userTier ?? 'N/A'}</p>
+              </div>
+              <div className="p-2 bg-background rounded border">
+                <p className="text-muted-foreground">Status</p>
+                <p className="font-mono">{diagnostics.error ? '❌ RLS Blocked' : 'Healthy'}</p>
+              </div>
+            </div>
+
+            {diagnostics.userTier !== 'admin' && (
+              <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded text-yellow-600">
+                <p className="font-bold">⚠️ Security Role Mismatch</p>
+                <p className="mt-1">The analytics policy requires your <b>profile tier</b> to be 'admin'. Yours is currently '{diagnostics.userTier}'.</p>
+                <p className="mt-2 text-[10px] opacity-70 italic">Fix: Run SQL on Supabase to set your tier to 'admin'.</p>
+              </div>
+            )}
+
+            {diagnostics.error && (
+              <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded text-red-600">
+                <p className="font-bold">Database Error</p>
+                <p className="mt-1 font-mono text-[10px]">{diagnostics.error}</p>
+              </div>
+            )}
+
+            <div className="mt-4 flex gap-2">
+              <Button variant="outline" size="xs" className="h-7 text-[10px]" onClick={fetchAnalytics}>
+                Retry Connection
+              </Button>
+              <Button variant="outline" size="xs" className="h-7 text-[10px]"
+                onClick={() => {
+                  const email = "your@email.com";
+                  const sql = `UPDATE profiles SET subscription_tier = 'admin' WHERE email = '${email}';`;
+                  navigator.clipboard.writeText(sql);
+                  alert("Upgrade SQL copied to clipboard! (You need to run this in Supabase SQL editor)");
+                }}>
+                Copy Upgrade SQL
+              </Button>
             </div>
           </CardContent>
         </Card>
