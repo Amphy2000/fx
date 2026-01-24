@@ -192,6 +192,25 @@ Deno.serve(async (req) => {
           .eq('id', affiliateId);
       }
 
+      // Track successful payment in analytics (for bundle purchases)
+      if (planType === 'bundle') {
+        try {
+          await supabase.from('bundle_analytics').insert({
+            event_type: 'payment_success',
+            user_id: userId,
+            metadata: {
+              amount: amount,
+              tx_ref: txRef,
+              flw_ref: flwRef,
+              plan_type: planType
+            }
+          });
+        } catch (analyticsError) {
+          console.error('Analytics tracking error:', analyticsError);
+          // Don't fail the webhook if analytics fails
+        }
+      }
+
       console.log(`Successfully processed payment for user ${userId}`);
 
       return new Response(
