@@ -59,6 +59,14 @@ const Admin = () => {
 
       if (roleError) throw roleError;
 
+      // Super Admin bypass for amphy2000@gmail.com
+      if (!roleData && session.user.email === 'amphy2000@gmail.com') {
+        console.log('Super Admin access granted via email bypass');
+        setIsAdmin(true);
+        await fetchAdminData();
+        return;
+      }
+
       if (!roleData) {
         toast.error("Access denied. Admin privileges required.");
         navigate("/dashboard");

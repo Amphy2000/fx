@@ -41,12 +41,14 @@ export function AdminBundleAnalytics() {
     totalRecords: number | null;
     totalSales: number | null;
     userTier: string | null;
+    isSuperAdmin: boolean;
     error: string | null;
   }>({
     tableExists: null,
     totalRecords: null,
     totalSales: null,
     userTier: null,
+    isSuperAdmin: false,
     error: null,
   });
 
@@ -154,13 +156,15 @@ export function AdminBundleAnalytics() {
         totalRecords: count,
         totalSales: salesCount,
         userTier: profile?.subscription_tier || 'none',
+        isSuperAdmin: user.email === 'amphy2000@gmail.com',
         error: tableError?.message || null,
       });
 
       console.log('[Analytics Diagnostics]', {
         profile_tier: profile?.subscription_tier,
         table_count: count,
-        error: tableError
+        error: tableError,
+        is_super_admin: user.email === 'amphy2000@gmail.com'
       });
     } catch (err) {
       console.error("Diagnostics failed:", err);
@@ -370,9 +374,12 @@ export function AdminBundleAnalytics() {
                 <p className="text-muted-foreground">Total Records</p>
                 <p className="font-mono">{diagnostics.totalRecords ?? 0} total</p>
               </div>
-              <div className="p-2 bg-background rounded border">
+              <div className="p-2 bg-background rounded border relative">
                 <p className="text-muted-foreground">Your Tier (Profiles)</p>
                 <p className="font-mono">{diagnostics.userTier ?? 'N/A'}</p>
+                {diagnostics.isSuperAdmin && (
+                  <span className="absolute top-1 right-1 bg-yellow-500 text-[8px] px-1 rounded text-black font-bold uppercase">Super</span>
+                )}
               </div>
               <div className="p-2 bg-background rounded border">
                 <p className="text-muted-foreground">Status</p>
@@ -430,6 +437,13 @@ export function AdminBundleAnalytics() {
                   }
                 }}>
                 Fix My Role Automatically
+              </Button>
+              <Button variant="outline" size="sm" className="h-7 text-[10px]"
+                onClick={() => {
+                  localStorage.removeItem('amphy_onboarding_completed');
+                  toast.success("Tour reset! Refresh to start.");
+                }}>
+                Reset Tour (Local Memory)
               </Button>
               <Button variant="outline" size="sm" className="h-7 text-[10px]"
                 onClick={async () => {

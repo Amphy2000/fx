@@ -54,19 +54,11 @@ export const OnboardingTour = () => {
     const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
 
     useEffect(() => {
-        const checkStatus = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('has_completed_onboarding')
-                    .eq('id', user.id)
-                    .single();
-
-                if (profile && !profile.has_completed_onboarding) {
-                    // Small delay to let page load
-                    setTimeout(() => setIsVisible(true), 1500);
-                }
+        const checkStatus = () => {
+            const hasSeen = localStorage.getItem('amphy_onboarding_completed');
+            if (hasSeen !== 'true') {
+                // Small delay to let page load
+                setTimeout(() => setIsVisible(true), 1500);
             }
         };
         checkStatus();
@@ -106,15 +98,9 @@ export const OnboardingTour = () => {
         }
     };
 
-    const completeTour = async () => {
+    const completeTour = () => {
         setIsVisible(false);
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-            await supabase
-                .from('profiles')
-                .update({ has_completed_onboarding: true })
-                .eq('id', user.id);
-        }
+        localStorage.setItem('amphy_onboarding_completed', 'true');
     };
 
     if (!isVisible) return null;
