@@ -356,6 +356,9 @@ export function AdminBundleAnalytics() {
               <Shield className="h-4 w-4" />
               Debug Analytics Connection
             </CardTitle>
+            <p className="text-[10px] text-yellow-600 bg-yellow-500/10 p-1 rounded border border-yellow-200 indent-1">
+              ⚠️ Note: Check this on <b>amphyai.vercel.app</b> for latest fixes.
+            </p>
           </CardHeader>
           <CardContent className="text-xs space-y-2">
             <div className="grid grid-cols-2 gap-2">
