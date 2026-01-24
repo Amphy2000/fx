@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Eye, MousePointerClick, CreditCard, CheckCircle, TrendingUp, Calendar, Shield } from "lucide-react";
@@ -367,16 +368,41 @@ export function AdminBundleAnalytics() {
               </div>
             )}
 
-            <div className="mt-4 flex gap-2">
+            <div className="mt-4 flex flex-wrap gap-2">
               <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={fetchAnalytics}>
                 Retry Connection
               </Button>
+              <Button
+                variant="default"
+                size="sm"
+                className="h-7 text-[10px] bg-red-600 hover:bg-red-700 text-white border-0"
+                onClick={async () => {
+                  try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) return;
+
+                    toast.loading("Applying one-click fix...");
+                    const { data, error } = await supabase.functions.invoke('admin-upgrade-user', {
+                      body: { userId: user.id, tier: 'admin' }
+                    });
+
+                    if (error) throw error;
+                    toast.success("Account fixed! Refreshing stats...");
+                    setTimeout(() => window.location.reload(), 1500);
+                  } catch (err: any) {
+                    console.error('One-click fix failed:', err);
+                    toast.error(`Fix failed: ${err.message || 'Unknown error'}`);
+                  }
+                }}>
+                Fix My Role Automatically
+              </Button>
               <Button variant="outline" size="sm" className="h-7 text-[10px]"
-                onClick={() => {
-                  const email = "your@email.com";
+                onClick={async () => {
+                  const { data: { user } } = await supabase.auth.getUser();
+                  const email = user?.email || "your-email@example.com";
                   const sql = `UPDATE profiles SET subscription_tier = 'admin' WHERE email = '${email}';`;
                   navigator.clipboard.writeText(sql);
-                  alert("Upgrade SQL copied to clipboard! (You need to run this in Supabase SQL editor)");
+                  toast.success("SQL copied for " + email);
                 }}>
                 Copy Upgrade SQL
               </Button>

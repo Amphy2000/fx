@@ -7,7 +7,7 @@ const corsHeaders = {
 
 interface UpgradeRequest {
   userId: string;
-  tier: 'free' | 'monthly' | 'premium' | 'lifetime';
+  tier: 'free' | 'monthly' | 'premium' | 'lifetime' | 'admin';
   expiresAt?: string;
 }
 
@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
-    
+
     if (userError || !user) {
       throw new Error('Invalid user');
     }
@@ -63,8 +63,8 @@ Deno.serve(async (req) => {
     }
 
     // Calculate credits based on tier
-    const credits = tier === 'free' ? 50 : tier === 'premium' ? 500 : tier === 'lifetime' ? 999999 : 200;
-    
+    const credits = (tier === 'lifetime' || tier === 'admin') ? 999999 : tier === 'free' ? 50 : tier === 'premium' ? 500 : 200;
+
     // Calculate expiry date (null for lifetime, 30 days for others if not provided)
     const expiryDate = tier === 'lifetime' ? null : (expiresAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString());
 
@@ -97,8 +97,8 @@ Deno.serve(async (req) => {
     console.log(`Successfully upgraded user ${userId} to ${tier}`);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         message: `User upgraded to ${tier}`,
         profile: data
       }),
