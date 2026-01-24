@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Loader2, Download, Search, Eye, Crown, Mail, BarChart3, Shield, Bell, Brain } from "lucide-react";
+import { Loader2, Download, Search, Eye, Crown, Mail, BarChart3, Shield, Bell, Brain, TrendingUp } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +26,7 @@ import { WeeklySummaryEmailManager } from "@/components/WeeklySummaryEmailManage
 import AdminAffiliateManager from "@/components/AdminAffiliateManager";
 import { AdminNotificationSender } from "@/components/AdminNotificationSender";
 import { AdminAIInsights } from "@/components/AdminAIInsights";
-import BundleAnalytics from "./BundleAnalytics";
+import { AdminBundleAnalytics } from "@/components/AdminBundleAnalytics";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -244,8 +244,8 @@ const Admin = () => {
                 <Brain className="h-3 w-3 mr-1" />
                 AI Insights
               </TabsTrigger>
-              <TabsTrigger value="bundle" className="text-xs px-3 py-1.5">
-                <BarChart3 className="h-3 w-3 mr-1" />
+              <TabsTrigger value="bundle-analytics" className="text-xs px-3 py-1.5">
+                <TrendingUp className="h-3 w-3 mr-1" />
                 Bundle
               </TabsTrigger>
             </TabsList>
@@ -521,8 +521,8 @@ const Admin = () => {
             <AdminAIInsights />
           </TabsContent>
 
-          <TabsContent value="bundle">
-            <BundleAnalytics />
+          <TabsContent value="bundle-analytics">
+            <AdminBundleAnalytics />
           </TabsContent>
         </Tabs>
 
