@@ -175,6 +175,7 @@ export function AppSidebar() {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
+                id="tour-sms-course"
                 onClick={() => window.open("https://smscourse.lovable.app/dashboard", "_blank")}
                 className="text-yellow-500 font-semibold"
               >
@@ -202,7 +203,11 @@ export function AppSidebar() {
         <SidebarGroupContent>
           <SidebarMenu>
             {tradingNavItems.map(item => <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton isActive={isActive(item.url)} onClick={() => handleNavClick(item.url)}>
+              <SidebarMenuButton
+                id={item.title === "Dashboard" ? "tour-dashboard" : item.title === "Trade Calendar" ? "tour-trade-calendar" : undefined}
+                isActive={isActive(item.url)}
+                onClick={() => handleNavClick(item.url)}
+              >
                 <item.icon className="h-4 w-4" />
                 <span>{item.title}</span>
               </SidebarMenuButton>
@@ -216,7 +221,11 @@ export function AppSidebar() {
         <SidebarGroupContent>
           <SidebarMenu>
             {aiNavItems.map(item => <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton isActive={isActive(item.url)} onClick={() => handleNavClick(item.url)}>
+              <SidebarMenuButton
+                id={item.title === "AI Daily Journal" ? "tour-ai-journal" : item.title === "AI Setup Analyzer" ? "tour-ai-setup-analyzer" : undefined}
+                isActive={isActive(item.url)}
+                onClick={() => handleNavClick(item.url)}
+              >
                 <item.icon className="h-4 w-4" />
                 <span>{item.title}</span>
               </SidebarMenuButton>
