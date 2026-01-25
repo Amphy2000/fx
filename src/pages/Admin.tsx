@@ -575,26 +575,43 @@ const Admin = () => {
                     <Button variant="outline" size="sm" onClick={async () => {
                       try {
                         toast.info("Testing Gemini connection...");
-                        // We send a dummy trade ID just to see if it reaches the API logic
-                        // We expect a 404 (Trade not found) or 200, but NOT a 500 (Server Error)
+
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (!session) {
+                          toast.error("Please log in to test.");
+                          return;
+                        }
+
                         const res = await fetch('/api/analyze-trade', {
                           method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ tradeId: 'test-connection' }) // Dummy ID
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${session.access_token}`
+                          },
+                          body: JSON.stringify({ tradeId: 'test-connection' })
                         });
+
+                        if (res.status === 404) {
+                          throw new Error("API Route not found (404)");
+                        }
 
                         const data = await res.json();
 
                         if (res.status === 401) {
-                          toast.error("Unauthorized: Please log in first.");
+                          toast.error("Unauthorized: Check auth tokens.");
                         } else if (data.error && data.error.includes('Gemini API Key missing')) {
                           toast.error("FAIL: Gemini Key is missing in Vercel!");
+                        } else if (data.error && data.error === 'Trade not found') {
+                          toast.success("SUCCESS: Bridge is connected & executing logic! 🚀");
+                        } else if (res.ok) {
+                          toast.success("SUCCESS: Bridge is active!");
                         } else {
-                          // If we get "Trade not found" or a success, the bridge IS working and talking to code
-                          toast.success("SUCCESS: Bridge is active & secure! 🚀");
+                          console.error("Bridge Error:", data);
+                          toast.error(`Bridge Error: ${data.error || 'Unknown'}`);
                         }
-                      } catch (e) {
-                        toast.error("Bridge unreachable. Check Vercel deployment.");
+                      } catch (e: any) {
+                        console.error("Bridge Connection Failed:", e);
+                        toast.error(`Bridge unreachable: ${e.message}. Check Vercel.`);
                       }
                     }}>Test Real Connection</Button>
                   </div>
