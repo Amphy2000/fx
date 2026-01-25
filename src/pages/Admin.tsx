@@ -577,29 +577,33 @@ const Admin = () => {
                       try {
                         toast.info("Testing Supabase Edge Function...");
 
-                        // Call the actual Supabase function with a test payload
+                        // Call with generic test ID
                         const { data, error } = await supabase.functions.invoke('analyze-trade', {
-                          body: { tradeId: 'test-gemini-key-check' }
+                          body: { tradeId: 'test-gemini-connection' }
                         });
 
                         if (error) {
-                          if (error.message?.includes('GEMINI_API_KEY')) {
-                            toast.error("❌ GEMINI_API_KEY not set in Supabase! Go to Supabase Dashboard → Settings → Edge Functions → Secrets and add it.");
-                          } else if (error.message?.includes('Trade not found') || error.message?.includes('404')) {
-                            toast.success("✅ SUCCESS! Edge Function is working. Add GEMINI_API_KEY to Supabase Secrets to use your own key.");
-                          } else if (error.message?.includes('Insufficient credits')) {
-                            toast.warning("⚠️ Using Lovable AI (credits required). Add GEMINI_API_KEY to Supabase to bypass this.");
+                          // Check context for real error details
+                          const status = (error as any)?.context?.response?.status;
+                          const body = await (error as any)?.context?.response?.text();
+
+                          console.error("Function Error Details:", { status, body, error });
+
+                          if (status === 404 || (error.message && error.message.includes('not found'))) {
+                            // A 404 on the trade lookup means the function RAN, checked the DB, and failed to find the dummy trade. 
+                            // This is actually a SUCCESS for the connection test.
+                            toast.success("✅ SUCCESS! Function is active (Trade lookup confirmed).");
+                          } else if (status === 500) {
+                            toast.error(`Server Error (500). Check Supabase Logs. Body: ${body}`);
                           } else {
-                            toast.error(`Error: ${error.message}`);
+                            toast.error(`Function Error: ${error.message}`);
                           }
                         } else {
                           toast.success("✅ Edge Function responded successfully!");
                         }
-
-                        console.log("Edge Function Response:", { data, error });
                       } catch (e: any) {
-                        console.error("Edge Function Test Failed:", e);
-                        toast.error(`Test failed: ${e.message}`);
+                        console.error("Test Failed:", e);
+                        toast.error(`Test exception: ${e.message}`);
                       }
                     }}>Test Edge Function</Button>
                   </div>
