@@ -575,37 +575,54 @@ const Admin = () => {
                     </div>
                     <Button variant="outline" size="sm" onClick={async () => {
                       try {
-                        toast.info("Testing Supabase Edge Function...");
+                        toast.info("Testing Edge Function via raw fetch...");
 
-                        // Call with generic test ID
-                        const { data, error } = await supabase.functions.invoke('analyze-trade', {
-                          body: { tradeId: 'test-gemini-connection' }
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (!session) {
+                          toast.error("Please login first");
+                          return;
+                        }
+
+                        // Construct the Edge Function URL directly
+                        // We use the project ref from the Supabase URL env var if possible, or fallback
+                        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+                        const projectRef = supabaseUrl.split('//')[1].split('.')[0];
+                        const functionUrl = `https://${projectRef}.supabase.co/functions/v1/analyze-trade`;
+
+                        console.log("Calling:", functionUrl);
+
+                        const res = await fetch(functionUrl, {
+                          method: 'POST',
+                          headers: {
+                            'Authorization': `Bearer ${session.access_token}`,
+                            'Content-Type': 'application/json'
+                          },
+                          body: JSON.stringify({ tradeId: 'test-gemini-connection' })
                         });
 
-                        if (error) {
-                          // Check context for real error details
-                          const status = (error as any)?.context?.response?.status;
-                          const body = await (error as any)?.context?.response?.text();
+                        const text = await res.text();
+                        console.log("Raw Response:", res.status, text);
 
-                          console.error("Function Error Details:", { status, body, error });
-
-                          if (status === 404 || (error.message && error.message.includes('not found'))) {
-                            // A 404 on the trade lookup means the function RAN, checked the DB, and failed to find the dummy trade. 
-                            // This is actually a SUCCESS for the connection test.
-                            toast.success("✅ SUCCESS! Function is active (Trade lookup confirmed).");
-                          } else if (status === 500) {
-                            toast.error(`Server Error (500). Check Supabase Logs. Body: ${body}`);
+                        if (res.status === 200) {
+                          toast.success("✅ SUCCESS! Function responded 200 OK.");
+                        } else if (res.status === 404) {
+                          // Check if it's the 404 from our code (Trade not found) or 404 from Supabase (Function not found)
+                          if (text.includes('Trade not found')) {
+                            toast.success("✅ SUCCESS! Function logic executed (Trade lookup verified).");
                           } else {
-                            toast.error(`Function Error: ${error.message}`);
+                            toast.error("❌ Function NOT FOUND (404). It might not be deployed.");
                           }
+                        } else if (res.status === 500) {
+                          toast.error(`❌ Server Error (500). Details: ${text}`);
                         } else {
-                          toast.success("✅ Edge Function responded successfully!");
+                          toast.error(`❌ Error ${res.status}: ${text}`);
                         }
+
                       } catch (e: any) {
-                        console.error("Test Failed:", e);
-                        toast.error(`Test exception: ${e.message}`);
+                        console.error("Raw Fetch Failed:", e);
+                        toast.error(`Fetch error: ${e.message}`);
                       }
-                    }}>Test Edge Function</Button>
+                    }}>Test Edge Function (Raw)</Button>
                   </div>
                   <p className="text-[10px] text-muted-foreground italic text-center">
                     Note: The app will now automatically retry calls if Google's free tier hits its 15 RPM limit.
