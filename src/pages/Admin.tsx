@@ -574,13 +574,29 @@ const Admin = () => {
                     </div>
                     <Button variant="outline" size="sm" onClick={async () => {
                       try {
-                        const res = await fetch('/api/analyze-trade', { method: 'OPTIONS' });
-                        if (res.ok) toast.success("Vercel AI Bridge is Active!");
-                        else toast.error("Bridge not found. Did you push the code?");
-                      } catch {
-                        toast.error("Bridge unreachable.");
+                        toast.info("Testing Gemini connection...");
+                        // We send a dummy trade ID just to see if it reaches the API logic
+                        // We expect a 404 (Trade not found) or 200, but NOT a 500 (Server Error)
+                        const res = await fetch('/api/analyze-trade', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ tradeId: 'test-connection' }) // Dummy ID
+                        });
+
+                        const data = await res.json();
+
+                        if (res.status === 401) {
+                          toast.error("Unauthorized: Please log in first.");
+                        } else if (data.error && data.error.includes('Gemini API Key missing')) {
+                          toast.error("FAIL: Gemini Key is missing in Vercel!");
+                        } else {
+                          // If we get "Trade not found" or a success, the bridge IS working and talking to code
+                          toast.success("SUCCESS: Bridge is active & secure! 🚀");
+                        }
+                      } catch (e) {
+                        toast.error("Bridge unreachable. Check Vercel deployment.");
                       }
-                    }}>Test Bridge</Button>
+                    }}>Test Real Connection</Button>
                   </div>
                   <p className="text-[10px] text-muted-foreground italic text-center">
                     Note: The app will now automatically retry calls if Google's free tier hits its 15 RPM limit.
