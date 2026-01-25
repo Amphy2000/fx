@@ -552,17 +552,18 @@ const Admin = () => {
                 <div className="bg-muted p-4 rounded-lg space-y-3">
                   <h3 className="font-bold flex items-center gap-2 text-foreground">
                     <Shield className="h-4 w-4 text-green-500" />
-                    How to keep your app AI 100% free:
+                    How to use YOUR Gemini API (100% Free Forever):
                   </h3>
                   <ol className="list-decimal pl-5 space-y-2 text-muted-foreground">
                     <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-primary underline">Google AI Studio</a>.</li>
-                    <li>Create a free <b>Gemini 1.5 Flash</b> or <b>2.0 Flash</b> API key.</li>
-                    <li>Log in to your <b>Vercel Project Dashboard</b>.</li>
-                    <li>Go to <b>Settings &rarr; Environment Variables</b>.</li>
-                    <li>Add a new variable:<br />
-                      <code className="bg-background px-2 py-1 rounded mt-1 inline-block border text-foreground font-mono">GEMINI_API_KEY = your_key_here</code>
+                    <li>Create a free <b>Gemini 2.0 Flash</b> API key (completely free, no credit card).</li>
+                    <li>Go to your <a href="https://supabase.com/dashboard" target="_blank" className="text-primary underline">Supabase Dashboard</a>.</li>
+                    <li>Select your project → <b>Settings</b> → <b>Edge Functions</b> → <b>Secrets</b>.</li>
+                    <li>Click <b>Add Secret</b>:<br />
+                      <code className="bg-background px-2 py-1 rounded mt-1 inline-block border text-foreground font-mono">Name: GEMINI_API_KEY</code><br />
+                      <code className="bg-background px-2 py-1 rounded mt-1 inline-block border text-foreground font-mono">Value: [paste your key]</code>
                     </li>
-                    <li>Redeploy your Vercel project.</li>
+                    <li>Click <b>Save</b>. Your app will instantly start using YOUR key instead of Lovable's!</li>
                   </ol>
                 </div>
 
@@ -574,39 +575,33 @@ const Admin = () => {
                     </div>
                     <Button variant="outline" size="sm" onClick={async () => {
                       try {
-                        toast.info("Checking Vercel API status...");
+                        toast.info("Testing Supabase Edge Function...");
 
-                        const res = await fetch('/api/health', { method: 'GET' });
+                        // Call the actual Supabase function with a test payload
+                        const { data, error } = await supabase.functions.invoke('analyze-trade', {
+                          body: { tradeId: 'test-gemini-key-check' }
+                        });
 
-                        if (!res.ok) {
-                          const text = await res.text();
-                          if (text.includes('<!doctype') || text.includes('<html')) {
-                            toast.error("❌ API not deployed! Vercel is returning HTML instead of running functions.");
-                            return;
-                          }
-                          throw new Error(`HTTP ${res.status}: ${text}`);
-                        }
-
-                        const data = await res.json();
-
-                        if (data.status === 'API is working!') {
-                          const diag = data.diagnostics;
-
-                          if (!diag.hasGeminiKey) {
-                            toast.error("❌ GEMINI_API_KEY not found in Vercel! Add it in Settings → Environment Variables.");
-                          } else if (diag.geminiKeyLength < 20) {
-                            toast.error(`⚠️ GEMINI_API_KEY looks invalid (only ${diag.geminiKeyLength} chars). Check your key.`);
+                        if (error) {
+                          if (error.message?.includes('GEMINI_API_KEY')) {
+                            toast.error("❌ GEMINI_API_KEY not set in Supabase! Go to Supabase Dashboard → Settings → Edge Functions → Secrets and add it.");
+                          } else if (error.message?.includes('Trade not found') || error.message?.includes('404')) {
+                            toast.success("✅ SUCCESS! Edge Function is working. Add GEMINI_API_KEY to Supabase Secrets to use your own key.");
+                          } else if (error.message?.includes('Insufficient credits')) {
+                            toast.warning("⚠️ Using Lovable AI (credits required). Add GEMINI_API_KEY to Supabase to bypass this.");
                           } else {
-                            toast.success(`✅ SUCCESS! API is live. Gemini Key: ${diag.geminiKeyLength} chars. Using ${diag.nodeVersion}.`);
+                            toast.error(`Error: ${error.message}`);
                           }
-
-                          console.log("Full Diagnostics:", diag);
+                        } else {
+                          toast.success("✅ Edge Function responded successfully!");
                         }
+
+                        console.log("Edge Function Response:", { data, error });
                       } catch (e: any) {
-                        console.error("Health Check Failed:", e);
-                        toast.error(`❌ API unreachable: ${e.message}. Push your code to GitHub and redeploy on Vercel.`);
+                        console.error("Edge Function Test Failed:", e);
+                        toast.error(`Test failed: ${e.message}`);
                       }
-                    }}>Check API Health</Button>
+                    }}>Test Edge Function</Button>
                   </div>
                   <p className="text-[10px] text-muted-foreground italic text-center">
                     Note: The app will now automatically retry calls if Google's free tier hits its 15 RPM limit.
