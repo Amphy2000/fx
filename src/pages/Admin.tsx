@@ -574,46 +574,39 @@ const Admin = () => {
                     </div>
                     <Button variant="outline" size="sm" onClick={async () => {
                       try {
-                        toast.info("Testing Gemini connection...");
+                        toast.info("Checking Vercel API status...");
 
-                        const { data: { session } } = await supabase.auth.getSession();
-                        if (!session) {
-                          toast.error("Please log in to test.");
-                          return;
-                        }
+                        const res = await fetch('/api/health', { method: 'GET' });
 
-                        const res = await fetch('/api/analyze-trade', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${session.access_token}`
-                          },
-                          body: JSON.stringify({ tradeId: 'test-connection' })
-                        });
-
-                        if (res.status === 404) {
-                          throw new Error("API Route not found (404)");
+                        if (!res.ok) {
+                          const text = await res.text();
+                          if (text.includes('<!doctype') || text.includes('<html')) {
+                            toast.error("❌ API not deployed! Vercel is returning HTML instead of running functions.");
+                            return;
+                          }
+                          throw new Error(`HTTP ${res.status}: ${text}`);
                         }
 
                         const data = await res.json();
 
-                        if (res.status === 401) {
-                          toast.error("Unauthorized: Check auth tokens.");
-                        } else if (data.error && data.error.includes('Gemini API Key missing')) {
-                          toast.error("FAIL: Gemini Key is missing in Vercel!");
-                        } else if (data.error && data.error === 'Trade not found') {
-                          toast.success("SUCCESS: Bridge is connected & executing logic! 🚀");
-                        } else if (res.ok) {
-                          toast.success("SUCCESS: Bridge is active!");
-                        } else {
-                          console.error("Bridge Error:", data);
-                          toast.error(`Bridge Error: ${data.error || 'Unknown'}`);
+                        if (data.status === 'API is working!') {
+                          const diag = data.diagnostics;
+
+                          if (!diag.hasGeminiKey) {
+                            toast.error("❌ GEMINI_API_KEY not found in Vercel! Add it in Settings → Environment Variables.");
+                          } else if (diag.geminiKeyLength < 20) {
+                            toast.error(`⚠️ GEMINI_API_KEY looks invalid (only ${diag.geminiKeyLength} chars). Check your key.`);
+                          } else {
+                            toast.success(`✅ SUCCESS! API is live. Gemini Key: ${diag.geminiKeyLength} chars. Using ${diag.nodeVersion}.`);
+                          }
+
+                          console.log("Full Diagnostics:", diag);
                         }
                       } catch (e: any) {
-                        console.error("Bridge Connection Failed:", e);
-                        toast.error(`Bridge unreachable: ${e.message}. Check Vercel.`);
+                        console.error("Health Check Failed:", e);
+                        toast.error(`❌ API unreachable: ${e.message}. Push your code to GitHub and redeploy on Vercel.`);
                       }
-                    }}>Test Real Connection</Button>
+                    }}>Check API Health</Button>
                   </div>
                   <p className="text-[10px] text-muted-foreground italic text-center">
                     Note: The app will now automatically retry calls if Google's free tier hits its 15 RPM limit.
