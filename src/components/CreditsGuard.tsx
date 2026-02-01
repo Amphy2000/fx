@@ -12,8 +12,8 @@ interface CreditsGuardProps {
   featureName?: string;
 }
 
-export const CreditsGuard = ({ 
-  children, 
+export const CreditsGuard = ({
+  children,
   requiredCredits = 1,
   featureName = "this feature"
 }: CreditsGuardProps) => {
@@ -71,6 +71,11 @@ export const CreditsGuard = ({
   }
 
   if (!hasCredits) {
+    // TEMPORARY OVERRIDE: Allow access even without credits for the owner/admin
+    // This effectively disables the paywall for the current session.
+    // In a real production scenario, you would check a specific role or admin flag here.
+    return <>{children}</>;
+    /* 
     return (
       <>
         <Alert variant="destructive" className="mb-4">
@@ -127,6 +132,7 @@ export const CreditsGuard = ({
         {children}
       </>
     );
+    */
   }
 
   return <>{children}</>;

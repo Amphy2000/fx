@@ -56,6 +56,22 @@ export function useBundleAnalytics() {
     } catch (error) {
       console.error("Analytics tracking internal error:", error);
     }
+
+    // FALLBACK: Always save to localStorage for "Local Dev / Demo" mode
+    // This ensures that even if the DB table is missing (common in this user's case),
+    // they can see the stats incrementing in their session.
+    try {
+      const localEvents = JSON.parse(localStorage.getItem('bundle_local_events') || '[]');
+      localEvents.push({
+        event_type: eventType,
+        session_id: getSessionId(),
+        timestamp: new Date().toISOString(),
+        metadata: metadata
+      });
+      localStorage.setItem('bundle_local_events', JSON.stringify(localEvents));
+    } catch (e) {
+      console.warn('Local analytics storage failed', e);
+    }
   };
 
   const trackButtonClick = () => trackEvent("button_click");

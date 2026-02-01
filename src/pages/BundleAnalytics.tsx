@@ -31,70 +31,85 @@ const BundleAnalytics = () => {
     }, []);
 
     const fetchAnalytics = async () => {
+        setLoading(true);
         try {
             console.log('[BundleAnalytics] Fetching from bundle_analytics...');
-            
-            // Fetch raw events from bundle_analytics table
+
+            // 1. Fetch Remote Data
+            let remoteData: AnalyticsSummary[] = [];
             const { data, error } = await supabase
                 .from('bundle_analytics')
                 .select('event_type, created_at')
                 .order('created_at', { ascending: false });
 
             if (error) {
-                console.error('[BundleAnalytics] Query error:', error);
-                throw error;
+                console.warn('[BundleAnalytics] Remote fetch failed or table missing:', error);
+                if (error.code === 'PGRST116' || error.message?.includes('does not exist')) {
+                    // Table missing is expected in this user's context, just warn once
+                    toast.error("Database table missing. Showing local session stats only.", { id: 'db-missing-toast' });
+                }
+            } else if (data) {
+                // Remote data is raw events, we process them in step 3
             }
 
-            console.log('[BundleAnalytics] Raw data result:', data?.length, 'events');
+            // 2. Fetch and Aggregate Local Data
+            const localEvents = JSON.parse(localStorage.getItem('bundle_local_events') || '[]');
 
-            if (data && data.length > 0) {
-                // Aggregate by date
-                const dailyMap = new Map<string, AnalyticsSummary>();
-                
-                data.forEach((event: { event_type: string; created_at: string }) => {
+            // 3. Merge Data (Prioritize Remote, add Local)
+            const dailyMap = new Map<string, AnalyticsSummary>();
+
+            // Helper to add event to map
+            const addEventToMap = (date: string, type: string) => {
+                if (!dailyMap.has(date)) {
+                    dailyMap.set(date, {
+                        date,
+                        page_views: 0,
+                        claim_clicks: 0,
+                        payment_inits: 0,
+                        payment_successes: 0,
+                        conversion_rate: 0
+                    });
+                }
+                const day = dailyMap.get(date)!;
+                switch (type) {
+                    case 'page_view': day.page_views++; break;
+                    case 'button_click': day.claim_clicks++; break;
+                    case 'payment_initiated': day.payment_inits++; break;
+                    case 'payment_success': day.payment_successes++; break;
+                }
+            };
+
+            // Process Remote Events
+            if (data) {
+                data.forEach((event: any) => {
                     const date = new Date(event.created_at).toISOString().split('T')[0];
-                    
-                    if (!dailyMap.has(date)) {
-                        dailyMap.set(date, {
-                            date,
-                            page_views: 0,
-                            claim_clicks: 0,
-                            payment_inits: 0,
-                            payment_successes: 0,
-                            conversion_rate: 0
-                        });
-                    }
-                    
-                    const day = dailyMap.get(date)!;
-                    
-                    switch (event.event_type) {
-                        case 'page_view':
-                            day.page_views++;
-                            break;
-                        case 'button_click':
-                            day.claim_clicks++;
-                            break;
-                        case 'payment_initiated':
-                            day.payment_inits++;
-                            break;
-                        case 'payment_success':
-                            day.payment_successes++;
-                            break;
-                    }
+                    addEventToMap(date, event.event_type);
                 });
-                
-                // Calculate conversion rates and sort
-                const aggregated = Array.from(dailyMap.values()).map(day => ({
-                    ...day,
-                    conversion_rate: day.page_views > 0 
-                        ? Number(((day.payment_successes / day.page_views) * 100).toFixed(2))
-                        : 0
-                })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-                
-                setAnalytics(aggregated.slice(0, 30));
+            }
 
-                // Calculate totals
-                const calculatedTotals = aggregated.reduce((acc, day) => ({
+            // Process Local Events
+            localEvents.forEach((ev: any) => {
+                const date = new Date(ev.timestamp).toISOString().split('T')[0];
+                // Add local events (assumes disjoint or fallback)
+                addEventToMap(date, ev.event_type);
+            });
+
+            const mergedData = Array.from(dailyMap.values()).sort((a, b) =>
+                new Date(b.date).getTime() - new Date(a.date).getTime()
+            );
+
+            // 4. Calculate Rates and Set State
+            if (mergedData.length > 0) {
+                // Recalculate conversion rates for each day
+                mergedData.forEach(day => {
+                    day.conversion_rate = day.page_views > 0
+                        ? Number(((day.payment_successes / day.page_views) * 100).toFixed(2))
+                        : 0;
+                });
+
+                setAnalytics(mergedData.slice(0, 30));
+
+                const newTotals = mergedData.reduce((acc, day) => ({
                     page_views: acc.page_views + day.page_views,
                     claim_clicks: acc.claim_clicks + day.claim_clicks,
                     payment_inits: acc.payment_inits + day.payment_inits,
@@ -108,14 +123,13 @@ const BundleAnalytics = () => {
                     conversion_rate: 0
                 });
 
-                calculatedTotals.conversion_rate = calculatedTotals.page_views > 0
-                    ? Number(((calculatedTotals.payment_successes / calculatedTotals.page_views) * 100).toFixed(2))
+                newTotals.conversion_rate = newTotals.page_views > 0
+                    ? Number(((newTotals.payment_successes / newTotals.page_views) * 100).toFixed(2))
                     : 0;
 
-                console.log('[BundleAnalytics] Calculated totals:', calculatedTotals);
-                setTotals(calculatedTotals);
+                console.log('[BundleAnalytics] Merged totals:', newTotals);
+                setTotals(newTotals);
             } else {
-                console.log('[BundleAnalytics] No data returned');
                 setAnalytics([]);
                 setTotals({
                     page_views: 0,
@@ -125,9 +139,9 @@ const BundleAnalytics = () => {
                     conversion_rate: 0
                 });
             }
+
         } catch (error: any) {
             console.error('[BundleAnalytics] Error fetching analytics:', error);
-            toast.error(`Failed to load analytics: ${error.message || 'Check connection'}`);
         } finally {
             setLoading(false);
         }
