@@ -28,31 +28,31 @@ const AIFeatures = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-2">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-              <TabsList className="grid w-full grid-cols-6">
-                <TabsTrigger value="screenshots" className="flex items-center gap-2">
-                  <Camera className="w-4 h-4" />
-                  Screenshots
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+              <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 gap-1 h-auto p-1">
+                <TabsTrigger value="screenshots" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+                  <Camera className="w-3 h-3 md:w-4 md:h-4 shrink-0" />
+                  <span className="truncate">Screenshots</span>
                 </TabsTrigger>
-                <TabsTrigger value="voice" className="flex items-center gap-2">
-                  <Mic className="w-4 h-4" />
-                  Voice
+                <TabsTrigger value="voice" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+                  <Mic className="w-3 h-3 md:w-4 md:h-4 shrink-0" />
+                  <span className="truncate">Voice</span>
                 </TabsTrigger>
-                <TabsTrigger value="patterns" className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" />
-                  Patterns
+                <TabsTrigger value="patterns" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+                  <TrendingUp className="w-3 h-3 md:w-4 md:h-4 shrink-0" />
+                  <span className="truncate">Patterns</span>
                 </TabsTrigger>
-                <TabsTrigger value="behavior" className="flex items-center gap-2">
-                  <Brain className="w-4 h-4" />
-                  Behavior
+                <TabsTrigger value="behavior" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+                  <Brain className="w-3 h-3 md:w-4 md:h-4 shrink-0" />
+                  <span className="truncate">Behavior</span>
                 </TabsTrigger>
-                <TabsTrigger value="insights" className="flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4" />
-                  Insights
+                <TabsTrigger value="insights" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+                  <Lightbulb className="w-3 h-3 md:w-4 md:h-4 shrink-0" />
+                  <span className="truncate">Insights</span>
                 </TabsTrigger>
-                <TabsTrigger value="assistant" className="flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4" />
-                  Assistant
+                <TabsTrigger value="assistant" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+                  <MessageSquare className="w-3 h-3 md:w-4 md:h-4 shrink-0" />
+                  <span className="truncate">Assistant</span>
                 </TabsTrigger>
               </TabsList>
 

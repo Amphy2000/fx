@@ -128,8 +128,10 @@ export const GlobalVoiceAssistant = ({
         if (data.action === 'navigate' && data.data?.destination) {
           const routes: Record<string, { path: string; name: string }> = {
             'dashboard': { path: '/dashboard', name: 'Dashboard' },
-            'journal': { path: '/journal', name: 'Journal' },
-            'analytics': { path: '/analytics', name: 'Analytics' },
+            'journal': { path: '/ai-journal', name: 'AI Journal' },
+            'journaling': { path: '/ai-journal', name: 'AI Journal' },
+            'ai_journal': { path: '/ai-journal', name: 'AI Journal' },
+            'analytics': { path: '/analytics/advanced', name: 'Analytics' },
             'targets': { path: '/targets', name: 'Targets' },
             'achievements': { path: '/achievements', name: 'Achievements' },
             'leaderboard': { path: '/leaderboard', name: 'Leaderboard' },
@@ -137,14 +139,15 @@ export const GlobalVoiceAssistant = ({
             'settings': { path: '/settings', name: 'Settings' },
             'pricing': { path: '/pricing', name: 'Pricing' },
             'integrations': { path: '/integrations', name: 'Integrations' },
-            'calendar': { path: '/calendar', name: 'Trade Calendar' },
+            'calendar': { path: '/trade-calendar', name: 'Trade Calendar' },
             'weekly_summary': { path: '/weekly-summary', name: 'Weekly Summary' },
-            'patterns': { path: '/pattern-recognition', name: 'Pattern Recognition' },
+            'patterns': { path: '/ai-features', name: 'AI Features' },
             'setups': { path: '/setups', name: 'Setups' },
             'routine': { path: '/routine', name: 'Trading Routine' },
-            'checkin': { path: '/checkin', name: 'Daily Check-in' },
-            'ai_coach': { path: '/ai-coach', name: 'AI Coach' },
-            'ai_chat': { path: '/ai-chat', name: 'AI Chat' }
+            'checkin': { path: '/check-in', name: 'Daily Check-in' },
+            'ai_coach': { path: '/ai-features', name: 'AI Features' },
+            'ai_chat': { path: '/ai-features', name: 'AI Features' },
+            'ai_features': { path: '/ai-features', name: 'AI Features' }
           };
           const route = routes[data.data.destination];
           if (route) {
