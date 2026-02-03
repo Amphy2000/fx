@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 // Core Trading Features
-const tradingNavItems = [{
+const tradingNavItems: any[] = [{
   title: "Dashboard",
   url: "/dashboard",
   icon: LayoutDashboard
@@ -22,7 +23,7 @@ const tradingNavItems = [{
 }];
 
 // AI-Powered Analysis
-const aiNavItems = [{
+const aiNavItems: any[] = [{
   title: "AI Features Hub",
   url: "/ai-features",
   icon: Brain
@@ -37,7 +38,7 @@ const aiNavItems = [{
 }];
 
 // Manual Tracking & Journaling
-const journalNavItems = [{
+const journalNavItems: any[] = [{
   title: "Daily Check-In",
   url: "/check-in",
   icon: Heart
@@ -48,11 +49,12 @@ const journalNavItems = [{
 }, {
   title: "Voice Memos",
   url: "/voice-memos",
-  icon: Mic
+  icon: Mic,
+  badge: "New"
 }];
 
 // Performance & Progress
-const performanceNavItems = [{
+const performanceNavItems: any[] = [{
   title: "Setups",
   url: "/setups",
   icon: Lightbulb
@@ -83,10 +85,11 @@ const performanceNavItems = [{
 }];
 
 // Utilities
-const toolsNavItems = [{
+const toolsNavItems: any[] = [{
   title: "Prop Firm Protector",
   url: "/prop-firm-protector",
-  icon: Shield
+  icon: Shield,
+  badge: "New"
 }, {
   title: "Calculators",
   url: "/calculators",
@@ -98,7 +101,7 @@ const toolsNavItems = [{
 }];
 
 // System
-const systemNavItems = [{
+const systemNavItems: any[] = [{
   title: "Integrations",
   url: "/integrations",
   icon: Plug
@@ -248,8 +251,17 @@ export function AppSidebar() {
           <SidebarMenu>
             {journalNavItems.map(item => <SidebarMenuItem key={item.title}>
               <SidebarMenuButton isActive={isActive(item.url)} onClick={() => handleNavClick(item.url)}>
-                <item.icon className="h-4 w-4" />
-                <span>{item.title}</span>
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-2">
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
+                  </div>
+                  {item.badge && (
+                    <Badge className="bg-primary text-primary-foreground text-[10px] px-1 h-4 ml-auto">
+                      {item.badge}
+                    </Badge>
+                  )}
+                </div>
               </SidebarMenuButton>
             </SidebarMenuItem>)}
           </SidebarMenu>
@@ -262,8 +274,17 @@ export function AppSidebar() {
           <SidebarMenu>
             {performanceNavItems.map(item => <SidebarMenuItem key={item.title}>
               <SidebarMenuButton isActive={isActive(item.url)} onClick={() => handleNavClick(item.url)}>
-                <item.icon className="h-4 w-4" />
-                <span>{item.title}</span>
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-2">
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
+                  </div>
+                  {item.badge && (
+                    <Badge className="bg-primary text-primary-foreground text-[10px] px-1 h-4 ml-auto">
+                      {item.badge}
+                    </Badge>
+                  )}
+                </div>
               </SidebarMenuButton>
             </SidebarMenuItem>)}
           </SidebarMenu>
@@ -276,8 +297,17 @@ export function AppSidebar() {
           <SidebarMenu>
             {toolsNavItems.map(item => <SidebarMenuItem key={item.title}>
               <SidebarMenuButton isActive={isActive(item.url)} onClick={() => handleNavClick(item.url)}>
-                <item.icon className="h-4 w-4" />
-                <span>{item.title}</span>
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-2">
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
+                  </div>
+                  {item.badge && (
+                    <Badge className="bg-primary text-primary-foreground text-[10px] px-1 h-4 ml-auto">
+                      {item.badge}
+                    </Badge>
+                  )}
+                </div>
               </SidebarMenuButton>
             </SidebarMenuItem>)}
           </SidebarMenu>

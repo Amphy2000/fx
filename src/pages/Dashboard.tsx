@@ -19,6 +19,12 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { DailyChallengeCard } from "@/components/DailyChallengeCard";
 import { TradingScoreCard } from "@/components/TradingScoreCard";
 import { MilestoneNotification } from "@/components/MilestoneNotification";
@@ -37,6 +43,7 @@ import { ShareToTwitterButton } from "@/components/ShareToTwitterButton";
 import { QuickCheckInModal } from "@/components/QuickCheckInModal";
 import { DrawdownRecoveryBanner } from "@/components/DrawdownRecoveryBanner";
 import { FreeVoiceMemo } from "@/components/FreeVoiceMemo";
+import { FeatureDiscoveryCard } from "@/components/FeatureDiscoveryCard";
 import { format } from "date-fns";
 
 const Dashboard = () => {
@@ -348,10 +355,19 @@ const Dashboard = () => {
               }}
               type="dashboard"
             />
-            <Button variant="outline" size="sm" onClick={() => setExportDialogOpen(true)} className="text-xs md:text-sm">
-              <FileDown className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-              Export
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={() => setExportDialogOpen(true)} className="text-xs md:text-sm">
+                    <FileDown className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                    Export
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Download your trade history as CSV or PDF</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <CreditsDisplay />
           </div>
         </div>
@@ -370,6 +386,8 @@ const Dashboard = () => {
             )}
           </div>
         )}
+
+        <FeatureDiscoveryCard />
 
         {/* TIME PERIOD FILTER */}
         <Card className="bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20 border-blue-200 dark:border-blue-800">

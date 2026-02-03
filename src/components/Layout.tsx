@@ -9,6 +9,7 @@ import { TrendingUp, Menu, Moon, Sun } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { Button } from "@/components/ui/button";
 import { OnboardingTour } from "@/components/OnboardingTour";
+import { CommandPalette } from "@/components/CommandPalette";
 
 interface LayoutProps {
   children: ReactNode;
@@ -63,6 +64,7 @@ export function Layout({
         {/* Footer */}
         <Footer />
         <OnboardingTour />
+        <CommandPalette />
       </div>
     </div>
   </SidebarProvider>;
