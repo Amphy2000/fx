@@ -45,6 +45,7 @@ import MentalStateCorrelation from "./pages/MentalStateCorrelation";
 import AffiliateApply from "./pages/AffiliateApply";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
 import BundleOffer from "./pages/BundleOffer";
+import VoiceMemos from "./pages/VoiceMemos";
 import { FloatingActionMenu } from "./components/FloatingActionMenu";
 
 const queryClient = new QueryClient();
@@ -95,6 +96,7 @@ const AppContent = () => {
           <Route path="/install" element={<Install />} />
           <Route path="/psychology-guide" element={<PsychologyGuide />} />
           <Route path="/guides" element={<Guides />} />
+          <Route path="/voice-memos" element={<VoiceMemos />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
