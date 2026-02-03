@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, TrendingDown, Target, Activity, XCircle, Info, Zap, Calculator, BarChart2, Coins, Settings2, RefreshCcw } from "lucide-react";
+import { Shield, TrendingDown, Target, Activity, XCircle, Info, Zap, Calculator, BarChart2, Coins, Settings2, RefreshCcw, AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
@@ -500,14 +500,35 @@ const PropFirmProtector = () => {
               <TabsContent value="simulator">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex justify-between items-center">
+                    <CardTitle className="flex flex-col md:flex-row justify-between items-center gap-4">
                       <div className="flex items-center gap-2">
                         <Activity className="h-5 w-5 text-blue-500" />
                         Monte Carlo Survival View
                       </div>
-                      <Button size="sm" onClick={runSimulation} disabled={isSimulating}>
-                        {isSimulating ? "Simulating..." : "Run 500 Simulations"}
-                      </Button>
+
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs whitespace-nowrap">Win Rate %</Label>
+                          <Input
+                            type="number"
+                            className="w-16 h-8 text-xs"
+                            value={simWinRate}
+                            onChange={(e) => setSimWinRate(Number(e.target.value))}
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs whitespace-nowrap">R:R</Label>
+                          <Input
+                            type="number"
+                            className="w-16 h-8 text-xs"
+                            value={simRR}
+                            onChange={(e) => setSimRR(Number(e.target.value))}
+                          />
+                        </div>
+                        <Button size="sm" onClick={runSimulation} disabled={isSimulating}>
+                          {isSimulating ? "Simulating..." : "Run Sim"}
+                        </Button>
+                      </div>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -552,11 +573,12 @@ const PropFirmProtector = () => {
                       <div className="h-[200px] flex items-center justify-center border-2 border-dashed rounded-xl bg-muted/20">
                         <div className="text-center text-muted-foreground">
                           <BarChart2 className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                          <p>Click "Run" to simulate your next 20 trades</p>
+                          <p>Ready to Simulate</p>
+                          <p className="text-xs opacity-70 mt-1">Adjust Win Rate & RR above to test scenarios</p>
                         </div>
-                        {userStats && userStats.tradeCount > 5 && (
-                          <div className="mt-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full inline-block">
-                            Based on your last {userStats.tradeCount} trades
+                        {userStats && userStats.tradeCount > 0 && (
+                          <div className="absolute bottom-4 right-4 text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                            Auto-synced from {userStats.tradeCount} trades
                           </div>
                         )}
                       </div>
@@ -568,37 +590,56 @@ const PropFirmProtector = () => {
               <TabsContent value="analysis">
                 <Card>
                   <CardContent className="pt-6 space-y-4">
-                    <Alert>
+                    <Alert variant={simulationStats && simulationStats.pass < 50 ? "destructive" : "default"}>
                       <Info className="h-4 w-4" />
-                      <AlertTitle>Smart Analysis</AlertTitle>
+                      <AlertTitle>Honest Assessment</AlertTitle>
                       <AlertDescription>
-                        Based on your {simWinRate}% win rate and {simRR} RR:
+                        {simulationStats ? (
+                          simulationStats.pass < 50
+                            ? "CRITICAL WARNING: Based on these stats, you are statistically likely to fail this challenge. You must improve Win Rate or RR before continuing."
+                            : simulationStats.pass < 80
+                              ? "CAUTION: Your strategy has an edge, but a bad streak could still wipe you out. Lower your risk per trade."
+                              : "EXCELLENT: You have a strong statistical edge. Stick to the plan and don't over-leverage."
+                        ) : "Run the simulator to get a statistical assessment."}
                       </AlertDescription>
                     </Alert>
-                    <ul className="space-y-2 text-sm text-muted-foreground">
-                      <li className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-primary" />
-                        To maintain this account, limit daily trades to <strong>3</strong>.
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-primary" />
-                        Your optimal risk per trade is <strong>0.8% - 1.2%</strong>.
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-red-500" />
-                        <strong>Danger Zone:</strong> Do not exceed 4 losses in a row today.
-                      </li>
-                    </ul>
+
+                    <div className="space-y-4">
+                      <h4 className="font-semibold text-sm">Recommendations</h4>
+                      <ul className="space-y-2 text-sm text-muted-foreground">
+                        {riskPerTrade > 2 && (
+                          <li className="flex items-start gap-2 text-red-500">
+                            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                            <span><strong>High Risk Warning:</strong> Risking {riskPerTrade}% per trade is very aggressive for a prop firm. Recommended: 0.5% - 1%.</span>
+                          </li>
+                        )}
+                        {simWinRate < 40 && simRR < 2 && (
+                          <li className="flex items-start gap-2 text-orange-500">
+                            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                            <span><strong>Negative Expectancy:</strong> A {simWinRate}% win rate with {simRR} RR is hard to sustain. Aim for at least 1:2.5 RR.</span>
+                          </li>
+                        )}
+                        <li className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-primary" />
+                          <span>Based on your daily limit, stop trading if you lose <strong>{Math.floor(calculations.effectiveRiskAmount / (currentBalance * (riskPerTrade / 100)))}</strong> trades in a row today.</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-primary" />
+                          <span>To survive a worst-case streak of {simulationStats?.worstCaseStreak || 8} losses, ensure your buffer is at least <strong>${((simulationStats?.worstCaseStreak || 8) * (currentBalance * (riskPerTrade / 100))).toFixed(0)}</strong>.</span>
+                        </li>
+                      </ul>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
 
-            </Tabs>
 
-          </div>
-        </div>
-      </div>
-    </Layout>
+            </Tabs >
+
+          </div >
+        </div >
+      </div >
+    </Layout >
   );
 };
 
