@@ -1,4 +1,4 @@
-import { LayoutDashboard, MessageSquare, Calendar, Settings, Brain, LogOut, Target, Calculator, CreditCard, Trophy, GraduationCap, Plug, Heart, ClipboardCheck, Lightbulb, BarChart3, Flame, Award, BookOpen, Zap, Notebook, Sparkles, TrendingUp, FileText, Activity, Users, Crown } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Calendar, Settings, Brain, LogOut, Target, Calculator, CreditCard, Trophy, GraduationCap, Plug, Heart, ClipboardCheck, Lightbulb, BarChart3, Flame, Award, BookOpen, Zap, Notebook, Sparkles, TrendingUp, FileText, Activity, Users, Crown, Shield } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -80,6 +80,10 @@ const performanceNavItems = [{
 
 // Utilities
 const toolsNavItems = [{
+  title: "Prop Firm Protector",
+  url: "/prop-firm-protector",
+  icon: Shield
+}, {
   title: "Calculators",
   url: "/calculators",
   icon: Calculator

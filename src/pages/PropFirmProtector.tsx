@@ -1,472 +1,517 @@
-import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useMemo } from "react";
 import { Layout } from "@/components/Layout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { 
-  Shield, 
-  AlertTriangle, 
-  TrendingDown, 
-  Calculator, 
-  Target,
-  Activity,
-  CheckCircle2,
-  XCircle,
-  Info
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Shield, AlertTriangle, TrendingDown, Target, DollarSign, Activity, CheckCircle2, XCircle, Info, Zap } from "lucide-react";
+
+// Popular prop firm presets with their rules
+const PROP_FIRM_PRESETS = {
+  custom: { name: "Custom", dailyDD: 0, totalDD: 0, description: "Enter your own rules" },
+  ftmo: { name: "FTMO", dailyDD: 5, totalDD: 10, description: "Most popular prop firm" },
+  fundedNext: { name: "Funded Next", dailyDD: 5, totalDD: 10, description: "Fast payouts" },
+  myForexFunds: { name: "My Forex Funds", dailyDD: 5, totalDD: 12, description: "Flexible rules" },
+  theForexFunder: { name: "The Funded Trader", dailyDD: 5, totalDD: 10, description: "Multiple account sizes" },
+  e8Funding: { name: "E8 Funding", dailyDD: 5, totalDD: 8, description: "Strict but fair" },
+  trueForexFunds: { name: "True Forex Funds", dailyDD: 5, totalDD: 10, description: "Good for beginners" },
+  topTierTrader: { name: "Top Tier Trader", dailyDD: 3, totalDD: 6, description: "Very strict rules" },
+};
+
+const ACCOUNT_SIZE_PRESETS = [
+  { value: 5000, label: "$5K" },
+  { value: 10000, label: "$10K" },
+  { value: 25000, label: "$25K" },
+  { value: 50000, label: "$50K" },
+  { value: 100000, label: "$100K" },
+  { value: 200000, label: "$200K" },
+];
 
 const PropFirmProtector = () => {
-  const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
+  const [selectedFirm, setSelectedFirm] = useState<string>("ftmo");
+  const [accountSize, setAccountSize] = useState<number>(100000);
+  const [currentBalance, setCurrentBalance] = useState<number>(100000);
+  const [maxDailyDrawdown, setMaxDailyDrawdown] = useState<number>(5);
+  const [maxTotalDrawdown, setMaxTotalDrawdown] = useState<number>(10);
+  const [stopLossPips, setStopLossPips] = useState<number>(20);
+  const [todaysLoss, setTodaysLoss] = useState<number>(0);
 
-  // Input state
-  const [accountSize, setAccountSize] = useState<string>("100000");
-  const [currentBalance, setCurrentBalance] = useState<string>("100000");
-  const [maxDailyDrawdown, setMaxDailyDrawdown] = useState<string>("5");
-  const [maxTotalDrawdown, setMaxTotalDrawdown] = useState<string>("10");
-  const [stopLossPips, setStopLossPips] = useState<string>("20");
-  const [pipValue, setPipValue] = useState<string>("10"); // $10 per pip per lot for forex
+  // When firm changes, update the DD values
+  const handleFirmChange = (firmKey: string) => {
+    setSelectedFirm(firmKey);
+    const firm = PROP_FIRM_PRESETS[firmKey as keyof typeof PROP_FIRM_PRESETS];
+    if (firm && firmKey !== "custom") {
+      setMaxDailyDrawdown(firm.dailyDD);
+      setMaxTotalDrawdown(firm.totalDD);
+    }
+  };
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        navigate("/auth");
-        return;
-      }
-      setUser(session.user);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        navigate("/auth");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  // Calculations
   const calculations = useMemo(() => {
-    const size = parseFloat(accountSize) || 0;
-    const balance = parseFloat(currentBalance) || 0;
-    const dailyDD = parseFloat(maxDailyDrawdown) || 0;
-    const totalDD = parseFloat(maxTotalDrawdown) || 0;
-    const slPips = parseFloat(stopLossPips) || 0;
-    const pipVal = parseFloat(pipValue) || 10;
-
-    // Safe Zone Calculations
-    const dailyDrawdownLimit = size * (dailyDD / 100);
-    const totalDrawdownLimit = size * (totalDD / 100);
-    const minimumBalance = size - totalDrawdownLimit;
+    // Daily drawdown is calculated from starting balance of the day (account size for simplicity)
+    const dailyLossLimit = (maxDailyDrawdown / 100) * accountSize;
+    const dailyLossRemaining = Math.max(0, dailyLossLimit - todaysLoss);
     
-    const dailyLossRemaining = dailyDrawdownLimit; // Resets daily
-    const totalLossRemaining = balance - minimumBalance;
+    // Total drawdown from initial account size
+    const totalLossLimit = (maxTotalDrawdown / 100) * accountSize;
+    const totalLossUsed = accountSize - currentBalance;
+    const totalLossRemaining = Math.max(0, totalLossLimit - totalLossUsed);
     
-    // Use the smaller of daily or total remaining
+    // The effective limit is whichever is smaller
     const effectiveLossRemaining = Math.min(dailyLossRemaining, totalLossRemaining);
-
-    // Lot Size Guard - Max lot size to never hit daily limit in one trade
-    const maxLotSize = slPips > 0 && pipVal > 0 
-      ? dailyLossRemaining / (slPips * pipVal) 
-      : 0;
-
-    // Progress towards drawdown (0-100, higher = more danger)
-    const lossFromStart = size - balance;
-    const drawdownProgress = totalDrawdownLimit > 0 
-      ? Math.min(100, Math.max(0, (lossFromStart / totalDrawdownLimit) * 100))
-      : 0;
-
-    // Recovery Mode
-    const isInRecovery = balance < size;
-    const recoveryNeeded = size - balance;
-    const recoveryPercentage = size > 0 ? ((size - balance) / size) * 100 : 0;
-
-    // Recovery risk suggestion
-    let suggestedRisk = 1; // Default 1%
-    if (recoveryPercentage > 5) suggestedRisk = 0.25;
-    else if (recoveryPercentage > 2) suggestedRisk = 0.5;
-    else if (recoveryPercentage > 0) suggestedRisk = 0.75;
-
-    // Suggested lot size based on recovery risk
-    const recoveryLotSize = slPips > 0 && pipVal > 0 
-      ? (balance * (suggestedRisk / 100)) / (slPips * pipVal)
-      : 0;
-
+    const isLimitedByDaily = dailyLossRemaining <= totalLossRemaining;
+    
+    // Breach thresholds
+    const dailyBreachThreshold = accountSize - dailyLossLimit;
+    const totalBreachThreshold = accountSize - totalLossLimit;
+    
+    // Progress percentages (how much of the limit is used)
+    const dailyProgress = (todaysLoss / dailyLossLimit) * 100;
+    const totalProgress = (totalLossUsed / totalLossLimit) * 100;
+    
+    // Risk status
+    const isInDanger = dailyProgress >= 70 || totalProgress >= 70;
+    const isCritical = dailyProgress >= 90 || totalProgress >= 90;
+    const isBreached = dailyProgress >= 100 || totalProgress >= 100;
+    
+    // Recovery mode
+    const isInRecovery = currentBalance < accountSize;
+    const recoveryNeeded = accountSize - currentBalance;
+    const recoveryPercent = ((accountSize - currentBalance) / accountSize) * 100;
+    
+    // Lot size calculation (assuming standard lot = $10/pip for major pairs)
+    const pipValue = 10; // Standard lot pip value in USD
+    const maxLotSize = effectiveLossRemaining / (stopLossPips * pipValue);
+    
+    // Conservative risk suggestions based on status
+    let suggestedRiskPercent = 1;
+    let suggestedLotSize = 0;
+    
+    if (isBreached) {
+      suggestedRiskPercent = 0;
+      suggestedLotSize = 0;
+    } else if (isCritical) {
+      suggestedRiskPercent = 0.25;
+    } else if (isInDanger) {
+      suggestedRiskPercent = 0.5;
+    } else if (isInRecovery) {
+      suggestedRiskPercent = 0.5;
+    } else {
+      suggestedRiskPercent = 1;
+    }
+    
+    suggestedLotSize = (currentBalance * (suggestedRiskPercent / 100)) / (stopLossPips * pipValue);
+    
+    // Number of trades possible at suggested risk
+    const tradesRemaining = effectiveLossRemaining / (suggestedLotSize * stopLossPips * pipValue);
+    
     return {
-      dailyDrawdownLimit,
-      totalDrawdownLimit,
-      minimumBalance,
+      dailyLossLimit,
       dailyLossRemaining,
+      totalLossLimit,
+      totalLossUsed,
       totalLossRemaining,
       effectiveLossRemaining,
-      maxLotSize,
-      drawdownProgress,
+      isLimitedByDaily,
+      dailyBreachThreshold,
+      totalBreachThreshold,
+      dailyProgress,
+      totalProgress,
+      isInDanger,
+      isCritical,
+      isBreached,
       isInRecovery,
       recoveryNeeded,
-      recoveryPercentage,
-      suggestedRisk,
-      recoveryLotSize,
+      recoveryPercent,
+      maxLotSize,
+      suggestedRiskPercent,
+      suggestedLotSize,
+      tradesRemaining: isFinite(tradesRemaining) ? tradesRemaining : 0,
     };
-  }, [accountSize, currentBalance, maxDailyDrawdown, maxTotalDrawdown, stopLossPips, pipValue]);
+  }, [accountSize, currentBalance, maxDailyDrawdown, maxTotalDrawdown, stopLossPips, todaysLoss]);
 
-  // Determine progress bar color based on drawdown percentage
-  const getProgressColor = (progress: number) => {
-    if (progress < 30) return "bg-green-500";
-    if (progress < 60) return "bg-yellow-500";
-    if (progress < 80) return "bg-orange-500";
-    return "bg-red-500";
+  const getStatusColor = () => {
+    if (calculations.isBreached) return "bg-red-500";
+    if (calculations.isCritical) return "bg-red-400";
+    if (calculations.isInDanger) return "bg-yellow-500";
+    return "bg-green-500";
   };
-
-  const getStatusBadge = (progress: number) => {
-    if (progress < 30) return { label: "Safe Zone", variant: "default" as const, icon: CheckCircle2 };
-    if (progress < 60) return { label: "Caution", variant: "secondary" as const, icon: AlertTriangle };
-    if (progress < 80) return { label: "Danger Zone", variant: "destructive" as const, icon: AlertTriangle };
-    return { label: "Critical", variant: "destructive" as const, icon: XCircle };
-  };
-
-  const status = getStatusBadge(calculations.drawdownProgress);
-  const StatusIcon = status.icon;
-
-  if (!user) return null;
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto p-4 md:p-6 max-w-6xl space-y-6">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Shield className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">Prop Firm Protector</h1>
+        <div className="flex items-center gap-3">
+          <div className={`p-3 rounded-xl ${getStatusColor()}`}>
+            <Shield className="h-8 w-8 text-white" />
           </div>
-          <p className="text-muted-foreground">
-            Your discipline guardian — never breach drawdown limits again
-          </p>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold">Prop Firm Protector</h1>
+            <p className="text-muted-foreground">Never blow your account again</p>
+          </div>
         </div>
 
-        {/* Main Status Card */}
-        <Card className="mb-6 border-2" style={{ borderColor: calculations.drawdownProgress > 60 ? 'hsl(var(--destructive))' : 'hsl(var(--primary) / 0.3)' }}>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
-                Account Status
-              </CardTitle>
-              <Badge variant={status.variant} className="flex items-center gap-1">
-                <StatusIcon className="h-3 w-3" />
-                {status.label}
-              </Badge>
-            </div>
+        {/* Breach Alert */}
+        {calculations.isBreached && (
+          <Alert variant="destructive" className="animate-pulse">
+            <XCircle className="h-5 w-5" />
+            <AlertTitle className="text-lg">⚠️ STOP TRADING NOW!</AlertTitle>
+            <AlertDescription className="text-base">
+              You have breached your drawdown limit. Trading more will result in account termination.
+              Contact your prop firm for next steps.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Critical Warning */}
+        {calculations.isCritical && !calculations.isBreached && (
+          <Alert className="border-red-500 bg-red-500/10">
+            <AlertTriangle className="h-5 w-5 text-red-500" />
+            <AlertTitle className="text-red-500">CRITICAL: You're 1 bad trade away from breach!</AlertTitle>
+            <AlertDescription>
+              You've used over 90% of your drawdown limit. Consider stopping for today.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Quick Setup */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-primary" />
+              Quick Setup
+            </CardTitle>
+            <CardDescription>Select your prop firm - we know the rules</CardDescription>
           </CardHeader>
-          <CardContent>
-            {/* Drawdown Progress Bar */}
-            <div className="mb-4">
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-muted-foreground">Drawdown Used</span>
-                <span className={cn(
-                  "font-semibold",
-                  calculations.drawdownProgress > 60 ? "text-destructive" : "text-foreground"
-                )}>
-                  {calculations.drawdownProgress.toFixed(1)}%
-                </span>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Prop Firm</Label>
+                <Select value={selectedFirm} onValueChange={handleFirmChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your prop firm" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(PROP_FIRM_PRESETS).map(([key, firm]) => (
+                      <SelectItem key={key} value={key}>
+                        <div className="flex flex-col">
+                          <span>{firm.name}</span>
+                          {key !== "custom" && (
+                            <span className="text-xs text-muted-foreground">
+                              {firm.dailyDD}% daily / {firm.totalDD}% total
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="relative h-4 w-full overflow-hidden rounded-full bg-secondary">
-                <div 
-                  className={cn(
-                    "h-full transition-all duration-500 ease-out",
-                    getProgressColor(calculations.drawdownProgress)
-                  )}
-                  style={{ width: `${calculations.drawdownProgress}%` }}
-                />
-              </div>
-              <div className="flex justify-between text-xs mt-1 text-muted-foreground">
-                <span>Safe</span>
-                <span>Limit</span>
+
+              <div className="space-y-2">
+                <Label>Account Size</Label>
+                <div className="flex gap-2 flex-wrap">
+                  {ACCOUNT_SIZE_PRESETS.map((preset) => (
+                    <Badge
+                      key={preset.value}
+                      variant={accountSize === preset.value ? "default" : "outline"}
+                      className="cursor-pointer hover:bg-primary/20"
+                      onClick={() => {
+                        setAccountSize(preset.value);
+                        if (currentBalance === accountSize || currentBalance > preset.value) {
+                          setCurrentBalance(preset.value);
+                        }
+                      }}
+                    >
+                      {preset.label}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* Key Metrics */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-              <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-                <p className="text-xs text-muted-foreground">Daily Loss Remaining</p>
-                <p className="text-xl font-bold text-primary">
-                  ${calculations.dailyLossRemaining.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                </p>
+            {selectedFirm === "custom" && (
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="space-y-2">
+                  <Label>Max Daily Drawdown %</Label>
+                  <Input
+                    type="number"
+                    value={maxDailyDrawdown}
+                    onChange={(e) => setMaxDailyDrawdown(parseFloat(e.target.value) || 0)}
+                    step="0.5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Max Total Drawdown %</Label>
+                  <Input
+                    type="number"
+                    value={maxTotalDrawdown}
+                    onChange={(e) => setMaxTotalDrawdown(parseFloat(e.target.value) || 0)}
+                    step="0.5"
+                  />
+                </div>
               </div>
-              <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-                <p className="text-xs text-muted-foreground">Total Loss Remaining</p>
-                <p className="text-xl font-bold text-primary">
-                  ${calculations.totalLossRemaining.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Today's Trading */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-primary" />
+              Today's Trading
+            </CardTitle>
+            <CardDescription>Update these as you trade</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Current Balance ($)</Label>
+                <Input
+                  type="number"
+                  value={currentBalance}
+                  onChange={(e) => setCurrentBalance(parseFloat(e.target.value) || 0)}
+                  className="text-lg font-semibold"
+                />
               </div>
-              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-                <p className="text-xs text-muted-foreground">Minimum Balance</p>
-                <p className="text-xl font-bold text-destructive">
-                  ${calculations.minimumBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                </p>
+              <div className="space-y-2">
+                <Label>Today's Loss So Far ($)</Label>
+                <Input
+                  type="number"
+                  value={todaysLoss}
+                  onChange={(e) => setTodaysLoss(parseFloat(e.target.value) || 0)}
+                  placeholder="0"
+                  className="text-lg"
+                />
+                <p className="text-xs text-muted-foreground">Enter positive number (e.g., 500 if you lost $500)</p>
               </div>
-              <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                <p className="text-xs text-muted-foreground">Safe to Risk</p>
-                <p className="text-xl font-bold text-green-500">
-                  ${calculations.effectiveLossRemaining.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                </p>
+              <div className="space-y-2">
+                <Label>Your Stop Loss (pips)</Label>
+                <Input
+                  type="number"
+                  value={stopLossPips}
+                  onChange={(e) => setStopLossPips(parseFloat(e.target.value) || 1)}
+                  className="text-lg"
+                />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Input Fields */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-primary" />
-                Account Configuration
-              </CardTitle>
-              <CardDescription>
-                Enter your prop firm account details
-              </CardDescription>
+        {/* Main Status Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Daily Limit */}
+          <Card className={calculations.dailyProgress >= 70 ? "border-yellow-500" : ""}>
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg">Daily Limit</CardTitle>
+                <Badge variant={calculations.dailyProgress >= 90 ? "destructive" : "secondary"}>
+                  {calculations.dailyProgress.toFixed(0)}% used
+                </Badge>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="accountSize">Initial Account Size ($)</Label>
-                  <Input
-                    id="accountSize"
-                    type="number"
-                    value={accountSize}
-                    onChange={(e) => setAccountSize(e.target.value)}
-                    placeholder="100000"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="currentBalance">Current Balance ($)</Label>
-                  <Input
-                    id="currentBalance"
-                    type="number"
-                    value={currentBalance}
-                    onChange={(e) => setCurrentBalance(e.target.value)}
-                    placeholder="100000"
-                  />
-                </div>
+            <CardContent className="space-y-3">
+              <div className="relative">
+                <Progress 
+                  value={Math.min(calculations.dailyProgress, 100)} 
+                  className="h-4"
+                />
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <Label htmlFor="dailyDD">Max Daily Drawdown (%)</Label>
-                  <Input
-                    id="dailyDD"
-                    type="number"
-                    step="0.1"
-                    value={maxDailyDrawdown}
-                    onChange={(e) => setMaxDailyDrawdown(e.target.value)}
-                    placeholder="5"
-                  />
+                  <p className="text-muted-foreground">You can lose</p>
+                  <p className="text-2xl font-bold text-green-500">
+                    ${calculations.dailyLossRemaining.toFixed(0)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">more today</p>
                 </div>
                 <div>
-                  <Label htmlFor="totalDD">Max Total Drawdown (%)</Label>
-                  <Input
-                    id="totalDD"
-                    type="number"
-                    step="0.1"
-                    value={maxTotalDrawdown}
-                    onChange={(e) => setMaxTotalDrawdown(e.target.value)}
-                    placeholder="10"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="slPips">Stop Loss (Pips)</Label>
-                  <Input
-                    id="slPips"
-                    type="number"
-                    value={stopLossPips}
-                    onChange={(e) => setStopLossPips(e.target.value)}
-                    placeholder="20"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="pipValue">Pip Value ($/lot)</Label>
-                  <Input
-                    id="pipValue"
-                    type="number"
-                    value={pipValue}
-                    onChange={(e) => setPipValue(e.target.value)}
-                    placeholder="10"
-                  />
-                </div>
-              </div>
-
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription className="text-sm">
-                  Standard forex pip value: $10/lot. Adjust for your instrument (Gold: ~$1/pip, JPY: ~$9.09/pip).
-                </AlertDescription>
-              </Alert>
-            </CardContent>
-          </Card>
-
-          {/* Lot Size Guard */}
-          <Card className="border-primary/30">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calculator className="h-5 w-5 text-primary" />
-                Lot Size Guard
-              </CardTitle>
-              <CardDescription>
-                Maximum position size to protect your account
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="p-6 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 mb-4">
-                <p className="text-sm text-muted-foreground mb-1">Max Safe Lot Size</p>
-                <p className="text-4xl font-bold text-primary">
-                  {calculations.maxLotSize.toFixed(2)} lots
-                </p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  With {stopLossPips} pips SL, you'll never lose more than your daily limit
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex justify-between p-3 rounded-lg bg-muted/50">
-                  <span className="text-sm text-muted-foreground">If you lose this trade:</span>
-                  <span className="font-semibold text-destructive">
-                    -${(calculations.maxLotSize * parseFloat(stopLossPips || "0") * parseFloat(pipValue || "10")).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                  </span>
-                </div>
-                <div className="flex justify-between p-3 rounded-lg bg-muted/50">
-                  <span className="text-sm text-muted-foreground">Daily limit:</span>
-                  <span className="font-semibold">
-                    ${calculations.dailyDrawdownLimit.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                  </span>
-                </div>
-                <div className="flex justify-between p-3 rounded-lg bg-green-500/10">
-                  <span className="text-sm text-muted-foreground">Buffer remaining:</span>
-                  <span className="font-semibold text-green-500">
-                    ${(calculations.dailyDrawdownLimit - (calculations.maxLotSize * parseFloat(stopLossPips || "0") * parseFloat(pipValue || "10"))).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                  </span>
+                  <p className="text-muted-foreground">Daily limit</p>
+                  <p className="text-xl font-semibold">
+                    ${calculations.dailyLossLimit.toFixed(0)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">({maxDailyDrawdown}%)</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Recovery Mode */}
-          {calculations.isInRecovery && (
-            <Card className="lg:col-span-2 border-yellow-500/50 bg-yellow-500/5">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-yellow-600 dark:text-yellow-500">
-                  <TrendingDown className="h-5 w-5" />
-                  Recovery Mode Active
-                </CardTitle>
-                <CardDescription>
-                  Your balance is below starting capital. Here's your recovery strategy.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <div className="p-4 rounded-lg bg-background border">
-                    <p className="text-sm text-muted-foreground">Amount to Recover</p>
-                    <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-500">
-                      ${calculations.recoveryNeeded.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {calculations.recoveryPercentage.toFixed(2)}% below start
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-background border">
-                    <p className="text-sm text-muted-foreground">Suggested Risk</p>
-                    <p className="text-2xl font-bold text-primary">
-                      {calculations.suggestedRisk}%
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Per trade until recovered
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-background border">
-                    <p className="text-sm text-muted-foreground">Recovery Lot Size</p>
-                    <p className="text-2xl font-bold text-primary">
-                      {calculations.recoveryLotSize.toFixed(2)} lots
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Max position with recovery risk
-                    </p>
-                  </div>
-                </div>
-
-                <Alert className="border-yellow-500/30 bg-yellow-500/10">
-                  <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
-                  <AlertTitle className="text-yellow-600 dark:text-yellow-500">Recovery Strategy</AlertTitle>
-                  <AlertDescription className="text-muted-foreground">
-                    <ul className="list-disc list-inside mt-2 space-y-1">
-                      <li>Trade at {calculations.suggestedRisk}% risk until you're back to ${parseFloat(accountSize).toLocaleString()}</li>
-                      <li>Focus on high-probability A+ setups only</li>
-                      <li>Avoid revenge trading — patience is key</li>
-                      <li>Use max {calculations.recoveryLotSize.toFixed(2)} lots with {stopLossPips} pip SL</li>
-                    </ul>
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Rules Summary */}
-          <Card className={calculations.isInRecovery ? "" : "lg:col-span-2"}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-primary" />
-                Your Protection Rules
-              </CardTitle>
+          {/* Total Limit */}
+          <Card className={calculations.totalProgress >= 70 ? "border-yellow-500" : ""}>
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg">Total Limit</CardTitle>
+                <Badge variant={calculations.totalProgress >= 90 ? "destructive" : "secondary"}>
+                  {calculations.totalProgress.toFixed(0)}% used
+                </Badge>
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-lg border bg-muted/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    <span className="font-medium">Daily Limit</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Max loss per day: <strong className="text-foreground">${calculations.dailyDrawdownLimit.toLocaleString()}</strong>
+            <CardContent className="space-y-3">
+              <div className="relative">
+                <Progress 
+                  value={Math.min(calculations.totalProgress, 100)} 
+                  className="h-4"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Buffer remaining</p>
+                  <p className="text-2xl font-bold text-green-500">
+                    ${calculations.totalLossRemaining.toFixed(0)}
                   </p>
+                  <p className="text-xs text-muted-foreground">until breach</p>
                 </div>
-                <div className="p-4 rounded-lg border bg-muted/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    <span className="font-medium">Total Limit</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Never go below: <strong className="text-foreground">${calculations.minimumBalance.toLocaleString()}</strong>
+                <div>
+                  <p className="text-muted-foreground">Total limit</p>
+                  <p className="text-xl font-semibold">
+                    ${calculations.totalLossLimit.toFixed(0)}
                   </p>
-                </div>
-                <div className="p-4 rounded-lg border bg-muted/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    <span className="font-medium">Position Limit</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Max lot size: <strong className="text-foreground">{calculations.maxLotSize.toFixed(2)} lots</strong>
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg border bg-muted/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    <span className="font-medium">Buffer Zone</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Safe to risk today: <strong className="text-foreground">${calculations.effectiveLossRemaining.toLocaleString()}</strong>
-                  </p>
+                  <p className="text-xs text-muted-foreground">({maxTotalDrawdown}%)</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* THE ANSWER - What lot size to use */}
+        <Card className="border-primary bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <Target className="h-6 w-6 text-primary" />
+              Your Safe Trading Zone
+            </CardTitle>
+            <CardDescription>
+              Based on your {stopLossPips} pip stop loss
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Max Lot Size */}
+              <div className="text-center p-4 bg-background rounded-lg border">
+                <p className="text-sm text-muted-foreground mb-1">Maximum Lot Size</p>
+                <p className="text-4xl font-bold text-red-500">
+                  {calculations.maxLotSize.toFixed(2)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Absolute max (uses all remaining buffer)
+                </p>
+              </div>
+
+              {/* Suggested Lot Size */}
+              <div className="text-center p-4 bg-primary/10 rounded-lg border-2 border-primary">
+                <p className="text-sm text-muted-foreground mb-1">Recommended Lot Size</p>
+                <p className="text-4xl font-bold text-primary">
+                  {calculations.suggestedLotSize.toFixed(2)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {calculations.suggestedRiskPercent}% risk per trade
+                </p>
+              </div>
+
+              {/* Trades Remaining */}
+              <div className="text-center p-4 bg-background rounded-lg border">
+                <p className="text-sm text-muted-foreground mb-1">Trades Remaining</p>
+                <p className="text-4xl font-bold text-green-500">
+                  {Math.floor(calculations.tradesRemaining)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  at recommended size
+                </p>
+              </div>
+            </div>
+
+            {/* Plain English Explanation */}
+            <Alert className="bg-muted/50">
+              <Info className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                <strong>In plain English:</strong> With a {stopLossPips} pip stop loss, 
+                trade at <strong>{calculations.suggestedLotSize.toFixed(2)} lots</strong> or less. 
+                This means you can take approximately <strong>{Math.floor(calculations.tradesRemaining)} losing trades</strong> before 
+                hitting your {calculations.isLimitedByDaily ? "daily" : "total"} limit.
+                {calculations.maxLotSize > 0 && (
+                  <span className="text-red-500 font-medium">
+                    {" "}Never go above {calculations.maxLotSize.toFixed(2)} lots!
+                  </span>
+                )}
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+
+        {/* Recovery Mode */}
+        {calculations.isInRecovery && !calculations.isBreached && (
+          <Card className="border-yellow-500 bg-yellow-500/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-yellow-600">
+                <TrendingDown className="h-5 w-5" />
+                Recovery Mode Active
+              </CardTitle>
+              <CardDescription>
+                You're ${calculations.recoveryNeeded.toFixed(0)} ({calculations.recoveryPercent.toFixed(1)}%) below your starting balance
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    Recovery Strategy
+                  </h4>
+                  <ul className="text-sm space-y-1 text-muted-foreground">
+                    <li>• Reduce risk to {calculations.suggestedRiskPercent}% per trade</li>
+                    <li>• Focus on A+ setups only</li>
+                    <li>• Max 2-3 trades per day</li>
+                    <li>• Take partial profits early</li>
+                  </ul>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    Path Back to 100%
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    At {calculations.suggestedRiskPercent}% risk, you need approximately{" "}
+                    <strong>{Math.ceil(calculations.recoveryNeeded / (currentBalance * (calculations.suggestedRiskPercent / 100)))}</strong>{" "}
+                    winning trades at 1:1 RR to recover.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Rules Reminder */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Your Account Rules
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div className="text-center p-3 bg-muted rounded-lg">
+                <p className="text-muted-foreground">Account Size</p>
+                <p className="text-lg font-bold">${accountSize.toLocaleString()}</p>
+              </div>
+              <div className="text-center p-3 bg-muted rounded-lg">
+                <p className="text-muted-foreground">Daily Max Loss</p>
+                <p className="text-lg font-bold">${calculations.dailyLossLimit.toFixed(0)}</p>
+              </div>
+              <div className="text-center p-3 bg-muted rounded-lg">
+                <p className="text-muted-foreground">Total Max Loss</p>
+                <p className="text-lg font-bold">${calculations.totalLossLimit.toFixed(0)}</p>
+              </div>
+              <div className="text-center p-3 bg-muted rounded-lg">
+                <p className="text-muted-foreground">Breach At</p>
+                <p className="text-lg font-bold text-red-500">${calculations.totalBreachThreshold.toLocaleString()}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );
