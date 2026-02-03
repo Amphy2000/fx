@@ -37,13 +37,7 @@ const ACCOUNT_SIZE_PRESETS = [
 
 const ASSET_CLASSES = {
   forex: { name: "Forex Majors", pipValue: 10, description: "EURUSD, GBPUSD (Standard Lot)" },
-  gold: { name: "Gold (XAUUSD)", pipValue: 1, description: "1 Lot = $1 per tick / $100 per $1 move" }, // Typically 1 lot = 100oz. 1 pip (0.01) = $1. But typically traders count 0.10 move as 1 pip. Let's normalize. 
-  // Let's assume Standard Lot (1.00) on Gold:
-  // Price moves $1900.00 -> $1901.00 ($1 move). Value is usually $100. 
-  // If we count 1 "pip" as 0.01 price move, then 1 pip = $1. 
-  // If we count 1 "pip" as 0.10 price move, then 1 pip = $10.
-  // Standard MT5/MT4 convention for XAUUSD is often 0.01 digits, so let's use sensible defaults.
-  // Actually, let's let user override pip value if needed, but default to safe standards.
+  gold: { name: "Gold (XAUUSD)", pipValue: 10, description: "1 Lot = $10 per 10-cent move (Standard)" },
   indices: { name: "Indices (US30)", pipValue: 5, description: "Variable (Approx $5/point)" },
 };
 
@@ -63,13 +57,63 @@ const PropFirmProtector = () => {
   const [simRisk, setSimRisk] = useState(1);
   const [simulationResult, setSimulationResult] = useState<{ pass: number; breach: number } | null>(null);
 
-  // Fetch User Stats
+  // Persistence: Load settings from localStorage on mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem("propFirmSettings");
+    if (savedSettings) {
+      const parsed = JSON.parse(savedSettings);
+      setSelectedFirm(parsed.selectedFirm || "ftmo");
+      setAssetClass(parsed.assetClass || "forex");
+      setAccountSize(parsed.accountSize || 100000);
+      setCurrentBalance(parsed.currentBalance || 100000);
+      setMaxDailyDrawdown(parsed.maxDailyDrawdown || 5);
+      setMaxTotalDrawdown(parsed.maxTotalDrawdown || 10);
+      setStopLossPips(parsed.stopLossPips || 20);
+      // We don't load todaysLoss here blindly, we prefer the DB sync, but we can fallback
+      if (parsed.todaysLoss !== undefined) setTodaysLoss(parsed.todaysLoss);
+    }
+  }, []);
+
+  // Persistence: Save settings on change
+  useEffect(() => {
+    const settings = {
+      selectedFirm,
+      assetClass,
+      accountSize,
+      currentBalance,
+      maxDailyDrawdown,
+      maxTotalDrawdown,
+      stopLossPips,
+      todaysLoss // Save it too
+    };
+    localStorage.setItem("propFirmSettings", JSON.stringify(settings));
+  }, [selectedFirm, assetClass, accountSize, currentBalance, maxDailyDrawdown, maxTotalDrawdown, stopLossPips, todaysLoss]);
+
+  // Fetch User Stats & TODAY'S P&L
   const { data: userStats } = useQuery({
     queryKey: ['user-stats-prop'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
 
+      // 1. Fetch Today's Trades for Daily Loss Sync
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const { data: todaysTrades } = await supabase
+        .from('trades')
+        .select('profit_loss')
+        .eq('user_id', user.id)
+        .gte('created_at', today.toISOString());
+
+      let diffInfo = null;
+      if (todaysTrades) {
+        const netPnL = todaysTrades.reduce((acc, t) => acc + (t.profit_loss || 0), 0);
+        const calculatedLoss = -netPnL; // Negative P&L = Positive Loss
+        diffInfo = calculatedLoss;
+      }
+
+      // 2. Fetch All Trades for Simulator Stats
       const { data: trades } = await supabase
         .from('trades')
         .select('result, profit_loss')
@@ -77,12 +121,11 @@ const PropFirmProtector = () => {
         .order('created_at', { ascending: false })
         .limit(100);
 
-      if (!trades || trades.length === 0) return null;
+      if (!trades || trades.length === 0) return { winRate: 50, rr: 2, todayLossCalc: diffInfo };
 
       const wins = trades.filter(t => t.result === 'win').length;
       const winRate = (wins / trades.length) * 100;
 
-      // Rough R:R calculation (Avg Win / Avg Loss)
       const winningTrades = trades.filter(t => t.profit_loss && t.profit_loss > 0);
       const losingTrades = trades.filter(t => t.profit_loss && t.profit_loss < 0);
 
@@ -91,15 +134,20 @@ const PropFirmProtector = () => {
 
       const rr = avgLoss > 0 ? avgWin / avgLoss : 1.5;
 
-      return { winRate, rr };
+      return { winRate, rr, todayLossCalc: diffInfo };
     }
   });
 
-  // Auto-fill simulator with real data
+  // Sync state with Fetched Data
   useEffect(() => {
     if (userStats) {
       setSimWinRate(Math.round(userStats.winRate));
       setSimRR(Number(userStats.rr.toFixed(1)));
+
+      // Auto-update todaysLoss from DB if available
+      if (userStats.todayLossCalc !== null && userStats.todayLossCalc !== undefined) {
+        setTodaysLoss(userStats.todayLossCalc);
+      }
     }
   }, [userStats]);
 
