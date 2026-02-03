@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Calculators from "./pages/Calculators";
+import PropFirmProtector from "./pages/PropFirmProtector";
 import WeeklySummary from "./pages/WeeklySummary";
 import AIJournal from "./pages/AIJournal";
 import Leaderboard from "./pages/Leaderboard";
@@ -59,6 +60,7 @@ const AppContent = () => {
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/calculators" element={<Calculators />} />
+          <Route path="/prop-firm-protector" element={<PropFirmProtector />} />
           <Route path="/weekly-summary" element={<WeeklySummary />} />
           <Route path="/partner-summary" element={<WeeklySummary />} />
           <Route path="/ai-journal" element={<AIJournal />} />
