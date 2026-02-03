@@ -419,13 +419,13 @@ const Dashboard = () => {
                 <div className="flex items-center gap-2 text-xs">
                   <input
                     type="date"
-                    className="px-2 py-1 border rounded text-xs"
+                    className="px-2 py-1 border rounded text-xs bg-background text-foreground dark:bg-slate-800 dark:text-white dark:border-slate-600"
                     onChange={(e) => setCustomStartDate(e.target.value ? new Date(e.target.value) : null)}
                   />
                   <span className="text-muted-foreground">to</span>
                   <input
                     type="date"
-                    className="px-2 py-1 border rounded text-xs"
+                    className="px-2 py-1 border rounded text-xs bg-background text-foreground dark:bg-slate-800 dark:text-white dark:border-slate-600"
                     onChange={(e) => setCustomEndDate(e.target.value ? new Date(e.target.value) : null)}
                   />
                 </div>

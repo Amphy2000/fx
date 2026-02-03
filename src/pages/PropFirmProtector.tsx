@@ -379,18 +379,18 @@ const PropFirmProtector = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Account Size</Label>
-                    <Input type="number" value={accountSize} onChange={e => setAccountSize(Number(e.target.value))} />
+                    <Input type="number" value={accountSize} onChange={e => setAccountSize(e.target.value === '' ? 0 : Number(e.target.value))} step="any" />
                   </div>
                   <div className="space-y-2">
                     <Label>Start Day Balance</Label>
-                    <Input type="number" value={startOfDayBalance} onChange={e => setStartOfDayBalance(Number(e.target.value))} className="bg-blue-50/50 dark:bg-blue-950/20 border-blue-200" />
+                    <Input type="number" value={startOfDayBalance} onChange={e => setStartOfDayBalance(e.target.value === '' ? 0 : Number(e.target.value))} className="bg-blue-50/50 dark:bg-blue-950/20 border-blue-200" step="any" />
                   </div>
                 </div>
 
                 {isTrailing && (
                   <div className="space-y-2">
                     <Label className="text-yellow-600 flex items-center gap-1">High Water Mark <Info className="h-3 w-3" /></Label>
-                    <Input type="number" value={highWaterMark} onChange={e => setHighWaterMark(Number(e.target.value))} className="border-yellow-200 bg-yellow-50/30" />
+                    <Input type="number" value={highWaterMark} onChange={e => setHighWaterMark(e.target.value === '' ? 0 : Number(e.target.value))} className="border-yellow-200 bg-yellow-50/30" step="any" />
                     <p className="text-[10px] text-muted-foreground">Highest equity reached. Defines your trailing limit.</p>
                   </div>
                 )}
@@ -398,7 +398,7 @@ const PropFirmProtector = () => {
                 <div className="space-y-2">
                   <Label className="flex justify-between">Current Balance <span className="text-xs text-muted-foreground font-normal">Syncing with DB...</span></Label>
                   <div className="flex gap-2">
-                    <Input type="number" value={currentBalance} onChange={e => setCurrentBalance(Number(e.target.value))} className="font-mono text-lg font-bold" />
+                    <Input type="number" value={currentBalance} onChange={e => setCurrentBalance(e.target.value === '' ? 0 : Number(e.target.value))} className="font-mono text-lg font-bold" step="any" />
                     <Button variant="outline" size="icon" onClick={() => refetchStats()} title="Sync P&L"><RefreshCcw className="h-4 w-4" /></Button>
                   </div>
                 </div>
@@ -417,7 +417,7 @@ const PropFirmProtector = () => {
 
                 <div className="space-y-2">
                   <Label>Stop Loss (Pips)</Label>
-                  <Input type="number" value={stopLossPips} onChange={e => setStopLossPips(Number(e.target.value))} />
+                  <Input type="number" value={stopLossPips} onChange={e => setStopLossPips(e.target.value === '' ? 0 : Number(e.target.value))} step="any" />
                 </div>
                 <div className="space-y-2">
                   <Label>Asset Class</Label>
@@ -504,6 +504,11 @@ const PropFirmProtector = () => {
                       <div className="flex items-center gap-2">
                         <Activity className="h-5 w-5 text-blue-500" />
                         Monte Carlo Survival View
+                        {userStats && userStats.tradeCount > 0 && (
+                          <Badge variant="outline" className="text-xs text-green-600 bg-green-100 border-green-300">
+                            Auto-synced from {userStats.tradeCount} trades
+                          </Badge>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-3">
@@ -576,11 +581,6 @@ const PropFirmProtector = () => {
                           <p>Ready to Simulate</p>
                           <p className="text-xs opacity-70 mt-1">Adjust Win Rate & RR above to test scenarios</p>
                         </div>
-                        {userStats && userStats.tradeCount > 0 && (
-                          <div className="absolute bottom-4 right-4 text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                            Auto-synced from {userStats.tradeCount} trades
-                          </div>
-                        )}
                       </div>
                     )}
                   </CardContent>
