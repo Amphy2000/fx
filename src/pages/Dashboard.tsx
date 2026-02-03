@@ -52,6 +52,12 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  // Time Filter State
+  const [timeFilter, setTimeFilter] = useState<'all' | 'month' | 'week' | 'custom'>('month');
+  const [customStartDate, setCustomStartDate] = useState<Date | null>(null);
+  const [customEndDate, setCustomEndDate] = useState<Date | null>(null);
+
   const [stats, setStats] = useState({
     totalTrades: 0,
     wins: 0,
@@ -228,17 +234,51 @@ const Dashboard = () => {
     });
   };
 
-  // Filter trades when account selection changes
-  useEffect(() => {
-    if (selectedAccountId) {
-      const filtered = allTrades.filter(t => t.mt5_account_id === selectedAccountId);
-      setTrades(filtered);
-      calculateStats(filtered);
-    } else {
-      setTrades(allTrades);
-      calculateStats(allTrades);
+  // Helper function to filter trades by time period
+  const filterTradesByTime = (tradesToFilter: any[]) => {
+    const now = new Date();
+
+    switch (timeFilter) {
+      case 'week': {
+        const weekAgo = new Date(now);
+        weekAgo.setDate(now.getDate() - 7);
+        return tradesToFilter.filter(t => new Date(t.created_at) >= weekAgo);
+      }
+      case 'month': {
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        return tradesToFilter.filter(t => new Date(t.created_at) >= monthStart);
+      }
+      case 'custom': {
+        if (!customStartDate) return tradesToFilter;
+        const filtered = tradesToFilter.filter(t => {
+          const tradeDate = new Date(t.created_at);
+          const isAfterStart = tradeDate >= customStartDate;
+          const isBeforeEnd = customEndDate ? tradeDate <= customEndDate : true;
+          return isAfterStart && isBeforeEnd;
+        });
+        return filtered;
+      }
+      case 'all':
+      default:
+        return tradesToFilter;
     }
-  }, [selectedAccountId, allTrades]);
+  };
+
+  // Filter trades when account selection OR time filter changes
+  useEffect(() => {
+    let filtered = allTrades;
+
+    // First filter by account if selected
+    if (selectedAccountId) {
+      filtered = filtered.filter(t => t.mt5_account_id === selectedAccountId);
+    }
+
+    // Then filter by time period
+    filtered = filterTradesByTime(filtered);
+
+    setTrades(filtered);
+    calculateStats(filtered);
+  }, [selectedAccountId, allTrades, timeFilter, customStartDate, customEndDate]);
   const handleTradeAdded = () => {
     if (user) {
       fetchTrades(user.id);
@@ -330,6 +370,73 @@ const Dashboard = () => {
             )}
           </div>
         )}
+
+        {/* TIME PERIOD FILTER */}
+        <Card className="bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20 border-blue-200 dark:border-blue-800">
+          <CardContent className="p-3 md:p-4">
+            <div className="flex flex-col md:flex-row md:items-center gap-3">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">Time Period:</span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant={timeFilter === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTimeFilter('all')}
+                  className="text-xs"
+                >
+                  All-Time
+                </Button>
+                <Button
+                  variant={timeFilter === 'month' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTimeFilter('month')}
+                  className="text-xs"
+                >
+                  This Month
+                </Button>
+                <Button
+                  variant={timeFilter === 'week' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTimeFilter('week')}
+                  className="text-xs"
+                >
+                  This Week
+                </Button>
+                <Button
+                  variant={timeFilter === 'custom' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTimeFilter('custom')}
+                  className="text-xs"
+                >
+                  Custom Range
+                </Button>
+              </div>
+
+              {timeFilter === 'custom' && (
+                <div className="flex items-center gap-2 text-xs">
+                  <input
+                    type="date"
+                    className="px-2 py-1 border rounded text-xs"
+                    onChange={(e) => setCustomStartDate(e.target.value ? new Date(e.target.value) : null)}
+                  />
+                  <span className="text-muted-foreground">to</span>
+                  <input
+                    type="date"
+                    className="px-2 py-1 border rounded text-xs"
+                    onChange={(e) => setCustomEndDate(e.target.value ? new Date(e.target.value) : null)}
+                  />
+                </div>
+              )}
+
+              <div className="text-xs text-muted-foreground ml-auto">
+                Showing {stats.totalTrades} trade{stats.totalTrades !== 1 ? 's' : ''}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3 w-full max-w-full">
