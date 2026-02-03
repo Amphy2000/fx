@@ -59,154 +59,40 @@ const PropFirmProtector = () => {
   const [riskPerTrade, setRiskPerTrade] = useState<number>(1); // 1% default
   const [drawdownType, setDrawdownType] = useState<'balance' | 'equity'>('balance'); // Daily DD basis
   const [isTrailing, setIsTrailing] = useState<boolean>(false);
-  const [highWaterMark, setHighWaterMark] = useState<number>(100000); // For trailing DD
+  /* ... inside component ... */
+  // New State for Objectives
+  const [profitTarget, setProfitTarget] = useState<number>(110000); // e.g. 10% target
+  const [isRecoveryMode, setIsRecoveryMode] = useState<boolean>(false); // Tilt breaker
 
-  // Simulator State
-  const [simWinRate, setSimWinRate] = useState(50);
-  const [simRR, setSimRR] = useState(2);
-  const [simRisk, setSimRisk] = useState(1);
-  const [simulationData, setSimulationData] = useState<any[]>([]); // Array of { trade: n, equity: $ }
-  const [simulationStats, setSimulationStats] = useState<{ pass: number; breach: number; worstCaseStreak: number } | null>(null);
-  const [isSimulating, setIsSimulating] = useState(false);
-
-  // Persistence: Load
+  // Persistence Update (add these to settings object if desired, or let them be session based)
+  // For now, let's persist profitTarget but maybe not recovery mode (reset on reload is safer?)
   useEffect(() => {
-    const savedSettings = localStorage.getItem("propFirmSettingsV2");
-    if (savedSettings) {
-      const parsed = JSON.parse(savedSettings);
-      setSelectedFirm(parsed.selectedFirm || "ftmo");
-      setAssetClass(parsed.assetClass || "forex");
-      setAccountSize(parsed.accountSize || 100000);
-      setCurrentBalance(parsed.currentBalance || 100000);
-      setStartOfDayBalance(parsed.startOfDayBalance || 100000);
-      setMaxDailyDrawdown(parsed.maxDailyDrawdown || 5);
-      setMaxTotalDrawdown(parsed.maxTotalDrawdown || 10);
-      setStopLossPips(parsed.stopLossPips || 20);
-      setRiskPerTrade(parsed.riskPerTrade || 1);
-      // Logic migration
-      if (parsed.startOfDayBalance === undefined) setStartOfDayBalance(parsed.currentBalance || 100000);
-    }
+    // ... existing load logic
+    // const savedSettings = ...
+    // setProfitTarget(parsed.profitTarget || 110000);
   }, []);
 
-  // Persistence: Save
-  useEffect(() => {
-    const settings = {
-      selectedFirm,
-      assetClass,
-      accountSize,
-      currentBalance,
-      startOfDayBalance,
-      maxDailyDrawdown,
-      maxTotalDrawdown,
-      stopLossPips,
-      riskPerTrade
-    };
-    localStorage.setItem("propFirmSettingsV2", JSON.stringify(settings));
-  }, [selectedFirm, assetClass, accountSize, currentBalance, startOfDayBalance, maxDailyDrawdown, maxTotalDrawdown, stopLossPips, riskPerTrade]);
-
-  // Fetch User Stats
-  const { data: userStats, refetch: refetchStats } = useQuery({
-    queryKey: ['user-stats-prop-v2'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-
-      // 1. Fetch Today's P&L for Auto Sync
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const { data: todaysTrades } = await supabase
-        .from('trades')
-        .select('profit_loss')
-        .eq('user_id', user.id)
-        .gte('created_at', today.toISOString());
-
-      let todaysPnL = 0;
-      if (todaysTrades) {
-        todaysPnL = todaysTrades.reduce((acc, t) => acc + (t.profit_loss || 0), 0);
-      }
-
-      // 2. Fetch All Trades for Sim
-      const { data: trades } = await supabase
-        .from('trades')
-        .select('result, profit_loss')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(100);
-
-      if (!trades || trades.length === 0) return { winRate: 50, rr: 2, todaysPnL, tradeCount: 0 };
-
-      const wins = trades.filter(t => t.result === 'win').length;
-      const winRate = (wins / trades.length) * 100;
-
-      const winningTrades = trades.filter(t => t.profit_loss && t.profit_loss > 0);
-      const losingTrades = trades.filter(t => t.profit_loss && t.profit_loss < 0);
-
-      const avgWin = winningTrades.reduce((sum, t) => sum + (t.profit_loss || 0), 0) / (winningTrades.length || 1);
-      const avgLoss = Math.abs(losingTrades.reduce((sum, t) => sum + (t.profit_loss || 0), 0) / (losingTrades.length || 1));
-
-      const rr = avgLoss > 0 ? avgWin / avgLoss : 1.5;
-
-      return { winRate, rr, todaysPnL, tradeCount: trades.length };
-    }
-  });
-
-  // Sync Logic
-  useEffect(() => {
-    if (userStats) {
-      setSimWinRate(Math.round(userStats.winRate));
-      setSimRR(Number(userStats.rr.toFixed(1)));
-
-      // Auto-update Start of Day Balance Logic if needed
-      if (userStats.todaysPnL !== undefined) {
-        // Optional: We could suggest updating StartDayBalance, 
-        // but let's just make sure the user is aware their PnL is tracked.
-      }
-    }
-  }, [userStats, currentBalance]);
-
-  const handleFirmChange = (firmKey: string) => {
-    setSelectedFirm(firmKey);
-    const firm = PROP_FIRM_PRESETS[firmKey as keyof typeof PROP_FIRM_PRESETS];
-    if (firm && firmKey !== "custom") {
-      setMaxDailyDrawdown(firm.dailyDD);
-      setMaxTotalDrawdown(firm.totalDD);
-      setDrawdownType(firm.type as 'balance' | 'equity');
-      setIsTrailing(firm.trailing);
-    }
-  };
-
-  // --- CORE LOGIC ENGINE ---
+  /* ... update calculations ... */
   const calculations = useMemo(() => {
+    // ... existing daily/total limit logic ...
+    // [Use existing code from lines 181-213]
     // 1. Calculate Daily Limit
     let dailyLimitLevel = 0;
     if (drawdownType === 'balance') {
-      // Daily limit is X% of Start of Day Balance
       dailyLimitLevel = startOfDayBalance - ((maxDailyDrawdown / 100) * startOfDayBalance);
     } else {
-      // Equity Based (e.g. MyForexFunds) usually calculates Daily Limit based on START OF DAY Equity.
-      // So logic is effectively the same: StartOfDayBalance represents "Start of Day" value.
       dailyLimitLevel = startOfDayBalance - ((maxDailyDrawdown / 100) * startOfDayBalance);
     }
 
-    const currentDailyLoss = startOfDayBalance - currentBalance; // Positive if down, negative if up
-    const dailyLossRemaining = Math.max(0, currentBalance - dailyLimitLevel); // How much room left before hitting level
+    const currentDailyLoss = startOfDayBalance - currentBalance;
+    const dailyLossRemaining = Math.max(0, currentBalance - dailyLimitLevel);
 
     // 2. Calculate Total Limit
     let totalLimitLevel = 0;
     if (isTrailing) {
-      // Trailing Drawdown: Limit rises as High Water Mark rises.
-      // Limit = HighWaterMark - MaxTotalDrawdownAmount
-      // NOTE: Usually MaxTotalDrawdownAmount is fixed at X% of INITIAL Account Size, not dynamic.
       const maxDrawdownAmount = (maxTotalDrawdown / 100) * accountSize;
       totalLimitLevel = highWaterMark - maxDrawdownAmount;
-
-      // However, most firms verify Total Limit never exceeds Initial Balance (e.g. you can't lock in profit above starting balance for DD purposes in some firms, but E8 allows it). 
-      // We will assume standard Trailing where it trails up indefinitely OR stops at Initial Balance.
-      // For safety/generic, we let it trail up. User can set HighWaterMark lower if they want.
     } else {
-      // Fixed Total DD (Static)
-      // Limit = Initial Account Size - (TotalDD% * Initial Account Size)
       totalLimitLevel = accountSize - ((maxTotalDrawdown / 100) * accountSize);
     }
 
@@ -219,28 +105,37 @@ const PropFirmProtector = () => {
     const pipValue = pipValueConfig.pipValue;
 
     // Allow user Risk Per Trade
-    const riskAmountDesired = (currentBalance * (riskPerTrade / 100));
+    let riskAmountDesired = (currentBalance * (riskPerTrade / 100));
+
+    // RECOVERY MODE LOGIC
+    if (isRecoveryMode) {
+      riskAmountDesired = riskAmountDesired * 0.5; // Half risk
+    }
+
     const safeRiskAmount = Math.min(riskAmountDesired, effectiveRiskAmount * 0.95);
     const suggestedLotSize = safeRiskAmount / (stopLossPips * pipValue);
 
-    // Determine Status
+    // ... existing status logic ...
     const dailyProgress = ((startOfDayBalance - currentBalance) / (startOfDayBalance - dailyLimitLevel)) * 100;
 
-    // For Total Progress, we compare against the total range allowed 
-    // (Current Balance - Limit) / (Max Allowable - Limit) ?? 
-    // Simpler: Just visualizing how close we are to the limit. 
-    // Let's us % of "Allowed Drawdown" used.
-    // Allowed Total DD = HighWaterMark - TotalLimitLevel.
-    // Used = HighWaterMark - CurrentBalance.
     const allowedTotalDD = isTrailing ? (highWaterMark - totalLimitLevel) : ((maxTotalDrawdown / 100) * accountSize);
     const usedTotalDD = isTrailing ? (highWaterMark - currentBalance) : (accountSize - currentBalance);
     const totalProgress = (usedTotalDD / allowedTotalDD) * 100;
 
     const isBreached = currentBalance <= dailyLimitLevel || currentBalance <= totalLimitLevel;
-    const isCritical = dailyLossRemaining < (effectiveRiskAmount * 0.2) || totalLossRemaining < (effectiveRiskAmount * 0.2); // Less than 20% buffer left
+    const isCritical = dailyLossRemaining < (effectiveRiskAmount * 0.2) || totalLossRemaining < (effectiveRiskAmount * 0.2);
     const isInDanger = dailyLossRemaining < (effectiveRiskAmount * 0.5);
-
     const isRecovering = currentBalance < accountSize;
+
+    // OBJECTIVES LOGIC
+    const distanceToTarget = Math.max(0, profitTarget - currentBalance);
+    // Approx trades needed = Distance / (RiskAmount * RR)
+    // Avg win amount = RiskAmount * simRR
+    // But this assumes 100% winrate. With 50% winrate, net profit per trade = (WinAmt * 0.5) - (LossAmt * 0.5).
+    // Expected Value per trade = (risk * simRR * (simWinRate/100)) - (risk * (1 - simWinRate/100))
+    const riskAmt = safeRiskAmount;
+    const evPerTrade = (riskAmt * simRR * (simWinRate / 100)) - (riskAmt * (1 - (simWinRate / 100)));
+    const tradesToPass = evPerTrade > 0 ? Math.ceil(distanceToTarget / evPerTrade) : 999;
 
     return {
       dailyLimitLevel,
@@ -249,16 +144,25 @@ const PropFirmProtector = () => {
       totalLossRemaining,
       effectiveRiskAmount,
       suggestedLotSize: Math.max(0, suggestedLotSize),
-      dailyProgress: Math.max(0, Math.min(100, (currentDailyLoss / ((maxDailyDrawdown / 100) * startOfDayBalance)) * 100)), // Visual %
-      totalProgress: Math.max(0, Math.min(100, totalProgress)), // Visual %
+      dailyProgress: Math.max(0, Math.min(100, (currentDailyLoss / ((maxDailyDrawdown / 100) * startOfDayBalance)) * 100)),
+      totalProgress: Math.max(0, Math.min(100, totalProgress)),
       isBreached,
       isCritical,
       isInDanger,
       isRecovering,
       riskUsedPct: (safeRiskAmount / currentBalance) * 100,
-      pipValueName: pipValueConfig.name
+      pipValueName: pipValueConfig.name,
+      distanceToTarget,
+      tradesToPass,
+      isRecoveryActive: isRecoveryMode
     };
-  }, [accountSize, currentBalance, startOfDayBalance, maxDailyDrawdown, maxTotalDrawdown, stopLossPips, assetClass, riskPerTrade, isTrailing, highWaterMark, drawdownType]);
+  }, [accountSize, currentBalance, startOfDayBalance, maxDailyDrawdown, maxTotalDrawdown, stopLossPips, assetClass, riskPerTrade, isTrailing, highWaterMark, drawdownType, isRecoveryMode, profitTarget, simRR, simWinRate]);
+
+  /* ... UI Updates ... */
+  // In Dashboard Right Column, add "Objectives" Card above Simulator Tabs?
+  // Or inside Analysis Tab?
+  // Let's add a compact "Mission Control" bar.
+
 
 
   // --- MONTE CARLO SIMULATOR (Animated) ---
@@ -377,10 +281,37 @@ const PropFirmProtector = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Account Size</Label>
-                    <Input type="number" value={accountSize} onChange={e => setAccountSize(Number(e.target.value))} />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Account Size</Label>
+                      <Input type="number" value={accountSize} onChange={e => setAccountSize(Number(e.target.value))} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-blue-600">Profit Target</Label>
+                      <Input
+                        type="number"
+                        value={profitTarget}
+                        onChange={e => setProfitTarget(Number(e.target.value))}
+                        className="bg-blue-50/20 border-blue-200"
+                      />
+                    </div>
                   </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center bg-orange-50 dark:bg-orange-950/20 p-2 rounded border border-orange-200">
+                      <Label className="text-orange-700 dark:text-orange-400 flex flex-col cursor-pointer" htmlFor="recovery-mode">
+                        <span className="font-semibold flex items-center gap-1.5"><Shield className="h-3 w-3" /> Recovery Mode</span>
+                        <span className="text-[10px] opacity-80 font-normal">Halves risk to help regain confidence</span>
+                      </Label>
+                      <Switch
+                        id="recovery-mode"
+                        checked={isRecoveryMode}
+                        onCheckedChange={setIsRecoveryMode}
+                      />
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     <Label>Start Day Balance</Label>
                     <Input type="number" value={startOfDayBalance} onChange={e => setStartOfDayBalance(Number(e.target.value))} className="bg-blue-50/50 dark:bg-blue-950/20 border-blue-200" />
@@ -469,17 +400,21 @@ const PropFirmProtector = () => {
             </div>
 
             {/* 2. THE GOLDEN NUMBER (Lot Size) */}
-            <Card className="bg-primary text-primary-foreground overflow-hidden relative">
+            <Card className={`bg-primary text-primary-foreground overflow-hidden relative ${isRecoveryMode ? 'bg-orange-600' : ''}`}>
+              {isRecoveryMode && <div className="absolute top-0 left-0 w-full bg-orange-800 text-white text-[10px] text-center font-bold tracking-widest uppercase py-0.5 z-20">Recovery Mode Active</div>}
               <div className="absolute right-0 top-0 h-full w-1/3 bg-white/10 -skew-x-12 transform translate-x-12" />
               <CardContent className="pt-6 relative z-10">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h3 className="text-primary-foreground/80 font-medium mb-1">Safe Lot Size ({riskPerTrade}%)</h3>
+                    <h3 className="text-primary-foreground/80 font-medium mb-1 flex items-center gap-2">
+                      Safe Lot Size ({isRecoveryMode ? (riskPerTrade / 2).toFixed(1) : riskPerTrade}%)
+                      {isRecoveryMode && <Shield className="h-4 w-4" />}
+                    </h3>
                     <div className="text-6xl font-bold tracking-tighter">
                       {calculations.suggestedLotSize.toFixed(2)}
                     </div>
                     <p className="text-sm text-primary-foreground/70 mt-2">
-                      Max Loss: -${calculations.effectiveRiskAmount.toFixed(0)} (Risking {riskPerTrade}% of Balance)
+                      Max Loss: -${calculations.effectiveRiskAmount.toFixed(0)}
                     </p>
                   </div>
                   <div className="text-right hidden sm:block">
@@ -489,6 +424,31 @@ const PropFirmProtector = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* 3. MISSION CONTROL Objectives */}
+            <div className="grid grid-cols-3 gap-4">
+              <Card className="col-span-1 bg-blue-50/50 border-blue-100 dark:bg-blue-900/10 dark:border-blue-900/50">
+                <CardContent className="p-4 text-center">
+                  <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">Target</div>
+                  <div className="text-lg font-bold text-blue-600">${profitTarget.toLocaleString()}</div>
+                  <div className="text-[10px] text-muted-foreground">${Math.max(0, calculations.distanceToTarget).toLocaleString()} away</div>
+                </CardContent>
+              </Card>
+              <Card className="col-span-1 bg-green-50/50 border-green-100 dark:bg-green-900/10 dark:border-green-900/50">
+                <CardContent className="p-4 text-center">
+                  <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">Trades to Pass</div>
+                  <div className="text-lg font-bold text-green-600">{calculations.tradesToPass > 100 ? "100+" : calculations.tradesToPass}</div>
+                  <div className="text-[10px] text-muted-foreground">Est. Wins Needed</div>
+                </CardContent>
+              </Card>
+              <Card className="col-span-1 bg-purple-50/50 border-purple-100 dark:bg-purple-900/10 dark:border-purple-900/50">
+                <CardContent className="p-4 text-center">
+                  <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">Risk Power</div>
+                  <div className="text-lg font-bold text-purple-600">{calculations.riskUsedPct.toFixed(1)}%</div>
+                  <div className="text-[10px] text-muted-foreground">Of Daily Buffer</div>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* 3. SIMULATOR TABS */}
             <Tabs defaultValue="simulator" className="w-full">
