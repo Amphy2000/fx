@@ -93,6 +93,13 @@ export const CommandPalette = () => {
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, []);
 
+    // Listen for custom trigger event (for mobile/buttons)
+    useEffect(() => {
+        const handleOpen = () => setIsOpen(true);
+        window.addEventListener("open-command-palette", handleOpen);
+        return () => window.removeEventListener("open-command-palette", handleOpen);
+    }, []);
+
     // Handle arrow navigation
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
         if (e.key === "ArrowDown") {
@@ -153,8 +160,8 @@ export const CommandPalette = () => {
                                             <div
                                                 key={cmd.id}
                                                 className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors ${globalIndex === selectedIndex
-                                                        ? "bg-primary text-primary-foreground"
-                                                        : "hover:bg-muted"
+                                                    ? "bg-primary text-primary-foreground"
+                                                    : "hover:bg-muted"
                                                     }`}
                                                 onClick={() => handleCommandClick(cmd.url)}
                                                 onMouseEnter={() => setSelectedIndex(globalIndex)}

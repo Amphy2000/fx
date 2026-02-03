@@ -1,4 +1,4 @@
-import { LayoutDashboard, MessageSquare, Calendar, Settings, Brain, LogOut, Target, Calculator, CreditCard, Trophy, GraduationCap, Plug, Heart, ClipboardCheck, Lightbulb, BarChart3, Flame, Award, BookOpen, Zap, Notebook, Sparkles, TrendingUp, FileText, Activity, Users, Crown, Shield, Mic } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Calendar, Settings, Brain, LogOut, Target, Calculator, CreditCard, Trophy, GraduationCap, Plug, Heart, ClipboardCheck, Lightbulb, BarChart3, Flame, Award, BookOpen, Zap, Notebook, Sparkles, TrendingUp, FileText, Activity, Users, Crown, Shield, Mic, Search } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -202,9 +202,27 @@ export function AppSidebar() {
 
   return <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
     <SidebarHeader className="border-b border-sidebar-border p-4 overflow-hidden">
-      <div className="flex items-center gap-2 min-w-0">
-        <Brain className="h-6 w-6 text-sidebar-primary shrink-0" />
-        <span className="font-bold text-lg text-sidebar-foreground truncate">Amphy AI</span>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-2 min-w-0">
+          <Brain className="h-6 w-6 text-sidebar-primary shrink-0" />
+          <span className="font-bold text-lg text-sidebar-foreground truncate">Amphy AI</span>
+        </div>
+
+        {/* Search Trigger (Discoverability) */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full justify-between text-muted-foreground font-normal bg-sidebar-accent/50 border-sidebar-border hover:bg-sidebar-accent transition-all h-9 px-3"
+          onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
+        >
+          <div className="flex items-center gap-2">
+            <Search className="h-3.5 w-3.5" />
+            <span className="text-xs">Search...</span>
+          </div>
+          <kbd className="hidden lg:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+            <span className="text-xs">⌘</span>K
+          </kbd>
+        </Button>
       </div>
     </SidebarHeader>
 

@@ -5,7 +5,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import Navbar from "@/components/Navbar";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Footer } from "@/components/Footer";
-import { TrendingUp, Menu, Moon, Sun } from "lucide-react";
+import { TrendingUp, Menu, Moon, Sun, Search } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { Button } from "@/components/ui/button";
 import { OnboardingTour } from "@/components/OnboardingTour";
@@ -39,6 +39,15 @@ export function Layout({
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
+              className="h-9 w-9"
+              title="Search features"
+            >
+              <Search className="h-5 w-5" />
+            </Button>
             <NotificationBell />
             <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "light" ? "dark" : "light")} className="h-9 w-9">
               <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
