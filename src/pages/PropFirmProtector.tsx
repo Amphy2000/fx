@@ -134,7 +134,7 @@ const PropFirmProtector = () => {
         .order('created_at', { ascending: false })
         .limit(100);
 
-      if (!trades || trades.length === 0) return { winRate: 50, rr: 2, todaysPnL };
+      if (!trades || trades.length === 0) return { winRate: 50, rr: 2, todaysPnL, tradeCount: 0 };
 
       const wins = trades.filter(t => t.result === 'win').length;
       const winRate = (wins / trades.length) * 100;
@@ -147,7 +147,7 @@ const PropFirmProtector = () => {
 
       const rr = avgLoss > 0 ? avgWin / avgLoss : 1.5;
 
-      return { winRate, rr, todaysPnL };
+      return { winRate, rr, todaysPnL, tradeCount: trades.length };
     }
   });
 
@@ -157,17 +157,10 @@ const PropFirmProtector = () => {
       setSimWinRate(Math.round(userStats.winRate));
       setSimRR(Number(userStats.rr.toFixed(1)));
 
-      // Auto-update Start of Day Balance Logic? 
-      // If we know today's PnL, we can deduce Current Balance relative to Start Day.
-      // Current Balance = StartOfDay + PnL.
-      // So StartOfDay = Current Balance - PnL.
-      // But user typically updates "Current Balance" manually to match MT4/MT5.
-      // So let's update StartOfDayBalance based on Current - PnL.
+      // Auto-update Start of Day Balance Logic if needed
       if (userStats.todaysPnL !== undefined) {
-        const estimatedStartDay = currentBalance - userStats.todaysPnL;
-        // Only update if significantly different to prevent jitter?
-        // Or just trust the manual input for StartDay?
-        // Let's rely on manual Input for "Current Balance" and PnL tells us "How much we are up/down".
+        // Optional: We could suggest updating StartDayBalance, 
+        // but let's just make sure the user is aware their PnL is tracked.
       }
     }
   }, [userStats, currentBalance]);
@@ -191,10 +184,8 @@ const PropFirmProtector = () => {
       // Daily limit is X% of Start of Day Balance
       dailyLimitLevel = startOfDayBalance - ((maxDailyDrawdown / 100) * startOfDayBalance);
     } else {
-      // Daily limit is X% of Current Equity/Balance (Floating) - rare but possible
-      // Usually 'Equity' means "Based on Equity High" or similar. 
-      // For simplicity, standard prop firm "Equity Based daily" usually means Max Daily Loss is calculated relative to starting equity of day.
-      // Let's stick to StartOfDay Balance for most reliability unless specified.
+      // Equity Based (e.g. MyForexFunds) usually calculates Daily Limit based on START OF DAY Equity.
+      // So logic is effectively the same: StartOfDayBalance represents "Start of Day" value.
       dailyLimitLevel = startOfDayBalance - ((maxDailyDrawdown / 100) * startOfDayBalance);
     }
 
@@ -204,15 +195,15 @@ const PropFirmProtector = () => {
     // 2. Calculate Total Limit
     let totalLimitLevel = 0;
     if (isTrailing) {
-      // Trailing activates. Limit moves up as High Water Mark moves up? 
-      // Typically Trailing Drawdown matches High Water Mark - MaxTotalDrawdown.
-      // But it usually locks at initial balance.
-      // Simplified: Total Limit = HighWaterMark * (1 - TotalDD%).
-      // BUT most firms lock it at Initial Balance.
-      const trailingStop = highWaterMark - ((maxTotalDrawdown / 100) * accountSize);
-      // Usually trailing stop doesn't go higher than initial balance (e.g. FTMO doesn't trail, but E8 does).
-      // Let's assume standard trailing.
-      totalLimitLevel = trailingStop;
+      // Trailing Drawdown: Limit rises as High Water Mark rises.
+      // Limit = HighWaterMark - MaxTotalDrawdownAmount
+      // NOTE: Usually MaxTotalDrawdownAmount is fixed at X% of INITIAL Account Size, not dynamic.
+      const maxDrawdownAmount = (maxTotalDrawdown / 100) * accountSize;
+      totalLimitLevel = highWaterMark - maxDrawdownAmount;
+
+      // However, most firms verify Total Limit never exceeds Initial Balance (e.g. you can't lock in profit above starting balance for DD purposes in some firms, but E8 allows it). 
+      // We will assume standard Trailing where it trails up indefinitely OR stops at Initial Balance.
+      // For safety/generic, we let it trail up. User can set HighWaterMark lower if they want.
     } else {
       // Fixed Total DD (Static)
       // Limit = Initial Account Size - (TotalDD% * Initial Account Size)
@@ -228,29 +219,27 @@ const PropFirmProtector = () => {
     const pipValue = pipValueConfig.pipValue;
 
     // Allow user Risk Per Trade
-    // User wants to risk X% of CURRENT BALANCE.
     const riskAmountDesired = (currentBalance * (riskPerTrade / 100));
-
-    // SAFEGUARDS
-    // We cannot risk more than effectiveRiskRemaining.
-    // We should also leave a buffer (e.g. don't risk 100% of remaining buffer).
-    // Let's cap risk at 90% of remaining buffer if buffer is small.
     const safeRiskAmount = Math.min(riskAmountDesired, effectiveRiskAmount * 0.95);
-
     const suggestedLotSize = safeRiskAmount / (stopLossPips * pipValue);
 
     // Determine Status
     const dailyProgress = ((startOfDayBalance - currentBalance) / (startOfDayBalance - dailyLimitLevel)) * 100;
-    // ^ This calculation is tricky if we are in profit. currentB > startDayB -> Progress negative (Good).
 
-    const totalProgress = ((accountSize - currentBalance) / (accountSize - totalLimitLevel)) * 100;
-    // ^ Normalized Total Progress.
+    // For Total Progress, we compare against the total range allowed 
+    // (Current Balance - Limit) / (Max Allowable - Limit) ?? 
+    // Simpler: Just visualizing how close we are to the limit. 
+    // Let's us % of "Allowed Drawdown" used.
+    // Allowed Total DD = HighWaterMark - TotalLimitLevel.
+    // Used = HighWaterMark - CurrentBalance.
+    const allowedTotalDD = isTrailing ? (highWaterMark - totalLimitLevel) : ((maxTotalDrawdown / 100) * accountSize);
+    const usedTotalDD = isTrailing ? (highWaterMark - currentBalance) : (accountSize - currentBalance);
+    const totalProgress = (usedTotalDD / allowedTotalDD) * 100;
 
     const isBreached = currentBalance <= dailyLimitLevel || currentBalance <= totalLimitLevel;
     const isCritical = dailyLossRemaining < (effectiveRiskAmount * 0.2) || totalLossRemaining < (effectiveRiskAmount * 0.2); // Less than 20% buffer left
     const isInDanger = dailyLossRemaining < (effectiveRiskAmount * 0.5);
 
-    // Recovery
     const isRecovering = currentBalance < accountSize;
 
     return {
@@ -397,6 +386,14 @@ const PropFirmProtector = () => {
                     <Input type="number" value={startOfDayBalance} onChange={e => setStartOfDayBalance(Number(e.target.value))} className="bg-blue-50/50 dark:bg-blue-950/20 border-blue-200" />
                   </div>
                 </div>
+
+                {isTrailing && (
+                  <div className="space-y-2">
+                    <Label className="text-yellow-600 flex items-center gap-1">High Water Mark <Info className="h-3 w-3" /></Label>
+                    <Input type="number" value={highWaterMark} onChange={e => setHighWaterMark(Number(e.target.value))} className="border-yellow-200 bg-yellow-50/30" />
+                    <p className="text-[10px] text-muted-foreground">Highest equity reached. Defines your trailing limit.</p>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label className="flex justify-between">Current Balance <span className="text-xs text-muted-foreground font-normal">Syncing with DB...</span></Label>
@@ -557,6 +554,11 @@ const PropFirmProtector = () => {
                           <BarChart2 className="h-10 w-10 mx-auto mb-2 opacity-50" />
                           <p>Click "Run" to simulate your next 20 trades</p>
                         </div>
+                        {userStats && userStats.tradeCount > 5 && (
+                          <div className="mt-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full inline-block">
+                            Based on your last {userStats.tradeCount} trades
+                          </div>
+                        )}
                       </div>
                     )}
                   </CardContent>
