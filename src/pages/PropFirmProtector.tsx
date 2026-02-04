@@ -6,19 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, TrendingDown, Target, Activity, XCircle, Info, Zap, Calculator, BarChart2, Coins, Settings2, RefreshCcw, AlertTriangle } from "lucide-react";
+import { Shield, Target, Activity, Info, Zap, Settings2, RefreshCcw, AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
-import { Switch } from "@/components/ui/switch";
 
-// Enhanced Prop Firm Presets with Drawdown Type Metadata
-// type: 'balance' (Daily DD based on Start of Day Balance) | 'initial' (Total DD based on Initial Balance)
-// trailing: boolean (Total DD trails equity high water mark?)
 const PROP_FIRM_PRESETS = {
   custom: { name: "Custom", dailyDD: 5, totalDD: 10, type: 'balance', trailing: false, description: "Enter your own rules" },
   ftmo: { name: "FTMO", dailyDD: 5, totalDD: 10, type: 'balance', trailing: false, description: "Daily based on start of day balance" },
@@ -29,15 +24,6 @@ const PROP_FIRM_PRESETS = {
   topTierTrader: { name: "Top Tier Trader", dailyDD: 3, totalDD: 6, type: 'equity', trailing: false, description: "Equity + High Water Mark strict" },
 };
 
-const ACCOUNT_SIZE_PRESETS = [
-  { value: 5000, label: "$5K" },
-  { value: 10000, label: "$10K" },
-  { value: 25000, label: "$25K" },
-  { value: 50000, label: "$50K" },
-  { value: 100000, label: "$100K" },
-  { value: 200000, label: "$200K" },
-];
-
 const ASSET_CLASSES = {
   forex: { name: "Forex Majors", pipValue: 10, description: "EURUSD, GBPUSD (Standard Lot)" },
   gold: { name: "Gold (XAUUSD)", pipValue: 10, description: "1 Lot = $10 per 10-cent move (Standard)" },
@@ -47,37 +33,40 @@ const ASSET_CLASSES = {
 const PropFirmProtector = () => {
   const [selectedFirm, setSelectedFirm] = useState<string>("ftmo");
   const [assetClass, setAssetClass] = useState<string>("forex");
-  const [accountSize, setAccountSize] = useState<number>(100000); // Initial Account Size
-  const [currentBalance, setCurrentBalance] = useState<number>(100000); // Current Balance/Equity
-  const [startOfDayBalance, setStartOfDayBalance] = useState<number>(100000); // Important for Balance-based firms
-
+  const [accountSize, setAccountSize] = useState<number>(100000);
+  const [currentBalance, setCurrentBalance] = useState<number>(100000);
+  const [startOfDayBalance, setStartOfDayBalance] = useState<number>(100000);
   const [maxDailyDrawdown, setMaxDailyDrawdown] = useState<number>(5);
   const [maxTotalDrawdown, setMaxTotalDrawdown] = useState<number>(10);
   const [stopLossPips, setStopLossPips] = useState<number>(20);
-
-  // New: Risk Appetite & Drawdown Settings
-  const [riskPerTrade, setRiskPerTrade] = useState<number>(1); // 1% default
-  const [drawdownType, setDrawdownType] = useState<'balance' | 'equity'>('balance'); // Daily DD basis
+  const [riskPerTrade, setRiskPerTrade] = useState<number>(1);
   const [isTrailing, setIsTrailing] = useState<boolean>(false);
-  const [highWaterMark, setHighWaterMark] = useState<number>(100000); // For trailing DD
+  const [highWaterMark, setHighWaterMark] = useState<number>(100000);
 
   const [currentAccountSlot, setCurrentAccountSlot] = useState<number>(0);
-  const [accountNames, setAccountNames] = useState<string[]>(["Account 1", "Account 2", "Account 3"]);
+  const [accountNames, setAccountNames] = useState<string[]>(["Challenge 1"]);
+  const [selectedMt5AccountId, setSelectedMt5AccountId] = useState<string | null>(null);
+
+  // Sync with available MT5 accounts
+  const { data: mt5Accounts } = useQuery({
+    queryKey: ['mt5-accounts-list'],
+    queryFn: async () => {
+      const { data } = await supabase.from('mt5_accounts').select('id, broker_name, account_number');
+      return data || [];
+    }
+  });
 
   // Simulator State
   const [simWinRate, setSimWinRate] = useState(50);
   const [simRR, setSimRR] = useState(2);
-  const [simRisk, setSimRisk] = useState(1);
-  const [simulationData, setSimulationData] = useState<any[]>([]); // Array of { trade: n, equity: $ }
+  const [simulationData, setSimulationData] = useState<any[]>([]);
   const [simulationStats, setSimulationStats] = useState<{ pass: number; breach: number; worstCaseStreak: number } | null>(null);
   const [isSimulating, setIsSimulating] = useState(false);
 
-  // Persistence: Load
+  // Load persistence
   useEffect(() => {
     const savedNames = localStorage.getItem("propFirmAccountNames");
-    if (savedNames) {
-      setAccountNames(JSON.parse(savedNames));
-    }
+    if (savedNames) setAccountNames(JSON.parse(savedNames));
 
     const savedSettings = localStorage.getItem(`propFirmSettings_slot_${currentAccountSlot}`);
     if (savedSettings) {
@@ -91,101 +80,58 @@ const PropFirmProtector = () => {
       setMaxTotalDrawdown(parsed.maxTotalDrawdown || 10);
       setStopLossPips(parsed.stopLossPips || 20);
       setRiskPerTrade(parsed.riskPerTrade || 1);
-      if (parsed.startOfDayBalance === undefined) setStartOfDayBalance(parsed.currentBalance || 100000);
-    } else {
-      // Reset to defaults for new slot
-      setSelectedFirm("ftmo");
-      setAssetClass("forex");
-      setAccountSize(100000);
-      setCurrentBalance(100000);
-      setStartOfDayBalance(100000);
-      setMaxDailyDrawdown(5);
-      setMaxTotalDrawdown(10);
-      setStopLossPips(20);
-      setRiskPerTrade(1);
     }
   }, [currentAccountSlot]);
 
-  // Persistence: Save
+  // Save persistence
   useEffect(() => {
-    const settings = {
-      selectedFirm,
-      assetClass,
-      accountSize,
-      currentBalance,
-      startOfDayBalance,
-      maxDailyDrawdown,
-      maxTotalDrawdown,
-      stopLossPips,
-      riskPerTrade
-    };
+    const settings = { selectedFirm, assetClass, accountSize, currentBalance, startOfDayBalance, maxDailyDrawdown, maxTotalDrawdown, stopLossPips, riskPerTrade };
     localStorage.setItem(`propFirmSettings_slot_${currentAccountSlot}`, JSON.stringify(settings));
-  }, [currentAccountSlot, selectedFirm, assetClass, accountSize, currentBalance, startOfDayBalance, maxDailyDrawdown, maxTotalDrawdown, stopLossPips, riskPerTrade]);
-
-  useEffect(() => {
     localStorage.setItem("propFirmAccountNames", JSON.stringify(accountNames));
-  }, [accountNames]);
+  }, [currentAccountSlot, selectedFirm, assetClass, accountSize, currentBalance, startOfDayBalance, maxDailyDrawdown, maxTotalDrawdown, stopLossPips, riskPerTrade, accountNames]);
 
-  // Fetch User Stats
-  const { data: userStats, refetch: refetchStats } = useQuery({
-    queryKey: ['user-stats-prop-v2'],
+  // Real-time calculation from synced trades
+  const { data: syncStats, refetch: refetchSync } = useQuery({
+    queryKey: ['mt5-sync-stats', selectedMt5AccountId],
+    enabled: !!selectedMt5AccountId,
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-
-      // 1. Fetch Today's P&L for Auto Sync
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const { data: todaysTrades } = await supabase
-        .from('trades')
-        .select('profit_loss')
-        .eq('user_id', user.id)
-        .gte('created_at', today.toISOString());
-
-      let todaysPnL = 0;
-      if (todaysTrades) {
-        todaysPnL = todaysTrades.reduce((acc, t) => acc + (t.profit_loss || 0), 0);
-      }
-
-      // 2. Fetch All Trades for Sim
       const { data: trades } = await supabase
         .from('trades')
-        .select('result, profit_loss')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(100);
+        .select('profit_loss, close_time, result')
+        .eq('mt5_account_id', selectedMt5AccountId);
 
-      if (!trades || trades.length === 0) return { winRate: 50, rr: 2, todaysPnL, tradeCount: 0 };
+      if (!trades) return null;
 
-      const wins = trades.filter(t => t.result === 'win').length;
-      const winRate = (wins / trades.length) * 100;
+      const totalPnL = trades.reduce((sum, t) => sum + (t.profit_loss || 0), 0);
 
-      const winningTrades = trades.filter(t => t.profit_loss && t.profit_loss > 0);
-      const losingTrades = trades.filter(t => t.profit_loss && t.profit_loss < 0);
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const todayPnL = trades
+        .filter(t => t.close_time && new Date(t.close_time) >= startOfToday)
+        .reduce((sum, t) => sum + (t.profit_loss || 0), 0);
 
-      const avgWin = winningTrades.reduce((sum, t) => sum + (t.profit_loss || 0), 0) / (winningTrades.length || 1);
-      const avgLoss = Math.abs(losingTrades.reduce((sum, t) => sum + (t.profit_loss || 0), 0) / (losingTrades.length || 1));
+      const winCount = trades.filter(t => t.result === 'win').length;
+      const lossCount = trades.filter(t => t.result === 'loss').length;
+      const winRate = trades.length > 0 ? (winCount / (winCount + lossCount || 1)) * 100 : 50;
 
-      const rr = avgLoss > 0 ? avgWin / avgLoss : 1.5;
-
-      return { winRate, rr, todaysPnL, tradeCount: trades.length };
+      return { totalPnL, todayPnL, winRate, tradeCount: trades.length };
     }
   });
 
-  // Sync Logic
+  // Apply Sync Stats
   useEffect(() => {
-    if (userStats) {
-      setSimWinRate(Math.round(userStats.winRate));
-      setSimRR(Number(userStats.rr.toFixed(1)));
-
-      // Auto-update Start of Day Balance Logic if needed
-      if (userStats.todaysPnL !== undefined) {
-        // Optional: We could suggest updating StartDayBalance, 
-        // but let's just make sure the user is aware their PnL is tracked.
-      }
+    if (syncStats) {
+      setCurrentBalance(accountSize + syncStats.totalPnL);
+      setStartOfDayBalance(accountSize + syncStats.totalPnL - syncStats.todayPnL);
+      setSimWinRate(Math.round(syncStats.winRate));
     }
-  }, [userStats, currentBalance]);
+  }, [syncStats, accountSize]);
+
+  const addAccountSlot = () => {
+    const newNames = [...accountNames, `Account ${accountNames.length + 1}`];
+    setAccountNames(newNames);
+    setCurrentAccountSlot(newNames.length - 1);
+  };
 
   const handleFirmChange = (firmKey: string) => {
     setSelectedFirm(firmKey);
@@ -193,158 +139,76 @@ const PropFirmProtector = () => {
     if (firm && firmKey !== "custom") {
       setMaxDailyDrawdown(firm.dailyDD);
       setMaxTotalDrawdown(firm.totalDD);
-      setDrawdownType(firm.type as 'balance' | 'equity');
       setIsTrailing(firm.trailing);
     }
   };
 
-  // --- CORE LOGIC ENGINE ---
   const calculations = useMemo(() => {
-    // 1. Calculate Daily Limit
-    let dailyLimitLevel = 0;
-    if (drawdownType === 'balance') {
-      // Daily limit is X% of Start of Day Balance
-      dailyLimitLevel = startOfDayBalance - ((maxDailyDrawdown / 100) * startOfDayBalance);
-    } else {
-      // Equity Based (e.g. MyForexFunds) usually calculates Daily Limit based on START OF DAY Equity.
-      // So logic is effectively the same: StartOfDayBalance represents "Start of Day" value.
-      dailyLimitLevel = startOfDayBalance - ((maxDailyDrawdown / 100) * startOfDayBalance);
-    }
+    const dailyLimitLevel = startOfDayBalance - ((maxDailyDrawdown / 100) * startOfDayBalance);
+    const dailyLossRemaining = Math.max(0, currentBalance - dailyLimitLevel);
 
-    const currentDailyLoss = startOfDayBalance - currentBalance; // Positive if down, negative if up
-    const dailyLossRemaining = Math.max(0, currentBalance - dailyLimitLevel); // How much room left before hitting level
-
-    // 2. Calculate Total Limit
-    let totalLimitLevel = 0;
-    if (isTrailing) {
-      // Trailing Drawdown: Limit rises as High Water Mark rises.
-      // Limit = HighWaterMark - MaxTotalDrawdownAmount
-      // NOTE: Usually MaxTotalDrawdownAmount is fixed at X% of INITIAL Account Size, not dynamic.
-      const maxDrawdownAmount = (maxTotalDrawdown / 100) * accountSize;
-      totalLimitLevel = highWaterMark - maxDrawdownAmount;
-
-      // However, most firms verify Total Limit never exceeds Initial Balance (e.g. you can't lock in profit above starting balance for DD purposes in some firms, but E8 allows it). 
-      // We will assume standard Trailing where it trails up indefinitely OR stops at Initial Balance.
-      // For safety/generic, we let it trail up. User can set HighWaterMark lower if they want.
-    } else {
-      // Fixed Total DD (Static)
-      // Limit = Initial Account Size - (TotalDD% * Initial Account Size)
-      totalLimitLevel = accountSize - ((maxTotalDrawdown / 100) * accountSize);
-    }
+    const totalLimitLevel = isTrailing
+      ? (highWaterMark - ((maxTotalDrawdown / 100) * accountSize))
+      : (accountSize - ((maxTotalDrawdown / 100) * accountSize));
 
     const totalLossRemaining = Math.max(0, currentBalance - totalLimitLevel);
-
-    // 3. Effective Limit & Lot Size
     const effectiveRiskAmount = Math.min(dailyLossRemaining, totalLossRemaining);
 
-    const pipValueConfig = ASSET_CLASSES[assetClass as keyof typeof ASSET_CLASSES] || ASSET_CLASSES.forex;
-    const pipValue = pipValueConfig.pipValue;
-
-    // Allow user Risk Per Trade
-    const riskAmountDesired = (currentBalance * (riskPerTrade / 100));
-    const safeRiskAmount = Math.min(riskAmountDesired, effectiveRiskAmount * 0.95);
+    const pipValue = ASSET_CLASSES[assetClass as keyof typeof ASSET_CLASSES]?.pipValue || 10;
+    const safeRiskAmount = Math.min((currentBalance * (riskPerTrade / 100)), effectiveRiskAmount * 0.95);
     const suggestedLotSize = safeRiskAmount / (stopLossPips * pipValue);
 
-    // Determine Status
-    const dailyProgress = ((startOfDayBalance - currentBalance) / (startOfDayBalance - dailyLimitLevel)) * 100;
-
-    // For Total Progress, we compare against the total range allowed 
-    // (Current Balance - Limit) / (Max Allowable - Limit) ?? 
-    // Simpler: Just visualizing how close we are to the limit. 
-    // Let's us % of "Allowed Drawdown" used.
-    // Allowed Total DD = HighWaterMark - TotalLimitLevel.
-    // Used = HighWaterMark - CurrentBalance.
-    const allowedTotalDD = isTrailing ? (highWaterMark - totalLimitLevel) : ((maxTotalDrawdown / 100) * accountSize);
-    const usedTotalDD = isTrailing ? (highWaterMark - currentBalance) : (accountSize - currentBalance);
-    const totalProgress = (usedTotalDD / allowedTotalDD) * 100;
-
-    const isBreached = currentBalance <= dailyLimitLevel || currentBalance <= totalLimitLevel;
-    const isCritical = dailyLossRemaining < (effectiveRiskAmount * 0.2) || totalLossRemaining < (effectiveRiskAmount * 0.2); // Less than 20% buffer left
-    const isInDanger = dailyLossRemaining < (effectiveRiskAmount * 0.5);
-
-    const isRecovering = currentBalance < accountSize;
-
     return {
-      dailyLimitLevel,
       dailyLossRemaining,
-      totalLimitLevel,
       totalLossRemaining,
       effectiveRiskAmount,
       suggestedLotSize: Math.max(0, suggestedLotSize),
-      dailyProgress: Math.max(0, Math.min(100, (currentDailyLoss / ((maxDailyDrawdown / 100) * startOfDayBalance)) * 100)), // Visual %
-      totalProgress: Math.max(0, Math.min(100, totalProgress)), // Visual %
-      isBreached,
-      isCritical,
-      isInDanger,
-      isRecovering,
-      riskUsedPct: (safeRiskAmount / currentBalance) * 100,
-      pipValueName: pipValueConfig.name
+      dailyProgress: Math.max(0, Math.min(100, ((startOfDayBalance - currentBalance) / ((maxDailyDrawdown / 100) * startOfDayBalance)) * 100)),
+      totalProgress: Math.max(0, Math.min(100, ((isTrailing ? highWaterMark - currentBalance : accountSize - currentBalance) / ((maxTotalDrawdown / 100) * accountSize)) * 100)),
     };
-  }, [accountSize, currentBalance, startOfDayBalance, maxDailyDrawdown, maxTotalDrawdown, stopLossPips, assetClass, riskPerTrade, isTrailing, highWaterMark, drawdownType]);
+  }, [accountSize, currentBalance, startOfDayBalance, maxDailyDrawdown, maxTotalDrawdown, stopLossPips, assetClass, riskPerTrade, isTrailing, highWaterMark]);
 
-
-  // --- MONTE CARLO SIMULATOR (Animated) ---
   const runSimulation = async () => {
     setIsSimulating(true);
-    setSimulationData([]); // Reset
+    setSimulationData([]);
+    await new Promise(r => setTimeout(r, 200));
 
-    // Small delay for UI
-    await new Promise(r => setTimeout(r, 100));
-
-    const ITERATIONS = 500; // Run 500 futures
-    const TRADES = 20; // 20 trades ahead (User wants to see immediate future opacity)
-
+    const ITERATIONS = 200;
+    const TRADES = 20;
     let breachCount = 0;
     let passCount = 0;
     let worstStreak = 0;
-
-    const samples: any[] = []; // Store a few paths for chart
+    const samples: any[] = [];
 
     for (let i = 0; i < ITERATIONS; i++) {
-      let balance = currentBalance; // Start from NOW
-      let currentStreak = 0;
-      let maxStreakForRun = 0;
+      let bal = currentBalance;
+      let streak = 0;
       let survived = true;
-      let path = [{ trade: 0, balance: balance }];
+      let path = [{ trade: 0, balance: bal }];
 
       for (let t = 1; t <= TRADES; t++) {
-        const isWin = Math.random() * 100 < simWinRate;
-        if (isWin) {
-          const profit = (balance * (simRisk / 100)) * simRR;
-          balance += profit;
-          currentStreak = 0;
+        if (Math.random() * 100 < simWinRate) {
+          bal += (bal * (riskPerTrade / 100)) * simRR;
+          streak = 0;
         } else {
-          const loss = (balance * (simRisk / 100));
-          balance -= loss;
-          currentStreak++;
-          if (currentStreak > maxStreakForRun) maxStreakForRun = currentStreak;
+          bal -= (bal * (riskPerTrade / 100));
+          streak++;
+          if (streak > worstStreak) worstStreak = streak;
         }
-
-        // Check Breach Logic (simplified for speed)
-        if (balance < calculations.totalLimitLevel || (startOfDayBalance - balance) > ((maxDailyDrawdown / 100) * startOfDayBalance)) {
+        if (bal < accountSize * (1 - maxTotalDrawdown / 100)) {
           survived = false;
-          // Continue simulation to see depth of ruin or break?
-          // Break for this run
-          path.push({ trade: t, balance: balance }); // Log the crash
+          path.push({ trade: t, balance: bal });
           break;
         }
-        path.push({ trade: t, balance: balance });
+        path.push({ trade: t, balance: bal });
       }
-
-      if (!survived) breachCount++;
-      else passCount++;
-
-      if (maxStreakForRun > worstStreak) worstStreak = maxStreakForRun;
-
-      // Save first 5 paths for visualization + Worst path + Best path
-      if (i < 5) samples.push(path);
+      if (!survived) breachCount++; else passCount++;
+      if (i < 3) samples.push(path);
     }
 
-    // Prepare Chart Data
-    // We want an array of { trade: 1, run1: 10100, run2: 9900 ... }
     const chartData = [];
     for (let t = 0; t <= TRADES; t++) {
-      const point: any = { name: `Trade ${t}` };
+      const point: any = { name: `T${t}` };
       samples.forEach((run, idx) => {
         const step = run.find((s: any) => s.trade === t);
         if (step) point[`run${idx}`] = step.balance;
@@ -353,355 +217,201 @@ const PropFirmProtector = () => {
     }
 
     setSimulationData(chartData);
-    setSimulationStats({
-      pass: (passCount / ITERATIONS) * 100,
-      breach: (breachCount / ITERATIONS) * 100,
-      worstCaseStreak: worstStreak
-    });
-
+    setSimulationStats({ pass: (passCount / ITERATIONS) * 100, breach: (breachCount / ITERATIONS) * 100, worstCaseStreak: worstStreak });
     setIsSimulating(false);
   };
-
-  const statusColor = calculations.isBreached ? "bg-red-500" : calculations.isInDanger ? "bg-orange-500" : "bg-green-500";
 
   return (
     <Layout>
       <div className="container mx-auto p-4 md:p-6 max-w-6xl space-y-6">
-
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-3xl font-bold tracking-tight">Prop Firm Protector <span className="text-xs align-top bg-primary/20 text-primary px-2 py-0.5 rounded-full ml-2">PRO</span></h1>
-            <p className="text-muted-foreground">Professional Risk Management Engine for Serious Traders.</p>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Prop Firm Protector</h1>
+            <p className="text-muted-foreground">The ultimate risk engine for passing challenges.</p>
           </div>
-
-          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border">
+          <div className="flex flex-wrap items-center gap-2 bg-muted/30 p-1.5 rounded-xl border">
             {accountNames.map((name, idx) => (
-              <Button
-                key={idx}
-                variant={currentAccountSlot === idx ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setCurrentAccountSlot(idx)}
-                className="h-8 text-xs px-3"
-              >
-                {name}
-              </Button>
+              <Button key={idx} variant={currentAccountSlot === idx ? "default" : "ghost"} size="sm" onClick={() => setCurrentAccountSlot(idx)} className="h-8 text-xs">{name}</Button>
             ))}
+            <Button variant="outline" size="sm" onClick={addAccountSlot} className="h-8 w-8 p-0"><Zap className="h-4 w-4" /></Button>
           </div>
         </div>
 
-        <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/20">
-          <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-600">
-                <Info className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold">Why use the Prop Firm Protector?</p>
-                <p className="text-xs text-muted-foreground">Daily & Total Drawdown limits are the #1 reason traders fail challenges. This tool calculates your exact safe lot size based on current account values to prevent accidental breaches.</p>
-              </div>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => {
-              const newName = prompt("Enter account name:", accountNames[currentAccountSlot]);
-              if (newName) {
-                const newNames = [...accountNames];
-                newNames[currentAccountSlot] = newName;
-                setAccountNames(newNames);
-              }
-            }}>
-              Rename Account
-            </Button>
-          </CardContent>
-        </Card>
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-          {/* LEFT COLUMN: Controls */}
-          <div className="lg:col-span-1 space-y-6">
-            <Card className="border-t-4 border-t-primary shadow-lg">
-              <CardHeader className="pb-3 border-b bg-muted/30">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Settings2 className="h-5 w-5 text-primary" />
-                  Account Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-4">
+          {/* Settings Column */}
+          <div className="space-y-6">
+            <Card className="border-t-4 border-t-primary shadow-sm">
+              <CardHeader className="pb-3"><CardTitle className="text-lg flex items-center gap-2"><Settings2 className="h-5 w-5" />Configuration</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>MT5 Sync</Label>
+                  <Select value={selectedMt5AccountId || "manual"} onValueChange={v => setSelectedMt5AccountId(v === "manual" ? null : v)}>
+                    <SelectTrigger><SelectValue placeholder="Manual" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="manual">Manual Entry</SelectItem>
+                      {mt5Accounts?.map(acc => (<SelectItem key={acc.id} value={acc.id}>{acc.broker_name} - {acc.account_number}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-2">
                   <Label>Firm Preset</Label>
                   <Select value={selectedFirm} onValueChange={handleFirmChange}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(PROP_FIRM_PRESETS).map(([k, v]) => (
-                        <SelectItem key={k} value={k}>{v.name}</SelectItem>
-                      ))}
-                    </SelectContent>
+                    <SelectContent>{Object.entries(PROP_FIRM_PRESETS).map(([k, v]) => (<SelectItem key={k} value={k}>{v.name}</SelectItem>))}</SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground">{PROP_FIRM_PRESETS[selectedFirm as keyof typeof PROP_FIRM_PRESETS]?.description}</p>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Account Size</Label>
-                    <Input type="number" value={accountSize} onChange={e => setAccountSize(e.target.value === '' ? 0 : Number(e.target.value))} step="any" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Start Day Balance</Label>
-                    <Input type="number" value={startOfDayBalance} onChange={e => setStartOfDayBalance(e.target.value === '' ? 0 : Number(e.target.value))} className="bg-blue-50/50 dark:bg-blue-950/20 border-blue-200" step="any" />
-                  </div>
-                </div>
-
-                {isTrailing && (
-                  <div className="space-y-2">
-                    <Label className="text-yellow-600 flex items-center gap-1">High Water Mark <Info className="h-3 w-3" /></Label>
-                    <Input type="number" value={highWaterMark} onChange={e => setHighWaterMark(e.target.value === '' ? 0 : Number(e.target.value))} className="border-yellow-200 bg-yellow-50/30" step="any" />
-                    <p className="text-[10px] text-muted-foreground">Highest equity reached. Defines your trailing limit.</p>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label className="flex justify-between">Current Balance <span className="text-xs text-muted-foreground font-normal">Syncing with DB...</span></Label>
-                  <div className="flex gap-2">
-                    <Input type="number" value={currentBalance} onChange={e => setCurrentBalance(e.target.value === '' ? 0 : Number(e.target.value))} className="font-mono text-lg font-bold" step="any" />
-                    <Button variant="outline" size="icon" onClick={() => refetchStats()} title="Sync P&L"><RefreshCcw className="h-4 w-4" /></Button>
-                  </div>
-                </div>
-
-                <div className="space-y-2 p-4 bg-muted/50 rounded-lg border">
-                  <Label className="flex justify-between items-center text-primary font-semibold">
-                    Risk Appetite per Trade
-                    <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">{riskPerTrade}%</span>
-                  </Label>
-                  <Slider value={[riskPerTrade]} min={0.1} max={5} step={0.1} onValueChange={val => setRiskPerTrade(val[0])} className="py-2" />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Conservative (0.5%)</span>
-                    <span>Aggressive (2%+)</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Stop Loss (Pips)</Label>
-                  <Input type="number" value={stopLossPips} onChange={e => setStopLossPips(e.target.value === '' ? 0 : Number(e.target.value))} step="any" />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1"><Label className="text-xs">Account Size</Label><Input type="number" value={accountSize} onChange={e => setAccountSize(Number(e.target.value))} /></div>
+                  <div className="space-y-1"><Label className="text-xs">Day Start</Label><Input type="number" value={startOfDayBalance} onChange={e => setStartOfDayBalance(Number(e.target.value))} /></div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Asset Class</Label>
-                  <Select value={assetClass} onValueChange={setAssetClass}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(ASSET_CLASSES).map(([key, asset]) => (
-                        <SelectItem key={key} value={key}>{asset.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label className="flex justify-between">Current Balance <Button variant="ghost" size="sm" className="h-auto p-0 text-primary" onClick={() => refetchSync()}><RefreshCcw className="h-3 w-3 mr-1" />Sync</Button></Label>
+                  <Input type="number" value={currentBalance} onChange={e => setCurrentBalance(Number(e.target.value))} className="font-mono text-lg font-bold" />
+                </div>
+                <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
+                  <Label className="flex justify-between text-xs font-semibold">Risk Per Trade <span>{riskPerTrade}%</span></Label>
+                  <Slider value={[riskPerTrade]} min={0.1} max={3} step={0.1} onValueChange={v => setRiskPerTrade(v[0])} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1"><Label className="text-xs">Stop Loss (Pips)</Label><Input type="number" value={stopLossPips} onChange={e => setStopLossPips(Number(e.target.value))} /></div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Asset</Label>
+                    <Select value={assetClass} onValueChange={setAssetClass}>
+                      <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>{Object.entries(ASSET_CLASSES).map(([k, v]) => (<SelectItem key={k} value={k}>{v.name}</SelectItem>))}</SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* RIGHT COLUMN: Dashboard & Sim */}
+          {/* Main Content Column */}
           <div className="lg:col-span-2 space-y-6">
-
-            {/* 1. STATUS BOARD */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className={`${calculations.dailyLossRemaining < 0 ? 'bg-red-50 border-red-200 dark:bg-red-900/10' : ''}`}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Daily Drawdown</CardTitle>
-                </CardHeader>
+              <Card className="bg-gradient-to-br from-background to-muted/20">
+                <CardHeader className="pb-2"><CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">Daily Remaining</CardTitle></CardHeader>
                 <CardContent>
-                  <div className="flex justify-between items-end mb-2">
-                    <span className="text-3xl font-bold tracking-tighter">${Math.max(0, calculations.dailyLossRemaining).toFixed(0)}</span>
-                    <span className="text-xs text-muted-foreground mb-1">Limit: ${calculations.dailyLimitLevel.toFixed(0)}</span>
-                  </div>
-                  <Progress value={calculations.dailyProgress} className={`h-2 mb-2 ${calculations.dailyProgress > 80 ? "bg-red-200" : ""}`} />
-                  <p className="text-xs text-right text-muted-foreground">{calculations.dailyProgress.toFixed(1)}% Used</p>
+                  <div className="text-3xl font-bold">${calculations.dailyLossRemaining.toFixed(0)}</div>
+                  <Progress value={calculations.dailyProgress} className="h-1.5 mt-3" />
                 </CardContent>
               </Card>
-
-              <Card className={`${calculations.totalLossRemaining < 0 ? 'bg-red-50 border-red-200 dark:bg-red-900/10' : ''}`}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Total Drawdown</CardTitle>
-                </CardHeader>
+              <Card className="bg-gradient-to-br from-background to-muted/20">
+                <CardHeader className="pb-2"><CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">Total Remaining</CardTitle></CardHeader>
                 <CardContent>
-                  <div className="flex justify-between items-end mb-2">
-                    <span className="text-3xl font-bold tracking-tighter text-primary">${Math.max(0, calculations.totalLossRemaining).toFixed(0)}</span>
-                    <span className="text-xs text-muted-foreground mb-1">Limit: ${calculations.totalLimitLevel.toFixed(0)}</span>
-                  </div>
-                  <Progress value={calculations.totalProgress} className="h-2 mb-2" />
-                  <p className="text-xs text-right text-muted-foreground">{calculations.totalProgress.toFixed(1)}% Used</p>
+                  <div className="text-3xl font-bold">${calculations.totalLossRemaining.toFixed(0)}</div>
+                  <Progress value={calculations.totalProgress} className="h-1.5 mt-3" />
                 </CardContent>
               </Card>
             </div>
 
-            {/* 2. THE GOLDEN NUMBER (Lot Size) */}
-            <Card className="bg-primary text-primary-foreground overflow-hidden relative">
-              <div className="absolute right-0 top-0 h-full w-1/3 bg-white/10 -skew-x-12 transform translate-x-12" />
-              <CardContent className="pt-6 relative z-10">
+            <Card className="bg-primary text-primary-foreground border-none">
+              <CardContent className="pt-6">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h3 className="text-primary-foreground/80 font-medium mb-1">Safe Lot Size ({riskPerTrade}%)</h3>
-                    <div className="text-6xl font-bold tracking-tighter">
-                      {calculations.suggestedLotSize.toFixed(2)}
-                    </div>
-                    <p className="text-sm text-primary-foreground/70 mt-2">
-                      Max Loss: -${calculations.effectiveRiskAmount.toFixed(0)} (Risking {riskPerTrade}% of Balance)
-                    </p>
+                    <p className="text-xs uppercase opacity-70">Safe Lot Size</p>
+                    <div className="text-7xl font-black">{calculations.suggestedLotSize.toFixed(2)}</div>
+                    <p className="text-sm opacity-80 mt-1">Risking ${calculations.effectiveRiskAmount.toFixed(0)} ({riskPerTrade}%)</p>
                   </div>
-                  <div className="text-right hidden sm:block">
-                    <div className="text-4xl font-mono opacity-80">{stopLossPips}</div>
-                    <div className="text-xs uppercase tracking-widest opacity-60">PIP SL</div>
+                  <div className="text-right">
+                    <Shield className="h-12 w-12 opacity-20 ml-auto" />
+                    <p className="text-xs mt-2 font-mono">STOP LOSS: {stopLossPips} PIPS</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* 3. SIMULATOR TABS */}
-            <Tabs defaultValue="simulator" className="w-full">
-              <TabsList className="w-full grid grid-cols-2">
-                <TabsTrigger value="simulator">Future Simulator</TabsTrigger>
-                <TabsTrigger value="analysis">Risk Analysis</TabsTrigger>
+            <Tabs defaultValue="recovery" className="w-full">
+              <TabsList className="w-full grid grid-cols-3 h-12">
+                <TabsTrigger value="recovery" className="gap-2"><Target className="h-4 w-4" />Recovery</TabsTrigger>
+                <TabsTrigger value="simulator" className="gap-2"><Activity className="h-4 w-4" />Simulator</TabsTrigger>
+                <TabsTrigger value="info" className="gap-2"><Info className="h-4 w-4" />Guidance</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="simulator">
+              <TabsContent value="recovery" className="mt-4">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex flex-col md:flex-row justify-between items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <Activity className="h-5 w-5 text-blue-500" />
-                        Monte Carlo Survival View
-                        {userStats && userStats.tradeCount > 0 && (
-                          <Badge variant="outline" className="text-xs text-green-600 bg-green-100 border-green-300">
-                            Auto-synced from {userStats.tradeCount} trades
-                          </Badge>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          <Label className="text-xs whitespace-nowrap">Win Rate %</Label>
-                          <Input
-                            type="number"
-                            className="w-16 h-8 text-xs"
-                            value={simWinRate}
-                            onChange={(e) => setSimWinRate(Number(e.target.value))}
-                          />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Label className="text-xs whitespace-nowrap">R:R</Label>
-                          <Input
-                            type="number"
-                            className="w-16 h-8 text-xs"
-                            value={simRR}
-                            onChange={(e) => setSimRR(Number(e.target.value))}
-                          />
-                        </div>
-                        <Button size="sm" onClick={runSimulation} disabled={isSimulating}>
-                          {isSimulating ? "Simulating..." : "Run Sim"}
-                        </Button>
-                      </div>
-                    </CardTitle>
-                  </CardHeader>
+                  <CardHeader><CardTitle className="text-md">Drawdown Recovery Strategy</CardTitle></CardHeader>
                   <CardContent>
-                    {simulationStats ? (
-                      <div className="space-y-6">
-                        <div className="h-[200px] w-full">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={simulationData}>
-                              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                              <XAxis dataKey="name" hide />
-                              <YAxis domain={['auto', 'auto']} hide />
-                              <Tooltip
-                                contentStyle={{ backgroundColor: '#111', border: 'none', borderRadius: '8px' }}
-                                itemStyle={{ color: '#fff' }}
-                                formatter={(value: any) => [`$${Number(value).toFixed(0)}`, 'Equity']}
-                              />
-                              <ReferenceLine y={calculations.totalLimitLevel} stroke="red" strokeDasharray="3 3" label="Breach Level" />
-                              <Line type="monotone" dataKey="run0" stroke="#10b981" strokeWidth={2} dot={false} />
-                              <Line type="monotone" dataKey="run1" stroke="#3b82f6" strokeWidth={1} dot={false} style={{ opacity: 0.5 }} />
-                              <Line type="monotone" dataKey="run2" stroke="#6366f1" strokeWidth={1} dot={false} style={{ opacity: 0.3 }} />
-                              <Line type="monotone" dataKey="run3" stroke="#8b5cf6" strokeWidth={1} dot={false} style={{ opacity: 0.2 }} />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-4 text-center">
-                          <div className="p-3 bg-green-500/10 rounded border border-green-500/20">
-                            <div className="text-2xl font-bold text-green-500">{simulationStats.pass.toFixed(1)}%</div>
-                            <div className="text-xs text-muted-foreground">Survival Rate</div>
-                          </div>
-                          <div className="p-3 bg-red-500/10 rounded border border-red-500/20">
-                            <div className="text-2xl font-bold text-red-500">{simulationStats.breach.toFixed(1)}%</div>
-                            <div className="text-xs text-muted-foreground">Ruin Probability</div>
-                          </div>
-                          <div className="p-3 bg-orange-500/10 rounded border border-orange-500/20">
-                            <div className="text-2xl font-bold text-orange-500">{simulationStats.worstCaseStreak}</div>
-                            <div className="text-xs text-muted-foreground">Worst Losing Streak</div>
-                          </div>
-                        </div>
+                    {currentBalance >= accountSize ? (
+                      <div className="py-10 text-center space-y-2">
+                        <Zap className="h-10 w-10 mx-auto text-yellow-500" />
+                        <h4 className="font-bold">You are in the Green!</h4>
+                        <p className="text-sm text-muted-foreground">Keep your current risk. No recovery needed.</p>
                       </div>
                     ) : (
-                      <div className="h-[200px] flex items-center justify-center border-2 border-dashed rounded-xl bg-muted/20">
-                        <div className="text-center text-muted-foreground">
-                          <BarChart2 className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                          <p>Ready to Simulate</p>
-                          <p className="text-xs opacity-70 mt-1">Adjust Win Rate & RR above to test scenarios</p>
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="p-4 rounded-xl bg-primary/5 border border-primary/10">
+                            <p className="text-xs text-muted-foreground">Target to BE</p>
+                            <p className="text-2xl font-bold">${(accountSize - currentBalance).toFixed(0)}</p>
+                          </div>
+                          <div className="p-4 rounded-xl bg-destructive/5 border border-destructive/10">
+                            <p className="text-xs text-muted-foreground">Breach Buffer</p>
+                            <p className="text-2xl font-bold text-destructive">${calculations.totalLossRemaining.toFixed(0)}</p>
+                          </div>
                         </div>
+                        <Alert>
+                          <AlertTriangle className="h-4 w-4" />
+                          <AlertTitle>Action Plan</AlertTitle>
+                          <AlertDescription className="text-sm">
+                            To recover safely, drop risk to <strong>0.5%</strong>. With a 1:3 RR, you need <strong>{Math.ceil((accountSize - currentBalance) / (currentBalance * 0.005 * 3))}</strong> wins to reach Breakeven.
+                          </AlertDescription>
+                        </Alert>
                       </div>
                     )}
                   </CardContent>
                 </Card>
               </TabsContent>
 
-              <TabsContent value="analysis">
+              <TabsContent value="simulator" className="mt-4">
                 <Card>
-                  <CardContent className="pt-6 space-y-4">
-                    <Alert variant={simulationStats && simulationStats.pass < 50 ? "destructive" : "default"}>
-                      <Info className="h-4 w-4" />
-                      <AlertTitle>Honest Assessment</AlertTitle>
-                      <AlertDescription>
-                        {simulationStats ? (
-                          simulationStats.pass < 50
-                            ? "CRITICAL WARNING: Based on these stats, you are statistically likely to fail this challenge. You must improve Win Rate or RR before continuing."
-                            : simulationStats.pass < 80
-                              ? "CAUTION: Your strategy has an edge, but a bad streak could still wipe you out. Lower your risk per trade."
-                              : "EXCELLENT: You have a strong statistical edge. Stick to the plan and don't over-leverage."
-                        ) : "Run the simulator to get a statistical assessment."}
-                      </AlertDescription>
-                    </Alert>
-
-                    <div className="space-y-4">
-                      <h4 className="font-semibold text-sm">Recommendations</h4>
-                      <ul className="space-y-2 text-sm text-muted-foreground">
-                        {riskPerTrade > 2 && (
-                          <li className="flex items-start gap-2 text-red-500">
-                            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-                            <span><strong>High Risk Warning:</strong> Risking {riskPerTrade}% per trade is very aggressive for a prop firm. Recommended: 0.5% - 1%.</span>
-                          </li>
-                        )}
-                        {simWinRate < 40 && simRR < 2 && (
-                          <li className="flex items-start gap-2 text-orange-500">
-                            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-                            <span><strong>Negative Expectancy:</strong> A {simWinRate}% win rate with {simRR} RR is hard to sustain. Aim for at least 1:2.5 RR.</span>
-                          </li>
-                        )}
-                        <li className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-primary" />
-                          <span>Based on your daily limit, stop trading if you lose <strong>{Math.floor(calculations.effectiveRiskAmount / (currentBalance * (riskPerTrade / 100)))}</strong> trades in a row today.</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-primary" />
-                          <span>To survive a worst-case streak of {simulationStats?.worstCaseStreak || 8} losses, ensure your buffer is at least <strong>${((simulationStats?.worstCaseStreak || 8) * (currentBalance * (riskPerTrade / 100))).toFixed(0)}</strong>.</span>
-                        </li>
-                      </ul>
-                    </div>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="text-md">Monte Carlo Survival (20 Trades)</CardTitle>
+                    <Button size="sm" onClick={runSimulation} disabled={isSimulating}>{isSimulating ? "Simulating..." : "Run"}</Button>
+                  </CardHeader>
+                  <CardContent>
+                    {simulationStats ? (
+                      <div className="space-y-6">
+                        <div className="h-[180px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={simulationData}>
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
+                              <XAxis dataKey="name" hide />
+                              <YAxis hide domain={['auto', 'auto']} />
+                              <Tooltip />
+                              <Line type="monotone" dataKey="run0" stroke="#8884d8" dot={false} strokeWidth={2} />
+                              <Line type="monotone" dataKey="run1" stroke="#82ca9d" dot={false} strokeWidth={1} style={{ opacity: 0.5 }} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="text-center p-2 rounded-lg bg-muted"><div className="text-lg font-bold">{simulationStats.pass}%</div><div className="text-[10px] uppercase text-muted-foreground">Survival</div></div>
+                          <div className="text-center p-2 rounded-lg bg-muted"><div className="text-lg font-bold">{simulationStats.breach}%</div><div className="text-[10px] uppercase text-muted-foreground">Breach</div></div>
+                          <div className="text-center p-2 rounded-lg bg-muted"><div className="text-lg font-bold">{simulationStats.worstCaseStreak}</div><div className="text-[10px] uppercase text-muted-foreground">Losing Streak</div></div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-[180px] flex items-center justify-center border-2 border-dashed rounded-xl text-muted-foreground text-sm">Run simulation to see paths</div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
 
-
-            </Tabs >
-
-          </div >
-        </div >
-      </div >
-    </Layout >
+              <TabsContent value="info" className="mt-4">
+                <Card><CardContent className="pt-6 space-y-3 text-sm">
+                  <p className="font-semibold flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /> Why this is better than your Prop Dashboard:</p>
+                  <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
+                    <li><strong>Proactive, not Reactive:</strong> Dashboards tell you *that* you failed. This tells you *how* to trade so you don't.</li>
+                    <li><strong>Exact Math:</strong> Most traders "eyeball" lot sizes. This tool accounts for your daily buffer down to the cent.</li>
+                    <li><strong>Recovery Mode:</strong> Strategy automatically shifts to protection when you enter drawdown.</li>
+                  </ul>
+                </CardContent></Card>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+      </div>
+    </Layout>
   );
 };
 

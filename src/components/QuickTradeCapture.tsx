@@ -73,7 +73,7 @@ export const QuickTradeCapture = ({ onTradeAdded, isOpenExternal, onOpenChangeEx
       const { error } = await supabase.from("trades").insert({
         user_id: user.id,
         pair: pair.toUpperCase(),
-        direction: "long",
+        direction: "buy",
         entry_price: 0,
         result: result === "open" ? null : result,
         profit_loss: profitLoss,
