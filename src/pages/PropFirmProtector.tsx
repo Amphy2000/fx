@@ -61,6 +61,9 @@ const PropFirmProtector = () => {
   const [isTrailing, setIsTrailing] = useState<boolean>(false);
   const [highWaterMark, setHighWaterMark] = useState<number>(100000); // For trailing DD
 
+  const [currentAccountSlot, setCurrentAccountSlot] = useState<number>(0);
+  const [accountNames, setAccountNames] = useState<string[]>(["Account 1", "Account 2", "Account 3"]);
+
   // Simulator State
   const [simWinRate, setSimWinRate] = useState(50);
   const [simRR, setSimRR] = useState(2);
@@ -71,7 +74,12 @@ const PropFirmProtector = () => {
 
   // Persistence: Load
   useEffect(() => {
-    const savedSettings = localStorage.getItem("propFirmSettingsV2");
+    const savedNames = localStorage.getItem("propFirmAccountNames");
+    if (savedNames) {
+      setAccountNames(JSON.parse(savedNames));
+    }
+
+    const savedSettings = localStorage.getItem(`propFirmSettings_slot_${currentAccountSlot}`);
     if (savedSettings) {
       const parsed = JSON.parse(savedSettings);
       setSelectedFirm(parsed.selectedFirm || "ftmo");
@@ -83,10 +91,20 @@ const PropFirmProtector = () => {
       setMaxTotalDrawdown(parsed.maxTotalDrawdown || 10);
       setStopLossPips(parsed.stopLossPips || 20);
       setRiskPerTrade(parsed.riskPerTrade || 1);
-      // Logic migration
       if (parsed.startOfDayBalance === undefined) setStartOfDayBalance(parsed.currentBalance || 100000);
+    } else {
+      // Reset to defaults for new slot
+      setSelectedFirm("ftmo");
+      setAssetClass("forex");
+      setAccountSize(100000);
+      setCurrentBalance(100000);
+      setStartOfDayBalance(100000);
+      setMaxDailyDrawdown(5);
+      setMaxTotalDrawdown(10);
+      setStopLossPips(20);
+      setRiskPerTrade(1);
     }
-  }, []);
+  }, [currentAccountSlot]);
 
   // Persistence: Save
   useEffect(() => {
@@ -101,8 +119,12 @@ const PropFirmProtector = () => {
       stopLossPips,
       riskPerTrade
     };
-    localStorage.setItem("propFirmSettingsV2", JSON.stringify(settings));
-  }, [selectedFirm, assetClass, accountSize, currentBalance, startOfDayBalance, maxDailyDrawdown, maxTotalDrawdown, stopLossPips, riskPerTrade]);
+    localStorage.setItem(`propFirmSettings_slot_${currentAccountSlot}`, JSON.stringify(settings));
+  }, [currentAccountSlot, selectedFirm, assetClass, accountSize, currentBalance, startOfDayBalance, maxDailyDrawdown, maxTotalDrawdown, stopLossPips, riskPerTrade]);
+
+  useEffect(() => {
+    localStorage.setItem("propFirmAccountNames", JSON.stringify(accountNames));
+  }, [accountNames]);
 
   // Fetch User Stats
   const { data: userStats, refetch: refetchStats } = useQuery({
@@ -346,10 +368,50 @@ const PropFirmProtector = () => {
     <Layout>
       <div className="container mx-auto p-4 md:p-6 max-w-6xl space-y-6">
 
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">Prop Firm Protector <span className="text-xs align-top bg-primary/20 text-primary px-2 py-0.5 rounded-full ml-2">PRO</span></h1>
-          <p className="text-muted-foreground">Professional Risk Management Engine for Serious Traders.</p>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-3xl font-bold tracking-tight">Prop Firm Protector <span className="text-xs align-top bg-primary/20 text-primary px-2 py-0.5 rounded-full ml-2">PRO</span></h1>
+            <p className="text-muted-foreground">Professional Risk Management Engine for Serious Traders.</p>
+          </div>
+
+          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border">
+            {accountNames.map((name, idx) => (
+              <Button
+                key={idx}
+                variant={currentAccountSlot === idx ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setCurrentAccountSlot(idx)}
+                className="h-8 text-xs px-3"
+              >
+                {name}
+              </Button>
+            ))}
+          </div>
         </div>
+
+        <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/20">
+          <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-600">
+                <Info className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">Why use the Prop Firm Protector?</p>
+                <p className="text-xs text-muted-foreground">Daily & Total Drawdown limits are the #1 reason traders fail challenges. This tool calculates your exact safe lot size based on current account values to prevent accidental breaches.</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => {
+              const newName = prompt("Enter account name:", accountNames[currentAccountSlot]);
+              if (newName) {
+                const newNames = [...accountNames];
+                newNames[currentAccountSlot] = newName;
+                setAccountNames(newNames);
+              }
+            }}>
+              Rename Account
+            </Button>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 

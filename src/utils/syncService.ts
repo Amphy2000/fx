@@ -26,8 +26,11 @@ export const syncOfflineData = async () => {
     const unsyncedTrades = await getUnsyncedTrades();
     for (const trade of unsyncedTrades) {
       try {
+        // Sanitize data: remove deprecated 'emotions' field if it exists
+        const { emotions, ...sanitizedData } = trade.data as any;
+
         const { error } = await supabase.from("trades").insert({
-          ...trade.data,
+          ...sanitizedData,
           user_id: user.id,
         });
 

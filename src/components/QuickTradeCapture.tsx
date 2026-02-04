@@ -77,7 +77,8 @@ export const QuickTradeCapture = ({ onTradeAdded, isOpenExternal, onOpenChangeEx
         entry_price: 0,
         result: result === "open" ? null : result,
         profit_loss: profitLoss,
-        emotions: "neutral",
+        emotion_before: "neutral",
+        emotion_after: result === "open" ? null : "neutral",
         notes: "Quick capture"
       });
 
