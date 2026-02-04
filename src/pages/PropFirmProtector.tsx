@@ -9,7 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Target, Activity, Info, Zap, Settings2, RefreshCcw, AlertTriangle, Trash2, Edit3, Globe, TrendingUp, Calendar, Clock, Crown } from "lucide-react";
+import { Shield, Target, Activity, Info, Zap, Settings2, RefreshCcw, AlertTriangle, Trash2, Edit3, Globe, TrendingUp, Calendar, Clock, Crown, MessageSquare, AlertCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
@@ -33,7 +33,7 @@ const ASSET_CLASSES = {
 
 const PropFirmProtector = () => {
     const [selectedFirm, setSelectedFirm] = useState<string>("ftmo");
-    const [phase, setPhase] = useState<string>("phase1"); // phase1, phase2, funded
+    const [phase, setPhase] = useState<string>("phase1");
     const [assetClass, setAssetClass] = useState<string>("forex");
     const [accountSize, setAccountSize] = useState<number>(100000);
     const [currentBalance, setCurrentBalance] = useState<number>(100000);
@@ -50,7 +50,7 @@ const PropFirmProtector = () => {
 
     const isSavingLocked = useRef(false);
 
-    // Default Stats for Newbies (Conservative Pro Averages)
+    // Default Stats for Newbies
     const [simWinRate, setSimWinRate] = useState(45);
     const [simRR, setSimRR] = useState(2);
     const [useManualStats, setUseManualStats] = useState(true);
@@ -58,11 +58,11 @@ const PropFirmProtector = () => {
     const [simulationStats, setSimulationStats] = useState<{ pass: number; breach: number } | null>(null);
     const [isSimulating, setIsSimulating] = useState(false);
 
-    // Adjust target based on phase
     useEffect(() => {
+        if (isSavingLocked.current) return;
         if (phase === "phase1") setProfitTargetPercent(10);
         else if (phase === "phase2") setProfitTargetPercent(5);
-        else setProfitTargetPercent(0); // Funded
+        else setProfitTargetPercent(0);
     }, [phase]);
 
     // Load Persistence
@@ -104,7 +104,6 @@ const PropFirmProtector = () => {
         return () => clearTimeout(timer);
     }, [currentAccountSlot, selectedFirm, phase, assetClass, accountSize, currentBalance, startOfDayBalance, maxDailyDrawdown, maxTotalDrawdown, profitTargetPercent, stopLossPips, riskPerTrade, selectedMt5AccountId]);
 
-    // Sync Accounts
     const { data: mt5Accounts } = useQuery({
         queryKey: ['mt5-accounts-list'],
         queryFn: async () => {
@@ -113,7 +112,6 @@ const PropFirmProtector = () => {
         }
     });
 
-    // Calculations
     const calculations = useMemo(() => {
         const dailyLimit = startOfDayBalance * (maxDailyDrawdown / 100);
         const dailyFloor = startOfDayBalance - dailyLimit;
@@ -133,10 +131,28 @@ const PropFirmProtector = () => {
         const asset = ASSET_CLASSES[assetClass as keyof typeof ASSET_CLASSES] || ASSET_CLASSES.forex;
         const suggestedLotSize = safeRiskAmount / (stopLossPips * asset.pipValue);
 
-        // Pass Projection logic
         const wr = simWinRate / 100;
         const expectedValue = (wr * (safeRiskAmount * simRR)) - ((1 - wr) * safeRiskAmount);
         const tradesToTarget = expectedValue > 0 ? Math.ceil(remainingProfit / expectedValue) : Infinity;
+
+        // Guardian Insight Logic
+        let guardianStatus = "Safe";
+        let guardianMessage = "Account is stable. Guardian AI is monitoring your risk limits.";
+        let guardianColor = "text-green-500";
+        let guardianBg = "bg-green-500/10";
+
+        const dailyUsagePercent = dailyLimit > 0 ? ((startOfDayBalance - currentBalance) / dailyLimit) * 100 : 0;
+        if (dailyUsagePercent > 80) {
+            guardianStatus = "Critical";
+            guardianMessage = "DANGER: Daily Breach imminent. Close all trades and protect your equity.";
+            guardianColor = "text-red-500";
+            guardianBg = "bg-red-500/10";
+        } else if (dailyUsagePercent > 50) {
+            guardianStatus = "Caution";
+            guardianMessage = "High Daily Usage (50%+). Guardian suggests half-risk (0.25% - 0.50%) trades only.";
+            guardianColor = "text-orange-500";
+            guardianBg = "bg-orange-500/10";
+        }
 
         return {
             dailyLossRemaining,
@@ -147,6 +163,10 @@ const PropFirmProtector = () => {
             tradesToTarget,
             dailyProgress: dailyLimit > 0 ? Math.max(0, Math.min(100, ((startOfDayBalance - currentBalance) / dailyLimit) * 100)) : 0,
             totalProgress: totalLimit > 0 ? Math.max(0, Math.min(100, ((accountSize - currentBalance) / totalLimit) * 100)) : 0,
+            guardianStatus,
+            guardianMessage,
+            guardianColor,
+            guardianBg
         };
     }, [accountSize, currentBalance, startOfDayBalance, maxDailyDrawdown, maxTotalDrawdown, profitTargetPercent, stopLossPips, assetClass, riskPerTrade, simWinRate, simRR]);
 
@@ -188,7 +208,7 @@ const PropFirmProtector = () => {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">Prop Firm Protector</h1>
-                        <Badge variant="outline" className="text-primary border-primary mt-1">v2.1 Idolo Edition</Badge>
+                        <Badge variant="outline" className="text-primary border-primary mt-1">v2.2 Guardian AI Edition</Badge>
                     </div>
                     <div className="flex flex-wrap items-center gap-2 bg-muted/40 p-1.5 rounded-xl border border-border/50">
                         {accountNames.map((name, idx) => (
@@ -198,10 +218,26 @@ const PropFirmProtector = () => {
                     </div>
                 </div>
 
+                {/* Guardian AI: The Secret Sauce */}
+                <Card className={`${calculations.guardianBg} border-none shadow-sm overflow-hidden relative transition-all duration-300`}>
+                    <div className="absolute top-0 right-0 p-4 opacity-5"><Shield className={`h-12 w-12 ${calculations.guardianColor}`} /></div>
+                    <CardContent className="py-4 px-6 flex items-center gap-4">
+                        <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${calculations.guardianBg} border border-white/5`}>
+                            <Activity className={`h-5 w-5 ${calculations.guardianColor}`} />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <span className={`text-[9px] font-black uppercase tracking-widest ${calculations.guardianColor}`}>Guardian Intelligence: {calculations.guardianStatus}</span>
+                                {calculations.guardianStatus !== "Safe" && <div className={`h-1.5 w-1.5 rounded-full ${calculations.guardianColor.replace('text', 'bg')} animate-pulse`} />}
+                            </div>
+                            <p className="font-extrabold text-sm text-foreground/90">{calculations.guardianMessage}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Column 1: Config */}
                     <div className="space-y-6">
-                        <Card className="border-t-4 border-t-primary shadow-sm">
+                        <Card className="border-t-4 border-t-primary shadow-sm overflow-hidden text-foreground">
                             <CardHeader className="pb-3 border-b bg-muted/30 flex flex-row items-center justify-between space-y-0">
                                 <CardTitle className="text-lg flex items-center gap-2"><Settings2 className="h-5 w-5 text-primary" /> Setup</CardTitle>
                                 <div className="flex gap-1">
@@ -211,20 +247,20 @@ const PropFirmProtector = () => {
                             </CardHeader>
                             <CardContent className="space-y-4 pt-4">
                                 <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase text-muted-foreground">Account Phase</Label>
+                                    <Label className="text-[10px] font-black uppercase text-muted-foreground">Account Status</Label>
                                     <Select value={phase} onValueChange={setPhase}>
                                         <SelectTrigger className="h-9 font-bold"><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="phase1">Phase 1 Challenge (10%)</SelectItem>
                                             <SelectItem value="phase2">Phase 2 Verification (5%)</SelectItem>
-                                            <SelectItem value="funded">Funded (Payout Mode)</SelectItem>
+                                            <SelectItem value="funded">Funded Account (Payout Tracker)</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1"><Label className="text-[10px] uppercase font-bold">Account Size</Label><Input className="h-8" value={accountSize === 0 ? "" : accountSize} type="number" onChange={e => handleNumInput(e.target.value, setAccountSize)} /></div>
-                                    <div className="space-y-1"><Label className="text-[10px] uppercase font-bold">Daily Start Eq</Label><Input className="h-8" value={startOfDayBalance === 0 ? "" : startOfDayBalance} type="number" onChange={e => handleNumInput(e.target.value, setStartOfDayBalance)} /></div>
+                                    <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Account Size</Label><Input className="h-8" value={accountSize === 0 ? "" : accountSize} type="number" onChange={e => handleNumInput(e.target.value, setAccountSize)} /></div>
+                                    <div className="space-y-1"><Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Day Start Balance</Label><Input className="h-8" value={startOfDayBalance === 0 ? "" : startOfDayBalance} type="number" onChange={e => handleNumInput(e.target.value, setStartOfDayBalance)} /></div>
                                 </div>
 
                                 <div className="space-y-2 p-3 bg-primary/5 rounded-xl border border-primary/10">
@@ -238,148 +274,139 @@ const PropFirmProtector = () => {
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1"><Label className="text-[10px] font-bold uppercase">Stop Loss (Pips)</Label><Input className="h-8 font-bold" value={stopLossPips === 0 ? "" : stopLossPips} type="number" onChange={e => handleNumInput(e.target.value, setStopLossPips)} /></div>
+                                    <div className="space-y-1"><Label className="text-[10px] font-bold uppercase text-muted-foreground">Stop Loss (Pips)</Label><Input className="h-8 font-bold" value={stopLossPips === 0 ? "" : stopLossPips} type="number" onChange={e => handleNumInput(e.target.value, setStopLossPips)} /></div>
                                     <div className="space-y-1">
-                                        <Label className="text-[10px] font-bold uppercase">Firm</Label>
+                                        <Label className="text-[10px] font-bold uppercase text-muted-foreground">Firm Rules</Label>
                                         <Select value={selectedFirm} onValueChange={v => { setSelectedFirm(v); const f = PROP_FIRM_PRESETS[v as keyof typeof PROP_FIRM_PRESETS]; if (f) { setMaxDailyDrawdown(f.dailyDD); setMaxTotalDrawdown(f.totalDD); } }}><SelectTrigger className="h-8"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(PROP_FIRM_PRESETS).map(([k, v]) => (<SelectItem key={k} value={k}>{v.name}</SelectItem>))}</SelectContent></Select>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
-
-                        <Card className="bg-amber-500/10 border-amber-500/20 shadow-sm">
-                            <CardContent className="pt-4 flex items-start gap-3">
-                                <Clock className="h-4 w-4 text-amber-600 mt-1" />
-                                <div className="text-[11px] leading-tight text-amber-800">Professional traders risk 50% less during high-impact news. Check your calendar.</div>
-                            </CardContent>
-                        </Card>
                     </div>
 
-                    {/* Column 2&3: Visualizer */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Card className="bg-gradient-to-br from-background to-muted/20 border-l-4 border-l-orange-500 shadow-sm transition-transform hover:scale-[1.01]">
-                                <CardHeader className="pb-1"><CardTitle className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Daily Floor Buffer</CardTitle></CardHeader>
+                            <Card className="bg-gradient-to-br from-background to-muted/20 border-l-4 border-l-orange-500 shadow-sm overflow-hidden">
+                                <CardHeader className="pb-1"><CardTitle className="text-[10px] uppercase tracking-widest text-muted-foreground font-black">Daily Buffer</CardTitle></CardHeader>
                                 <CardContent>
                                     <div className="text-4xl font-black tracking-tighter">${calculations.dailyLossRemaining.toFixed(0)}</div>
-                                    <p className="text-[10px] font-bold uppercase mt-1 opacity-50">Remaining capacity for today</p>
+                                    <div className="mt-2 flex items-center gap-2">
+                                        <Progress value={calculations.dailyProgress} className="h-1.5 flex-1" />
+                                        <div className="text-[10px] font-bold opacity-50">{calculations.dailyProgress.toFixed(0)}%</div>
+                                    </div>
                                 </CardContent>
                             </Card>
-                            <Card className="bg-gradient-to-br from-background to-muted/20 border-l-4 border-l-blue-500 shadow-sm transition-transform hover:scale-[1.01]">
-                                <CardHeader className="pb-1"><CardTitle className="text-xs uppercase tracking-widest text-muted-foreground font-bold">{phase === 'funded' ? 'Next Payout Goal' : 'Required to Pass'}</CardTitle></CardHeader>
+                            <Card className="bg-gradient-to-br from-background to-muted/20 border-l-4 border-l-blue-500 shadow-sm overflow-hidden">
+                                <CardHeader className="pb-1"><CardTitle className="text-[10px] uppercase tracking-widest text-muted-foreground font-black">{phase === 'funded' ? 'Payout Goal' : 'To Pass'}</CardTitle></CardHeader>
                                 <CardContent>
                                     <div className="text-4xl font-black tracking-tighter text-blue-600">${calculations.remainingProfit.toFixed(0)}</div>
-                                    <p className="text-[10px] font-bold uppercase mt-1 opacity-50">{phase === 'funded' ? 'Secure the bag' : `Target: ${profitTargetPercent}%`}</p>
+                                    <div className="mt-2 flex items-center gap-2">
+                                        <Progress value={Math.max(0, 100 - (calculations.remainingProfit / (accountSize * (profitTargetPercent / 100)) * 100))} className="h-1.5 flex-1 bg-blue-100" />
+                                        <div className="text-[10px] font-bold opacity-50">{phase === 'funded' ? 'SAFE' : 'PHASE'}</div>
+                                    </div>
                                 </CardContent>
                             </Card>
                         </div>
 
+                        {/* RESPONSIVE LOT SIZE CARD: MOBILE-FIRST FIXED */}
                         <Card className="bg-[#0f172a] text-white border-none shadow-2xl relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity"><Crown className="h-24 w-24 text-primary" /></div>
-                            <CardContent className="pt-10 pb-10">
-                                <div className="flex flex-col md:flex-row justify-between items-center gap-10">
-                                    <div>
-                                        <Badge className="bg-primary text-white border-none px-4 py-1 mb-4 text-[11px] font-bold">RECOMMENDED LOT SIZE</Badge>
-                                        <div className="text-[11rem] leading-[1] font-black tracking-tighter drop-shadow-2xl text-white">{calculations.suggestedLotSize.toFixed(2)}</div>
-                                        <div className="flex gap-8 mt-6">
-                                            <div className="flex flex-col"><span className="text-[11px] font-bold opacity-50 uppercase tracking-widest">Safe Risk</span><span className="text-2xl font-black">${calculations.safeRiskAmount.toFixed(0)}</span></div>
-                                            <div className="w-px h-12 bg-white/10" />
-                                            <div className="flex flex-col"><span className="text-[11px] font-bold opacity-50 uppercase tracking-widest">Asset Scale</span><span className="text-2xl font-black">{assetClass === 'gold' ? 'GOLD' : 'FOREX'}</span></div>
+                            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity"><Crown className="h-20 w-20 text-primary" /></div>
+                            <CardContent className="pt-8 pb-8 md:pt-12 md:pb-12 px-6 md:px-10">
+                                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
+                                    <div className="w-full">
+                                        <Badge className="bg-primary text-white border-none px-3 py-0.5 mb-4 text-[10px] font-black uppercase tracking-widest">Recommended Lot Size</Badge>
+                                        <div className="text-6xl sm:text-7xl md:text-8xl lg:text-[10rem] font-black leading-none tracking-tighter drop-shadow-2xl overflow-hidden text-ellipsis whitespace-nowrap">
+                                            {calculations.suggestedLotSize.toFixed(2)}
+                                        </div>
+                                        <div className="flex flex-wrap gap-8 mt-6 text-white/90">
+                                            <div className="flex flex-col"><span className="text-[10px] font-bold opacity-30 uppercase tracking-[0.2em]">Safe Risk</span><span className="text-xl md:text-2xl font-black">${calculations.safeRiskAmount.toFixed(0)}</span></div>
+                                            <div className="hidden sm:block w-px h-10 bg-white/10" />
+                                            <div className="flex flex-col"><span className="text-[10px] font-bold opacity-30 uppercase tracking-[0.2em]">Asset Class</span><span className="text-xl md:text-2xl font-black">{assetClass.toUpperCase()}</span></div>
                                         </div>
                                     </div>
-                                    <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[40px] border border-white/10 text-center min-w-[200px] shadow-2xl">
-                                        <p className="text-xs font-bold opacity-40 uppercase tracking-widest mb-2">Stop Loss</p>
-                                        <div className="text-[6rem] leading-[1] font-black">{stopLossPips}</div>
-                                        <p className="text-[11px] font-extrabold opacity-40 tracking-widest uppercase mt-2">Pips</p>
+                                    <div className="bg-white/5 backdrop-blur-md p-6 md:p-10 rounded-[32px] md:rounded-[48px] border border-white/10 text-center w-full lg:w-auto min-w-[180px] shadow-2xl shrink-0">
+                                        <p className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] mb-2 text-white/50">Stop Loss</p>
+                                        <div className="text-5xl md:text-7xl lg:text-[6rem] font-black leading-none">{stopLossPips}</div>
+                                        <p className="text-[11px] font-black opacity-30 uppercase tracking-[0.2em] mt-2 text-white/50">Pips</p>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <Tabs defaultValue="recovery" className="w-full">
+                        <Tabs defaultValue="rescue" className="w-full">
                             <TabsList className="w-full grid grid-cols-3 h-14 bg-muted/40 p-1.5 rounded-2xl">
-                                <TabsTrigger value="recovery" className="rounded-xl font-bold uppercase text-[10px] tracking-widest">Account Rescue</TabsTrigger>
-                                <TabsTrigger value="simulator" className="rounded-xl font-bold uppercase text-[10px] tracking-widest">Stress Test</TabsTrigger>
-                                <TabsTrigger value="roadmap" className="rounded-xl font-bold uppercase text-[10px] tracking-widest">Funding Roadmap</TabsTrigger>
+                                <TabsTrigger value="rescue" className="rounded-xl font-black uppercase text-[10px] tracking-widest">Account Rescue</TabsTrigger>
+                                <TabsTrigger value="simulator" className="rounded-xl font-black uppercase text-[10px] tracking-widest">Stress Test</TabsTrigger>
+                                <TabsTrigger value="roadmap" className="rounded-xl font-black uppercase text-[10px] tracking-widest">Roadmap</TabsTrigger>
                             </TabsList>
 
-                            <TabsContent value="recovery" className="mt-6">
-                                <Card className="bg-muted/10 border-none shadow-none">
-                                    <CardHeader className="pb-4"><CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-primary opacity-80"><Shield className="h-4 w-4" /> Account Rescue</CardTitle></CardHeader>
-                                    <CardContent className="space-y-6">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <Card className="bg-[#0c111d] border-none shadow-lg">
-                                                <CardContent className="p-8">
-                                                    <p className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] mb-4">To Breakeven</p>
-                                                    <div className="text-6xl font-black text-primary tracking-tighter">${(accountSize - currentBalance < 0 ? 0 : accountSize - currentBalance).toFixed(0)}</div>
-                                                </CardContent>
-                                            </Card>
-                                            <Card className="bg-[#0c111d] border-none shadow-lg">
-                                                <CardContent className="p-8">
-                                                    <p className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] mb-4 text-destructive">Breach Floor</p>
-                                                    <div className="text-6xl font-black text-destructive tracking-tighter">${calculations.totalLossRemaining.toFixed(0)}</div>
-                                                </CardContent>
-                                            </Card>
-                                        </div>
-
-                                        {currentBalance < accountSize && (
-                                            <Alert className="bg-[#0c111d] border-primary/20 p-6 rounded-[24px]">
-                                                <AlertTriangle className="h-5 w-5 text-primary" />
-                                                <AlertDescription className="text-sm font-medium opacity-80 pl-2 leading-relaxed">
-                                                    Strategy: Reduce risk to <strong>0.5%</strong>. You need precisely <strong>{Math.ceil((accountSize - currentBalance) / (calculations.safeRiskAmount * 1.5))}</strong> wins (at 1:1.5 RR) to reach breakeven safely.
-                                                </AlertDescription>
-                                            </Alert>
-                                        )}
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between items-center text-[10px] font-black opacity-40 uppercase tracking-widest"><span>Survival Health</span><span>{calculations.totalProgress.toFixed(1)}% Usage</span></div>
-                                            <Progress value={calculations.totalProgress} className="h-3 rounded-full" />
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                            <TabsContent value="rescue" className="mt-6">
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <Card className="bg-slate-900 border-none shadow-xl">
+                                            <CardContent className="p-8">
+                                                <p className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] mb-4 text-white/50">To Breakeven</p>
+                                                <div className="text-6xl font-black text-primary tracking-tighter">${(accountSize - currentBalance < 0 ? 0 : accountSize - currentBalance).toFixed(0)}</div>
+                                            </CardContent>
+                                        </Card>
+                                        <Card className="bg-slate-900 border-none shadow-xl">
+                                            <CardContent className="p-8">
+                                                <p className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] mb-4 text-destructive/50">Breach Floor</p>
+                                                <div className="text-6xl font-black text-destructive tracking-tighter">${calculations.totalLossRemaining.toFixed(0)}</div>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                    {currentBalance < accountSize && (
+                                        <Alert className="bg-slate-900/50 border-primary/20 p-6 rounded-[24px]">
+                                            <AlertCircle className="h-5 w-5 text-primary" />
+                                            <AlertDescription className="text-sm font-medium opacity-80 pl-2 leading-relaxed text-foreground">
+                                                Guardian Tip: You are in a recovery phase. Consider trading at 50% of your normal risk until account is back to breakeven.
+                                            </AlertDescription>
+                                        </Alert>
+                                    )}
+                                </div>
                             </TabsContent>
 
                             <TabsContent value="simulator" className="mt-6">
-                                <Card className="p-8 pt-4">
+                                <Card className="p-6 md:p-8 pt-4">
                                     <div className="flex justify-between items-center mb-10 pb-4 border-b">
-                                        <h3 className="text-md font-bold uppercase tracking-widest">Monte Carlo Survival Prediction</h3>
-                                        <Button size="sm" onClick={() => setIsSimulating(true)} disabled={isSimulating} className="h-9 px-8 font-black shadow-primary/20 shadow-xl">{isSimulating ? "..." : "Launch Test"}</Button>
+                                        <h3 className="text-sm font-black uppercase tracking-widest">Monte Carlo Strategy Stability</h3>
+                                        <Button size="sm" onClick={() => setIsSimulating(true)} disabled={isSimulating} className="h-9 px-6 font-black shadow-primary/20 shadow-xl">{isSimulating ? "..." : "Simulate"}</Button>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-                                        <div className="space-y-6">
-                                            <div className="p-5 bg-muted/40 rounded-3xl space-y-5 border">
-                                                <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest opacity-40">Win Rate %</Label><Input value={simWinRate} type="number" onChange={e => handleNumInput(e.target.value, setSimWinRate)} className="h-9 font-black" /></div>
-                                                <div className="space-y-2"><Label className="text-[10px] font-black uppercase tracking-widest opacity-40">Avg RR</Label><Input value={simRR} type="number" onChange={e => handleNumInput(e.target.value, setSimRR)} className="h-9 font-black" /></div>
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                                        <div className="space-y-4">
+                                            <div className="p-5 bg-muted/40 rounded-[28px] border space-y-5">
+                                                <div className="space-y-1"><Label className="text-[10px] font-black uppercase opacity-40">Win Rate</Label><Input value={simWinRate} type="number" onChange={e => handleNumInput(e.target.value, setSimWinRate)} className="h-9 font-black" /></div>
+                                                <div className="space-y-1"><Label className="text-[10px] font-black uppercase opacity-40">RR Ratio</Label><Input value={simRR} type="number" onChange={e => handleNumInput(e.target.value, setSimRR)} className="h-9 font-black" /></div>
                                             </div>
-                                            <p className="text-[10px] italic text-muted-foreground leading-snug">This predicts if your strategy can survive a 20-trade variance streak without hitting the breach floor.</p>
                                         </div>
-                                        <div className="md:col-span-3 border-l pl-8">
-                                            <div className="h-[200px] w-full"><ResponsiveContainer width="100%" height="100%"><LineChart data={simulationData}><CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.05} /><Line type="monotone" dataKey="run0" stroke="#8884d8" dot={false} strokeWidth={3} /><Line type="monotone" dataKey="run1" stroke="#82ca9d" dot={false} strokeWidth={1} style={{ opacity: 0.3 }} /></LineChart></ResponsiveContainer></div>
+                                        <div className="md:col-span-3">
+                                            <div className="h-[200px] w-full"><ResponsiveContainer width="100%" height="100%"><LineChart data={simulationData}><CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.05} /><Line type="monotone" dataKey="run0" stroke="#10b981" dot={false} strokeWidth={3} /><Line type="monotone" dataKey="run1" stroke="#3b82f6" dot={false} strokeWidth={1} style={{ opacity: 0.3 }} /></LineChart></ResponsiveContainer></div>
                                         </div>
                                     </div>
                                 </Card>
                             </TabsContent>
 
                             <TabsContent value="roadmap" className="mt-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <Card className="bg-slate-900 border-none shadow-xl border-t-4 border-t-green-500 overflow-hidden">
-                                        <CardHeader><CardTitle className="text-xs font-black uppercase tracking-widest text-green-500">Pass Projection</CardTitle></CardHeader>
-                                        <CardContent className="space-y-8 p-8">
-                                            <div>
-                                                <p className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] mb-2 text-white">Estimated Trades to Target</p>
-                                                <div className="text-8xl font-black text-white tracking-tighter">{calculations.tradesToTarget === Infinity ? "???" : calculations.tradesToTarget}</div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-foreground">
+                                    <Card className="bg-slate-900 border-none shadow-2xl border-t-4 border-t-primary overflow-hidden">
+                                        <CardHeader><CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-white/40">Efficiency Projection</CardTitle></CardHeader>
+                                        <CardContent className="p-8 pt-0">
+                                            <div className="text-7xl md:text-8xl font-black text-white tracking-tighter leading-none mb-6">
+                                                {calculations.tradesToTarget === Infinity ? "???" : calculations.tradesToTarget}
+                                                <span className="text-xl font-bold ml-2 opacity-30 tracking-widest uppercase italic">Trades</span>
                                             </div>
-                                            <div className="space-y-4">
-                                                <div className="flex justify-between items-center text-[11px] text-white border-b border-white/5 pb-2"><span>Status</span><Badge className="bg-green-500 text-white font-bold">{phase === 'phase1' ? 'Phase 1' : phase === 'phase2' ? 'Phase 2' : 'Funded'}</Badge></div>
-                                                <div className="flex justify-between items-center text-[11px] text-white border-b border-white/5 pb-2"><span>Win Prob</span><span className="font-bold">{simWinRate}%</span></div>
-                                                <p className="text-[9px] opacity-40 text-white italic">Note: These numbers assume constant risk and zero revenge trading behavior.</p>
+                                            <div className="flex gap-4 flex-wrap">
+                                                <Badge className="bg-primary/20 text-primary border-none font-black">{simWinRate}% WinRate</Badge>
+                                                <Badge className="bg-blue-500/20 text-blue-400 border-none font-black">{phase.toUpperCase()}</Badge>
                                             </div>
                                         </CardContent>
                                     </Card>
-                                    <Card className="bg-muted/10 border-none p-8 flex flex-col justify-center gap-6">
-                                        <div className="flex items-center gap-4"><Crown className="h-6 w-6 text-primary" /><p className="text-sm font-bold leading-tight">Elite traders don't hit "Payouts" by luck, they hit them by math. Stick to the roadmap.</p></div>
-                                        <div className="space-y-2">
-                                            <Label className="text-[10px] font-black uppercase opacity-40">Distance to {phase === 'funded' ? 'Payout' : 'Funding'}</Label>
-                                            <Progress value={100 - (calculations.remainingProfit / (accountSize * (profitTargetPercent / 100)) * 100)} className="h-4 rounded-xl" />
+                                    <Card className="bg-muted/10 border-none p-8 flex flex-col justify-center gap-4">
+                                        <div className="flex items-center gap-3"><MessageSquare className="h-5 w-5 text-primary opacity-50" /><p className="text-sm font-bold opacity-80 leading-relaxed italic">"Risk is not a variable, it is a constant. Discipline is your only edge."</p></div>
+                                        <div className="space-y-2 mt-4">
+                                            <Label className="text-[10px] font-black uppercase opacity-30 tracking-[0.15em]">Phase Progress</Label>
+                                            <Progress value={100 - (calculations.remainingProfit / (accountSize * (profitTargetPercent / 100)) * 100)} className="h-2 rounded-full" />
                                         </div>
                                     </Card>
                                 </div>
