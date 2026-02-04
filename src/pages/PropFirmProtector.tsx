@@ -378,7 +378,7 @@ const PropFirmProtector = () => {
                                     <Card className="bg-muted/10 border-none p-8 flex flex-col justify-center gap-6">
                                         <div className="flex items-center gap-4"><Crown className="h-6 w-6 text-primary" /><p className="text-sm font-bold leading-tight">Elite traders don't hit "Payouts" by luck, they hit them by math. Stick to the roadmap.</p></div>
                                         <div className="space-y-2">
-                                            <Label className="text-[10px] font-black uppercase opacity-40">Distance to {phase === 'funded' ? 'Payout' : 'Funding'}</Badge>
+                                            <Label className="text-[10px] font-black uppercase opacity-40">Distance to {phase === 'funded' ? 'Payout' : 'Funding'}</Label>
                                             <Progress value={100 - (calculations.remainingProfit / (accountSize * (profitTargetPercent / 100)) * 100)} className="h-4 rounded-xl" />
                                         </div>
                                     </Card>
