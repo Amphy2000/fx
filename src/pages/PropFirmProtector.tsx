@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Target, Activity, Zap, Settings2, TrendingUp, Plus, Copy, CheckCircle2, Fingerprint, Scale, AlertTriangle, Brain, TrendingDown, Trophy } from "lucide-react";
+import { Shield, Target, Activity, Zap, Settings2, TrendingUp, Plus, Copy, CheckCircle2, Fingerprint, Scale, AlertTriangle, Brain, TrendingDown, Trophy, Bell, DollarSign, Map, BookOpen, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,21 @@ import { ChallengePhaseTracker } from "@/components/prop-firm/ChallengePhaseTrac
 import { BreachSimulator } from "@/components/prop-firm/BreachSimulator";
 import { EmotionalRiskIntegration } from "@/components/prop-firm/EmotionalRiskIntegration";
 import { PreTradeCheckpoint } from "@/components/prop-firm/PreTradeCheckpoint";
+import { BreachAlerts } from "@/components/prop-firm/BreachAlerts";
+import { PayoutCalculator } from "@/components/prop-firm/PayoutCalculator";
+import { RecoveryRoadmap } from "@/components/prop-firm/RecoveryRoadmap";
+import { TradeJournalSync } from "@/components/prop-firm/TradeJournalSync";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const PROP_FIRM_PRESETS = {
   custom: { name: "Custom", dailyDD: 5, totalDD: 10 },
@@ -191,9 +206,57 @@ const PropFirmProtector = () => {
           </div>
           <div className="flex bg-muted/30 p-1 rounded-xl border items-center gap-1 overflow-x-auto max-w-full">
             {accountNames.map((n, i) => (
-              <Button key={i} variant={currentAccountSlot === i ? "default" : "ghost"} size="sm" onClick={() => setCurrentAccountSlot(i)} className="h-8 px-4 text-[10px] font-bold uppercase rounded-lg">
-                {n}
-              </Button>
+              <div key={i} className="relative group">
+                <Button 
+                  variant={currentAccountSlot === i ? "default" : "ghost"} 
+                  size="sm" 
+                  onClick={() => setCurrentAccountSlot(i)} 
+                  className="h-8 px-4 text-[10px] font-bold uppercase rounded-lg pr-8"
+                >
+                  {n}
+                </Button>
+                {accountNames.length > 1 && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute right-0 top-0 h-8 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete "{n}"?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete this account and all its settings. This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => {
+                            const newNames = accountNames.filter((_, idx) => idx !== i);
+                            setAccountNames(newNames);
+                            localStorage.removeItem(`account_slot_${i}`);
+                            if (currentAccountSlot >= newNames.length) {
+                              setCurrentAccountSlot(Math.max(0, newNames.length - 1));
+                            } else if (currentAccountSlot === i) {
+                              setCurrentAccountSlot(0);
+                            }
+                            toast.success(`"${n}" deleted successfully`);
+                          }}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
             ))}
             <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => { const n = prompt("Account Name:"); if (n) setAccountNames([...accountNames, n]); }}><Plus className="h-4 w-4" /></Button>
           </div>
@@ -314,21 +377,79 @@ const PropFirmProtector = () => {
             </div>
 
             {/* Tabs with New Features */}
-            <Tabs defaultValue="challenge" className="w-full">
-              <TabsList className="w-full grid grid-cols-4 h-14 bg-muted/40 p-1.5 rounded-2xl border border-border/40">
-                <TabsTrigger value="challenge" className="rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                  <Trophy className="h-3.5 w-3.5" /> Challenge
+            <Tabs defaultValue="alerts" className="w-full">
+              <TabsList className="w-full grid grid-cols-4 lg:grid-cols-8 h-auto gap-1 bg-muted/40 p-1.5 rounded-2xl border border-border/40">
+                <TabsTrigger value="alerts" className="rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1 py-2">
+                  <Bell className="h-3 w-3" /> Alerts
                 </TabsTrigger>
-                <TabsTrigger value="simulator" className="rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                  <TrendingDown className="h-3.5 w-3.5" /> Simulator
+                <TabsTrigger value="payout" className="rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1 py-2">
+                  <DollarSign className="h-3 w-3" /> Payout
                 </TabsTrigger>
-                <TabsTrigger value="emotional" className="rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                  <Brain className="h-3.5 w-3.5" /> Mental
+                <TabsTrigger value="roadmap" className="rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1 py-2">
+                  <Map className="h-3 w-3" /> Recovery
                 </TabsTrigger>
-                <TabsTrigger value="rescue" className="rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                  <Scale className="h-3.5 w-3.5" /> Rescue
+                <TabsTrigger value="journal" className="rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1 py-2">
+                  <BookOpen className="h-3 w-3" /> Journal
+                </TabsTrigger>
+                <TabsTrigger value="challenge" className="rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1 py-2">
+                  <Trophy className="h-3 w-3" /> Challenge
+                </TabsTrigger>
+                <TabsTrigger value="simulator" className="rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1 py-2">
+                  <TrendingDown className="h-3 w-3" /> Simulate
+                </TabsTrigger>
+                <TabsTrigger value="emotional" className="rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1 py-2">
+                  <Brain className="h-3 w-3" /> Mental
+                </TabsTrigger>
+                <TabsTrigger value="rescue" className="rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1 py-2">
+                  <Scale className="h-3 w-3" /> Rescue
                 </TabsTrigger>
               </TabsList>
+
+              <TabsContent value="alerts" className="mt-6">
+                <BreachAlerts
+                  dailyUsedPercent={calcs.dailyProg}
+                  totalUsedPercent={Math.max(0, 100 - (calcs.totalRemaining / (accountSize * maxTotalDrawdown / 100)) * 100)}
+                  dailyRemaining={calcs.dailyRemaining}
+                  totalRemaining={calcs.totalRemaining}
+                  accountName={accountNames[currentAccountSlot]}
+                />
+              </TabsContent>
+
+              <TabsContent value="payout" className="mt-6">
+                <PayoutCalculator
+                  accountSize={accountSize}
+                  currentBalance={currentBalance}
+                  profitTargetPercent={profitTargetPercent}
+                  propFirm={selectedFirm}
+                />
+              </TabsContent>
+
+              <TabsContent value="roadmap" className="mt-6">
+                <RecoveryRoadmap
+                  accountSize={accountSize}
+                  currentBalance={currentBalance}
+                  maxDailyDrawdown={maxDailyDrawdown}
+                  maxTotalDrawdown={maxTotalDrawdown}
+                  riskPerTrade={riskPerTrade}
+                />
+              </TabsContent>
+
+              <TabsContent value="journal" className="mt-6">
+                {userId ? (
+                  <TradeJournalSync
+                    userId={userId}
+                    accountSize={accountSize}
+                    maxDailyDrawdown={maxDailyDrawdown}
+                    maxTotalDrawdown={maxTotalDrawdown}
+                    currentBalance={currentBalance}
+                  />
+                ) : (
+                  <Card className="p-8 text-center bg-slate-900 border-none rounded-3xl">
+                    <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">Sign in to sync your trade journal</p>
+                  </Card>
+                )}
+              </TabsContent>
 
               <TabsContent value="challenge" className="mt-6">
                 <ChallengePhaseTracker
