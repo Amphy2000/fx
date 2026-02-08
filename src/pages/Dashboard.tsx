@@ -57,6 +57,7 @@ const Dashboard = () => {
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [showQuickCheckIn, setShowQuickCheckIn] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const [hidePnL, setHidePnL] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
@@ -470,14 +471,18 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className={`premium-card bg-gradient-to-br ${stats.totalPnL >= 0 ? 'from-success/10 border-success/30' : 'from-destructive/10 border-destructive/30'}`}>
+        <Card className={`premium-card bg-gradient-to-br ${hidePnL ? 'from-muted/10 border-muted/30' : stats.totalPnL >= 0 ? 'from-success/10 border-success/30' : 'from-destructive/10 border-destructive/30'}`}>
           <CardContent className="p-2 md:p-3">
             <div className="flex items-center justify-between gap-1">
               <div className="min-w-0 flex-1">
                 <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">P/L</p>
-                <p className={`text-xs md:text-base lg:text-lg font-bold ${stats.totalPnL >= 0 ? 'text-gradient-success' : 'text-destructive'} break-all`}>
-                  ${stats.totalPnL >= 0 ? '+' : ''}{stats.totalPnL.toLocaleString()}
-                </p>
+                {hidePnL ? (
+                  <p className="text-xs md:text-base lg:text-lg font-bold text-muted-foreground">•••••</p>
+                ) : (
+                  <p className={`text-xs md:text-base lg:text-lg font-bold ${stats.totalPnL >= 0 ? 'text-gradient-success' : 'text-destructive'} break-all`}>
+                    ${stats.totalPnL >= 0 ? '+' : ''}{stats.totalPnL.toLocaleString()}
+                  </p>
+                )}
               </div>
               {stats.totalPnL >= 0 ? <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-success opacity-50 flex-shrink-0" /> : <TrendingDown className="h-4 w-4 md:h-5 md:w-5 text-destructive opacity-50 flex-shrink-0" />}
             </div>
@@ -504,28 +509,36 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="premium-card bg-gradient-to-br from-success/10 border-success/30">
+        <Card className={`premium-card bg-gradient-to-br ${hidePnL ? 'from-muted/10 border-muted/30' : 'from-success/10 border-success/30'}`}>
           <CardContent className="p-2 md:p-3">
             <div className="flex items-center justify-between gap-1">
               <div className="min-w-0 flex-1">
                 <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">Best</p>
-                <p className="text-xs md:text-base lg:text-lg font-bold text-gradient-success break-all">
-                  +${stats.bestTrade.toLocaleString()}
-                </p>
+                {hidePnL ? (
+                  <p className="text-xs md:text-base lg:text-lg font-bold text-muted-foreground">•••••</p>
+                ) : (
+                  <p className="text-xs md:text-base lg:text-lg font-bold text-gradient-success break-all">
+                    +${stats.bestTrade.toLocaleString()}
+                  </p>
+                )}
               </div>
               <Target className="h-4 w-4 md:h-5 md:w-5 text-success opacity-50 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="premium-card bg-gradient-to-br from-destructive/10 border-destructive/30">
+        <Card className={`premium-card bg-gradient-to-br ${hidePnL ? 'from-muted/10 border-muted/30' : 'from-destructive/10 border-destructive/30'}`}>
           <CardContent className="p-2 md:p-3">
             <div className="flex items-center justify-between gap-1">
               <div className="min-w-0 flex-1">
                 <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">Worst</p>
-                <p className="text-xs md:text-base lg:text-lg font-bold text-destructive break-all">
-                  ${stats.worstTrade.toLocaleString()}
-                </p>
+                {hidePnL ? (
+                  <p className="text-xs md:text-base lg:text-lg font-bold text-muted-foreground">•••••</p>
+                ) : (
+                  <p className="text-xs md:text-base lg:text-lg font-bold text-destructive break-all">
+                    ${stats.worstTrade.toLocaleString()}
+                  </p>
+                )}
               </div>
               <TrendingDown className="h-4 w-4 md:h-5 md:w-5 text-destructive opacity-50 flex-shrink-0" />
             </div>
@@ -560,7 +573,7 @@ const Dashboard = () => {
           className="touch-pan-y w-full"
         >
           <TabsContent value="overview" className="space-y-4 md:space-y-6 mt-4 md:mt-6 animate-fade-in w-full">
-            {user && <DrawdownRecoveryBanner userId={user.id} trades={trades} />}
+            {user && <DrawdownRecoveryBanner userId={user.id} trades={trades} hidePnL={hidePnL} onHidePnLChange={setHidePnL} />}
             {profile && <SubscriptionBanner profile={profile} />}
             <PsychologyFirstBanner />
             <FreeTierLimitWarning />
