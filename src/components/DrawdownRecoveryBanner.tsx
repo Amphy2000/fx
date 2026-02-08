@@ -21,6 +21,8 @@ interface DrawdownRecoveryBannerProps {
   userId: string;
   trades: any[];
   onExitRecovery?: () => void;
+  onHidePnLChange?: (hidden: boolean) => void;
+  hidePnL?: boolean;
 }
 
 interface RecoveryStats {
@@ -38,11 +40,22 @@ interface RecoveryStats {
 export const DrawdownRecoveryBanner = ({ 
   userId, 
   trades, 
-  onExitRecovery 
+  onExitRecovery,
+  onHidePnLChange,
+  hidePnL: externalHidePnL
 }: DrawdownRecoveryBannerProps) => {
   const [stats, setStats] = useState<RecoveryStats | null>(null);
-  const [hidePnL, setHidePnL] = useState(true);
+  const [internalHidePnL, setInternalHidePnL] = useState(true);
   const [dismissed, setDismissed] = useState(false);
+
+  // Use external state if provided, otherwise use internal state
+  const hidePnL = externalHidePnL !== undefined ? externalHidePnL : internalHidePnL;
+  
+  const handleHidePnLToggle = () => {
+    const newValue = !hidePnL;
+    setInternalHidePnL(newValue);
+    onHidePnLChange?.(newValue);
+  };
 
   useEffect(() => {
     calculateRecoveryStats();
@@ -303,7 +316,7 @@ export const DrawdownRecoveryBanner = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setHidePnL(!hidePnL)}
+                onClick={handleHidePnLToggle}
                 className="text-xs"
               >
                 {hidePnL ? (
