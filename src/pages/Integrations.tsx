@@ -306,35 +306,24 @@ const Integrations = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto p-6 max-w-4xl">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Integrations</h1>
-          <p className="text-muted-foreground">Connect your MT5 account or upload trade reports for automatic journaling</p>
+      <div className="container mx-auto p-6 max-w-4xl space-y-6">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold text-foreground">MT5 Auto-Sync</h1>
+          <p className="text-muted-foreground">Your fastest path to a sticky trading journal: connect once, sync automatically, review with discipline.</p>
         </div>
 
-        {/* Upgrade Banner after 3+ uploads */}
         {showUpgradeBanner && (
-          <Alert className="mb-6 border-primary/50 bg-gradient-to-r from-primary/10 to-amber-500/10">
+          <Alert className="border-primary/50 bg-gradient-to-r from-primary/10 to-accent/10">
             <Crown className="h-5 w-5 text-primary" />
-            <AlertDescription className="flex items-center justify-between">
+            <AlertDescription className="flex items-center justify-between gap-4">
               <div className="flex-1">
-                <p className="font-semibold text-foreground mb-1">
-                  ⏱️ You've manually uploaded {manualUploadCount}+ times
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Save hours with MT5 Auto-Sync - just $4.99/month. Your trades sync automatically every hour.
-                </p>
+                <p className="font-semibold text-foreground mb-1">You've manually uploaded {manualUploadCount}+ times</p>
+                <p className="text-sm text-muted-foreground">Switch to MT5 Auto-Sync so trades flow in automatically and you stay focused on execution.</p>
               </div>
-              <div className="flex items-center gap-2 ml-4">
-                <Button 
-                  size="sm" 
-                  onClick={() => navigate("/mt5-setup")}
-                  className="bg-primary hover:bg-primary/90"
-                >
-                  Upgrade to Auto-Sync
-                </Button>
-                <Button 
-                  size="sm" 
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={() => navigate("/integrations/mt5-setup")}>See 5-minute setup</Button>
+                <Button
+                  size="sm"
                   variant="ghost"
                   onClick={() => {
                     setShowUpgradeBanner(false);
@@ -348,45 +337,59 @@ const Integrations = () => {
           </Alert>
         )}
 
-        {/* MT5 Auto-Sync Section */}
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <TrendingUp className="h-6 w-6 text-primary" />
+              <div>
+                <CardTitle>Recommended operating mode</CardTitle>
+                <CardDescription>Use auto-sync as your default workflow; keep manual import only as backup.</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-xl border border-border bg-muted/20 p-4">
+              <p className="text-sm font-semibold text-foreground">1. Connect MT5</p>
+              <p className="text-sm text-muted-foreground mt-1">Add account number, broker, server, and investor password once.</p>
+            </div>
+            <div className="rounded-xl border border-border bg-muted/20 p-4">
+              <p className="text-sm font-semibold text-foreground">2. Let trades sync</p>
+              <p className="text-sm text-muted-foreground mt-1">Closed trades import automatically so journaling happens without friction.</p>
+            </div>
+            <div className="rounded-xl border border-border bg-muted/20 p-4">
+              <p className="text-sm font-semibold text-foreground">3. Review discipline</p>
+              <p className="text-sm text-muted-foreground mt-1">Use Prop Firm Protector and summaries to stay inside your rules.</p>
+            </div>
+          </CardContent>
+        </Card>
+
         <MT5IntegrationCard />
 
-        <Separator className="my-6" />
-
-        {/* Sync History */}
         {mt5Accounts.length > 0 && (
           <>
+            <Separator />
             <MT5SyncLogs />
-            <Separator className="my-6" />
           </>
         )}
 
-        {/* Manual Upload Section */}
+        <Separator />
+
         <Card className="border-border">
           <CardHeader>
             <div className="flex items-center gap-3">
               <Upload className="h-6 w-6 text-primary" />
               <div>
-                <CardTitle className="text-foreground">Manual Trade Import</CardTitle>
-                <CardDescription>
-                  Upload your MT5 trade report (.csv or .html) to import trades
-                </CardDescription>
+                <CardTitle>Backup: Manual Trade Import</CardTitle>
+                <CardDescription>Only use this when you cannot connect MT5 yet.</CardDescription>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
-              💡 <span>Pro tip: Upgrade to <Button variant="link" className="h-auto p-0 text-xs font-medium text-primary" onClick={() => navigate("/mt5-setup")}>MT5 Auto-Sync</Button> and never manually upload again</span>
-            </p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
               <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
               <Label htmlFor="file-upload" className="cursor-pointer">
-                <span className="text-foreground font-medium hover:text-primary transition-colors">
-                  Choose file or drag and drop
-                </span>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Supported formats: .csv, .html
-                </p>
+                <span className="text-foreground font-medium hover:text-primary transition-colors">Choose MT5 report</span>
+                <p className="text-sm text-muted-foreground mt-1">Supported formats: .csv, .html</p>
               </Label>
               <Input
                 id="file-upload"
@@ -405,12 +408,11 @@ const Integrations = () => {
             </div>
 
             <div className="text-xs text-muted-foreground bg-muted/30 p-3 rounded space-y-2">
-              <p><strong>How to export from MT5:</strong></p>
+              <p><strong>Export from MT5:</strong></p>
               <ol className="list-decimal list-inside space-y-1 ml-2">
-                <li>Open MT5 Terminal</li>
-                <li>Go to "Account History" tab</li>
-                <li>Right-click → "Save as Report"</li>
-                <li>Choose HTML or CSV format</li>
+                <li>Open Account History</li>
+                <li>Right-click and choose Save as Report</li>
+                <li>Export HTML or CSV</li>
                 <li>Upload the file here</li>
               </ol>
             </div>

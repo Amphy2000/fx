@@ -376,32 +376,19 @@ const PropFirmProtector = () => {
               </Card>
             </div>
 
-            {/* Tabs with New Features */}
             <Tabs defaultValue="alerts" className="w-full">
-              <TabsList className="w-full grid grid-cols-4 lg:grid-cols-8 h-auto gap-1 bg-muted/40 p-1.5 rounded-2xl border border-border/40">
+              <TabsList className="w-full grid grid-cols-2 lg:grid-cols-4 h-auto gap-1 bg-muted/40 p-1.5 rounded-2xl border border-border/40">
                 <TabsTrigger value="alerts" className="rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1 py-2">
                   <Bell className="h-3 w-3" /> Alerts
                 </TabsTrigger>
-                <TabsTrigger value="payout" className="rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1 py-2">
-                  <DollarSign className="h-3 w-3" /> Payout
-                </TabsTrigger>
-                <TabsTrigger value="roadmap" className="rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1 py-2">
-                  <Map className="h-3 w-3" /> Recovery
-                </TabsTrigger>
                 <TabsTrigger value="journal" className="rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1 py-2">
-                  <BookOpen className="h-3 w-3" /> Journal
+                  <BookOpen className="h-3 w-3" /> Journal Sync
                 </TabsTrigger>
                 <TabsTrigger value="challenge" className="rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1 py-2">
                   <Trophy className="h-3 w-3" /> Challenge
                 </TabsTrigger>
-                <TabsTrigger value="simulator" className="rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1 py-2">
-                  <TrendingDown className="h-3 w-3" /> Simulate
-                </TabsTrigger>
-                <TabsTrigger value="emotional" className="rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1 py-2">
-                  <Brain className="h-3 w-3" /> Mental
-                </TabsTrigger>
-                <TabsTrigger value="rescue" className="rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1 py-2">
-                  <Scale className="h-3 w-3" /> Rescue
+                <TabsTrigger value="recovery" className="rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1 py-2">
+                  <Scale className="h-3 w-3" /> Recovery
                 </TabsTrigger>
               </TabsList>
 
@@ -412,25 +399,6 @@ const PropFirmProtector = () => {
                   dailyRemaining={calcs.dailyRemaining}
                   totalRemaining={calcs.totalRemaining}
                   accountName={accountNames[currentAccountSlot]}
-                />
-              </TabsContent>
-
-              <TabsContent value="payout" className="mt-6">
-                <PayoutCalculator
-                  accountSize={accountSize}
-                  currentBalance={currentBalance}
-                  profitTargetPercent={profitTargetPercent}
-                  propFirm={selectedFirm}
-                />
-              </TabsContent>
-
-              <TabsContent value="roadmap" className="mt-6">
-                <RecoveryRoadmap
-                  accountSize={accountSize}
-                  currentBalance={currentBalance}
-                  maxDailyDrawdown={maxDailyDrawdown}
-                  maxTotalDrawdown={maxTotalDrawdown}
-                  riskPerTrade={riskPerTrade}
                 />
               </TabsContent>
 
@@ -460,89 +428,14 @@ const PropFirmProtector = () => {
                 />
               </TabsContent>
 
-              <TabsContent value="simulator" className="mt-6">
-                <BreachSimulator
+              <TabsContent value="recovery" className="mt-6">
+                <RecoveryRoadmap
                   accountSize={accountSize}
                   currentBalance={currentBalance}
                   maxDailyDrawdown={maxDailyDrawdown}
                   maxTotalDrawdown={maxTotalDrawdown}
                   riskPerTrade={riskPerTrade}
-                  stopLossPips={stopLossPips}
-                  suggestedLots={calcs.suggestedLots}
                 />
-              </TabsContent>
-
-              <TabsContent value="emotional" className="mt-6">
-                {userId ? (
-                  <EmotionalRiskIntegration
-                    userId={userId}
-                    currentRiskPercent={riskPerTrade}
-                    onRiskAdjustment={handleRiskAdjustment}
-                  />
-                ) : (
-                  <Card className="p-8 text-center bg-slate-900 border-none rounded-3xl">
-                    <Brain className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">Sign in to access mental state analysis</p>
-                  </Card>
-                )}
-              </TabsContent>
-
-              <TabsContent value="rescue" className="mt-6">
-                <Card className="bg-slate-950 border-none rounded-[32px] p-10 overflow-hidden relative">
-                  <div className="absolute top-0 right-0 p-10 opacity-[0.02] rotate-[-15deg]"><Scale className="h-48 w-48 text-white" /></div>
-                  <div className="max-w-2xl space-y-6 relative z-10">
-                    <Badge className={`${currentBalance < accountSize ? 'bg-destructive/10 text-destructive border-destructive/20' : 'bg-green-500/10 text-green-400 border-green-500/20'} text-[10px] px-3 font-black`}>
-                      {currentBalance < accountSize ? 'RECOVERY MODE ACTIVE' : 'NO RECOVERY NEEDED'}
-                    </Badge>
-                    <h2 className="text-4xl font-black text-white tracking-tighter">
-                      {currentBalance < accountSize ? 'Strategic Recovery' : 'Account Healthy'}
-                    </h2>
-                    
-                    {currentBalance < accountSize ? (
-                      <>
-                        <p className="text-white/40 font-medium leading-relaxed">
-                          You're ${(accountSize - currentBalance).toFixed(0)} below starting balance. Follow recovery protocol.
-                        </p>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
-                          <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
-                            <p className="text-[10px] font-black opacity-30 uppercase text-white mb-2">Gap</p>
-                            <p className="text-2xl font-black text-red-400">${(accountSize - currentBalance).toFixed(0)}</p>
-                          </div>
-                          <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
-                            <p className="text-[10px] font-black opacity-30 uppercase text-white mb-2">Safe Risk</p>
-                            <p className="text-2xl font-black text-amber-400">0.5%</p>
-                          </div>
-                          <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
-                            <p className="text-[10px] font-black opacity-30 uppercase text-white mb-2">Recovery Trades</p>
-                            <p className="text-2xl font-black text-primary">
-                              {Math.ceil((accountSize - currentBalance) / (calcs.safeRisk * 2))}
-                            </p>
-                          </div>
-                          <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
-                            <p className="text-[10px] font-black opacity-30 uppercase text-white mb-2">Target RR</p>
-                            <p className="text-2xl font-black text-green-400">1:2</p>
-                          </div>
-                        </div>
-                        <div className="p-4 bg-amber-500/10 rounded-xl border border-amber-500/20">
-                          <p className="text-[10px] font-black uppercase text-amber-400 mb-2">Recovery Protocol</p>
-                          <ul className="text-sm text-amber-400/80 space-y-1">
-                            <li>• Risk max 0.5% per trade (half normal size)</li>
-                            <li>• Only A+ setups - no revenge trades</li>
-                            <li>• Take profits at 1:2 minimum</li>
-                            <li>• Complete daily check-in before trading</li>
-                          </ul>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="p-6 bg-green-500/10 rounded-xl border border-green-500/20">
-                        <CheckCircle2 className="h-8 w-8 text-green-400 mb-3" />
-                        <p className="text-green-400">
-                          Your account is at or above starting balance. Keep up the good work!
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </Card>
               </TabsContent>
             </Tabs>
           </main>
