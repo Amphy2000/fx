@@ -12,7 +12,6 @@ import { UpgradePrompt } from "@/components/UpgradePrompt";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function MT5Setup() {
-  const [videoUrl, setVideoUrl] = useState("");
   const [isPaidUser, setIsPaidUser] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 

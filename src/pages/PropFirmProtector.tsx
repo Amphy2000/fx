@@ -8,16 +8,13 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Target, Activity, Zap, Settings2, TrendingUp, Plus, Copy, CheckCircle2, Fingerprint, Scale, AlertTriangle, Brain, TrendingDown, Trophy, Bell, DollarSign, Map, BookOpen, Trash2 } from "lucide-react";
+import { Shield, Settings2, Plus, Copy, CheckCircle2, Fingerprint, Scale, Trophy, Bell, BookOpen, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { ChallengePhaseTracker } from "@/components/prop-firm/ChallengePhaseTracker";
-import { BreachSimulator } from "@/components/prop-firm/BreachSimulator";
-import { EmotionalRiskIntegration } from "@/components/prop-firm/EmotionalRiskIntegration";
 import { PreTradeCheckpoint } from "@/components/prop-firm/PreTradeCheckpoint";
 import { BreachAlerts } from "@/components/prop-firm/BreachAlerts";
-import { PayoutCalculator } from "@/components/prop-firm/PayoutCalculator";
 import { RecoveryRoadmap } from "@/components/prop-firm/RecoveryRoadmap";
 import { TradeJournalSync } from "@/components/prop-firm/TradeJournalSync";
 import {
