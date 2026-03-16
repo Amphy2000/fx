@@ -1,11 +1,9 @@
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Download, Settings, Play, CheckCircle, FolderOpen, Upload, Link2, TestTube, Zap, AlertTriangle } from "lucide-react";
+import { Download, Settings, CheckCircle, TestTube, Zap, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MT5SetupWizard } from "@/components/MT5SetupWizard";
@@ -14,7 +12,6 @@ import { UpgradePrompt } from "@/components/UpgradePrompt";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function MT5Setup() {
-  const [videoUrl, setVideoUrl] = useState("");
   const [isPaidUser, setIsPaidUser] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -121,35 +118,27 @@ export default function MT5Setup() {
   return (
     <Layout>
       <div className="container mx-auto py-8 space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">MT5 Auto-Sync Setup Guide</h1>
-          <p className="text-muted-foreground">
-            One-time 5-minute setup for automatic trade synchronization
-          </p>
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold">MT5 setup</h1>
+          <p className="text-muted-foreground">One focused job: get your trades syncing automatically so the journal becomes effortless to keep using.</p>
         </div>
 
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            <strong>Important:</strong> Make sure you've connected your MT5 account in the{" "}
-            <a href="/integrations" className="underline font-semibold">Integrations page</a> first.
+            <strong>First:</strong> connect your account on the <a href="/integrations" className="underline font-semibold">MT5 Auto-Sync page</a>, then finish the terminal setup here.
           </AlertDescription>
         </Alert>
 
-        {/* Setup Options */}
         <Tabs defaultValue="wizard" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="wizard" className="flex items-center gap-2">
               <Zap className="h-4 w-4" />
-              Interactive Wizard
-            </TabsTrigger>
-            <TabsTrigger value="video" className="flex items-center gap-2">
-              <Play className="h-4 w-4" />
-              Video Guide
+              Fast setup
             </TabsTrigger>
             <TabsTrigger value="detailed" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
-              Detailed Steps
+              Detailed steps
             </TabsTrigger>
           </TabsList>
 
@@ -157,63 +146,13 @@ export default function MT5Setup() {
             <MT5SetupWizard />
           </TabsContent>
 
-          <TabsContent value="video" className="mt-6">
-            <Card className="border-2 border-primary">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Play className="h-5 w-5" />
-                  Video Tutorial
-                </CardTitle>
-                <CardDescription>
-                  Watch this step-by-step video guide for visual learners
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {videoUrl ? (
-                  <div className="aspect-video w-full bg-muted rounded-lg overflow-hidden">
-                    <iframe
-                      src={videoUrl}
-                      className="w-full h-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  </div>
-                ) : (
-                  <div className="aspect-video w-full bg-muted rounded-lg flex flex-col items-center justify-center gap-4">
-                    <Play className="h-16 w-16 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Video tutorial coming soon</p>
-                    <div className="space-y-2 w-full max-w-md px-4">
-                      <Label htmlFor="videoUrl" className="text-xs">Admin: Paste YouTube/Loom URL</Label>
-                      <Input
-                        id="videoUrl"
-                        placeholder="https://youtube.com/watch?v=..."
-                        onChange={(e) => {
-                          const url = e.target.value;
-                          if (url.includes('youtube.com') || url.includes('youtu.be')) {
-                            const videoId = url.split('v=')[1]?.split('&')[0] || url.split('/').pop();
-                            setVideoUrl(`https://www.youtube.com/embed/${videoId}`);
-                          } else if (url.includes('loom.com')) {
-                            setVideoUrl(url.replace('share', 'embed'));
-                          }
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           <TabsContent value="detailed" className="mt-6 space-y-6">
-            {/* Progress Indicator */}
             <Card>
               <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3 overflow-x-auto">
                   {[1, 2, 3, 4, 5].map((step) => (
-                    <div key={step} className="flex flex-col items-center gap-2">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center font-semibold text-sm">
-                        {step}
-                      </div>
+                    <div key={step} className="flex flex-col items-center gap-2 min-w-[72px]">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center font-semibold text-sm">{step}</div>
                       <Badge variant="outline" className="text-xs">Step {step}</Badge>
                     </div>
                   ))}
@@ -221,116 +160,59 @@ export default function MT5Setup() {
               </CardContent>
             </Card>
 
-            {/* Step 1 */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">1</div>
-                  Download the Expert Advisor
-                </CardTitle>
-                <CardDescription>
-                  Get our pre-configured EA file
-                </CardDescription>
+                <CardTitle className="flex items-center gap-2"><div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">1</div>Download the EA</CardTitle>
+                <CardDescription>Use the pre-configured file for the fastest path.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                  <Download className="h-16 w-16 text-muted-foreground" />
-                </div>
+              <CardContent>
                 <Button size="lg" asChild className="w-full">
                   <a href="/MT5_Trade_Sync_EA.mq5" download>
                     <Download className="h-5 w-5 mr-2" />
                     Download MT5_Trade_Sync_EA.mq5
                   </a>
                 </Button>
-                <Alert>
-                  <CheckCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Save to an easy-to-find location
-                  </AlertDescription>
-                </Alert>
               </CardContent>
             </Card>
 
-            {/* Step 2 */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">2</div>
-                  Open MT5 Data Folder
-                </CardTitle>
+                <CardTitle className="flex items-center gap-2"><div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">2</div>Install it in MT5</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-background p-4 rounded-lg border space-y-3">
-                  <ol className="list-decimal list-inside space-y-2 text-sm">
-                    <li>Click <Badge variant="secondary">File</Badge> → <Badge variant="secondary">Open Data Folder</Badge></li>
-                    <li>Open <Badge variant="secondary">MQL5</Badge> → <Badge variant="secondary">Experts</Badge></li>
-                  </ol>
-                </div>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                <p>Open <strong>File → Open Data Folder</strong>, then go to <strong>MQL5 → Experts</strong>.</p>
+                <p>Copy the EA file there and fully restart MT5.</p>
               </CardContent>
             </Card>
 
-            {/* Step 3 */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">3</div>
-                  Install the EA
-                </CardTitle>
+                <CardTitle className="flex items-center gap-2"><div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">3</div>Activate it on a chart</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-background p-4 rounded-lg border space-y-3">
-                  <ol className="list-decimal list-inside space-y-2 text-sm">
-                    <li>Copy EA file to Experts folder</li>
-                    <li>Restart MT5</li>
-                  </ol>
-                </div>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                <p>Press <kbd className="px-2 py-1 text-xs bg-muted border rounded">Ctrl+N</kbd>, find the EA under Expert Advisors, and drag it onto any chart.</p>
               </CardContent>
             </Card>
 
-            {/* Step 4 */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">4</div>
-                  Activate the EA
-                </CardTitle>
+                <CardTitle className="flex items-center gap-2"><div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">4</div>Add your API key</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-background p-4 rounded-lg border space-y-3">
-                  <ol className="list-decimal list-inside space-y-2 text-sm">
-                    <li>Press <kbd className="px-2 py-1 text-xs bg-muted border rounded">Ctrl+N</kbd></li>
-                    <li>Drag EA onto any chart</li>
-                  </ol>
-                </div>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                <p>Grab your key from the <a href="/integrations" className="underline font-semibold">MT5 Auto-Sync page</a>, paste it into the EA inputs, enable <strong>Allow Algo Trading</strong>, then click OK.</p>
               </CardContent>
             </Card>
 
-            {/* Step 5 */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">5</div>
-                  Configure API Key
-                </CardTitle>
+                <CardTitle className="flex items-center gap-2"><div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">5</div>Let it run</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <Alert className="bg-primary/5 border-primary">
-                  <AlertDescription>
-                    Get your API key from{" "}
-                    <a href="/integrations" className="underline font-semibold">Integrations page</a>
-                  </AlertDescription>
-                </Alert>
-                <div className="bg-background p-4 rounded-lg border space-y-3">
-                  <ol className="list-decimal list-inside space-y-2 text-sm">
-                    <li>Paste API key in <code className="text-xs bg-muted px-2 py-1 rounded">API_KEY</code></li>
-                    <li>Enable <Badge variant="secondary">Allow Algo Trading</Badge></li>
-                    <li>Click OK</li>
-                  </ol>
-                </div>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                <p>Once the connection is healthy, trades should start appearing automatically without manual uploads.</p>
                 <Button size="lg" asChild className="w-full">
                   <a href="/integrations">
                     <TestTube className="h-5 w-5 mr-2" />
-                    Test Connection
+                    Back to MT5 Auto-Sync
                   </a>
                 </Button>
               </CardContent>
@@ -338,32 +220,14 @@ export default function MT5Setup() {
           </TabsContent>
         </Tabs>
 
-        {/* Troubleshooting */}
         <Card>
           <CardHeader>
             <CardTitle>Troubleshooting</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <div>
-                <p className="font-medium text-sm">EA not appearing?</p>
-                <p className="text-sm text-muted-foreground">
-                  Fully restart MT5 after copying the file
-                </p>
-              </div>
-              <div>
-                <p className="font-medium text-sm">No smiley face icon?</p>
-                <p className="text-sm text-muted-foreground">
-                  Enable "Allow Algo Trading" in Tools → Options → Expert Advisors
-                </p>
-              </div>
-              <div>
-                <p className="font-medium text-sm">Trades not syncing?</p>
-                <p className="text-sm text-muted-foreground">
-                  Verify API key and test connection on Integrations page
-                </p>
-              </div>
-            </div>
+          <CardContent className="space-y-3 text-sm text-muted-foreground">
+            <p><strong>EA not visible?</strong> Restart MT5 completely after copying the file.</p>
+            <p><strong>No smiley face?</strong> Enable algo trading in MT5 settings.</p>
+            <p><strong>Still not syncing?</strong> Recheck server name, investor password, and API key.</p>
           </CardContent>
         </Card>
       </div>
