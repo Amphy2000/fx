@@ -342,8 +342,11 @@ const Dashboard = () => {
           <div>
             <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gradient-premium">Trading Dashboard</h1>
             <p className="text-xs md:text-sm lg:text-base text-muted-foreground">
-              AI-Powered Analytics {mt5Accounts.length > 0 ? '• MT5 Synced' : ''}
-              {selectedAccountId && mt5Accounts.length > 1 && ' • Filtered View'}
+              {selectedAccountId
+                ? "Focused account analytics"
+                : mt5Accounts.length > 1
+                  ? "Combined overview across all connected prop accounts"
+                  : "Your automated trading analytics hub"}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -373,18 +376,26 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {mt5Accounts.length > 1 && (
-          <div className="flex items-center gap-2">
-            <AccountSelector
-              accounts={mt5Accounts}
-              selectedAccountId={selectedAccountId}
-              onAccountChange={setSelectedAccountId}
-            />
-            {selectedAccountId && (
-              <Button variant="ghost" size="sm" onClick={() => setSelectedAccountId(null)}>
-                Clear Filter
-              </Button>
-            )}
+        {mt5Accounts.length > 0 && (
+          <div className="flex flex-col gap-3 rounded-xl border bg-muted/20 p-3 md:flex-row md:items-center md:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Account view</p>
+              <p className="text-xs text-muted-foreground">
+                {selectedAccountId ? "You are viewing one linked account." : "You are viewing the combined performance of all linked accounts."}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <AccountSelector
+                accounts={mt5Accounts}
+                selectedAccountId={selectedAccountId}
+                onAccountChange={setSelectedAccountId}
+              />
+              {selectedAccountId && (
+                <Button variant="ghost" size="sm" onClick={() => setSelectedAccountId(null)}>
+                  Back to all accounts
+                </Button>
+              )}
+            </div>
           </div>
         )}
 
