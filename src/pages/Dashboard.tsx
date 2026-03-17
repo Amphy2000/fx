@@ -500,7 +500,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="premium-card bg-gradient-to-br from-blue-500/10 border-blue-500/30">
+        <Card className="premium-card bg-gradient-to-br from-accent/10 border-accent/30">
           <CardContent className="p-2 md:p-3">
             <div>
               <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">Win Rate</p>
