@@ -342,8 +342,11 @@ const Dashboard = () => {
           <div>
             <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gradient-premium">Trading Dashboard</h1>
             <p className="text-xs md:text-sm lg:text-base text-muted-foreground">
-              AI-Powered Analytics {mt5Accounts.length > 0 ? '• MT5 Synced' : ''}
-              {selectedAccountId && mt5Accounts.length > 1 && ' • Filtered View'}
+              {selectedAccountId
+                ? "Focused account analytics"
+                : mt5Accounts.length > 1
+                  ? "Combined overview across all connected prop accounts"
+                  : "Your automated trading analytics hub"}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -373,30 +376,38 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {mt5Accounts.length > 1 && (
-          <div className="flex items-center gap-2">
-            <AccountSelector
-              accounts={mt5Accounts}
-              selectedAccountId={selectedAccountId}
-              onAccountChange={setSelectedAccountId}
-            />
-            {selectedAccountId && (
-              <Button variant="ghost" size="sm" onClick={() => setSelectedAccountId(null)}>
-                Clear Filter
-              </Button>
-            )}
+        {mt5Accounts.length > 0 && (
+          <div className="flex flex-col gap-3 rounded-xl border bg-muted/20 p-3 md:flex-row md:items-center md:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Account view</p>
+              <p className="text-xs text-muted-foreground">
+                {selectedAccountId ? "You are viewing one linked account." : "You are viewing the combined performance of all linked accounts."}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <AccountSelector
+                accounts={mt5Accounts}
+                selectedAccountId={selectedAccountId}
+                onAccountChange={setSelectedAccountId}
+              />
+              {selectedAccountId && (
+                <Button variant="ghost" size="sm" onClick={() => setSelectedAccountId(null)}>
+                  Back to all accounts
+                </Button>
+              )}
+            </div>
           </div>
         )}
 
         <FeatureDiscoveryCard />
 
         {/* TIME PERIOD FILTER */}
-        <Card className="bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20 border-blue-200 dark:border-blue-800">
+        <Card className="border-border bg-card">
           <CardContent className="p-3 md:p-4">
             <div className="flex flex-col md:flex-row md:items-center gap-3">
               <div className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">Time Period:</span>
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-semibold text-foreground">Time Period:</span>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
@@ -438,13 +449,13 @@ const Dashboard = () => {
                 <div className="flex items-center gap-2 text-xs">
                   <input
                     type="date"
-                    className="px-2 py-1 border rounded text-xs bg-background text-foreground dark:bg-slate-800 dark:text-white dark:border-slate-600"
+                    className="px-2 py-1 border border-border rounded text-xs bg-background text-foreground"
                     onChange={(e) => setCustomStartDate(e.target.value ? new Date(e.target.value) : null)}
                   />
                   <span className="text-muted-foreground">to</span>
                   <input
                     type="date"
-                    className="px-2 py-1 border rounded text-xs bg-background text-foreground dark:bg-slate-800 dark:text-white dark:border-slate-600"
+                    className="px-2 py-1 border border-border rounded text-xs bg-background text-foreground"
                     onChange={(e) => setCustomEndDate(e.target.value ? new Date(e.target.value) : null)}
                   />
                 </div>
@@ -489,7 +500,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="premium-card bg-gradient-to-br from-blue-500/10 border-blue-500/30">
+        <Card className="premium-card bg-gradient-to-br from-accent/10 border-accent/30">
           <CardContent className="p-2 md:p-3">
             <div>
               <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider">Win Rate</p>
@@ -590,7 +601,7 @@ const Dashboard = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
               {user && <EquityCurve userId={user.id} accountId={selectedAccountId} />}
-              <ModernBarChart data={getMonthlyData()} />
+              <ModernBarChart data={getMonthlyData()} title={selectedAccountId ? "Selected account monthly performance" : "All accounts monthly performance"} />
             </div>
             <DrawdownHeatmap trades={trades} />
           </TabsContent>

@@ -11,16 +11,18 @@ export function AccountSelector({ accounts, selectedAccountId, onAccountChange }
   if (accounts.length === 0) return null;
 
   return (
-    <Select 
-      value={selectedAccountId || "all"} 
+    <Select
+      value={selectedAccountId || "all"}
       onValueChange={(value) => onAccountChange(value === "all" ? null : value)}
     >
-      <SelectTrigger className="w-[200px]">
-        <Building2 className="h-4 w-4 mr-2" />
-        <SelectValue placeholder="Select account" />
+      <SelectTrigger className="w-full min-w-[240px] sm:w-[280px]">
+        <div className="flex items-center gap-2 truncate">
+          <Building2 className="h-4 w-4 text-muted-foreground" />
+          <SelectValue placeholder="Choose account view" />
+        </div>
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="all">All Accounts</SelectItem>
+        <SelectItem value="all">All connected accounts</SelectItem>
         {accounts.map((account) => (
           <SelectItem key={account.id} value={account.id}>
             {account.account_name || `${account.broker_name} ${account.account_number}`}
