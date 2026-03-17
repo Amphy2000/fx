@@ -402,12 +402,12 @@ const Dashboard = () => {
         <FeatureDiscoveryCard />
 
         {/* TIME PERIOD FILTER */}
-        <Card className="bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20 border-blue-200 dark:border-blue-800">
+        <Card className="border-border bg-card">
           <CardContent className="p-3 md:p-4">
             <div className="flex flex-col md:flex-row md:items-center gap-3">
               <div className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">Time Period:</span>
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-semibold text-foreground">Time Period:</span>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
