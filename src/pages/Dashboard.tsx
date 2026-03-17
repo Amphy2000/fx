@@ -601,7 +601,7 @@ const Dashboard = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full">
               {user && <EquityCurve userId={user.id} accountId={selectedAccountId} />}
-              <ModernBarChart data={getMonthlyData()} />
+              <ModernBarChart data={getMonthlyData()} title={selectedAccountId ? "Selected account monthly performance" : "All accounts monthly performance"} />
             </div>
             <DrawdownHeatmap trades={trades} />
           </TabsContent>
