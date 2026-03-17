@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle2, XCircle, RefreshCw, TrendingUp, Lock, Zap, Link2, Layers3, BarChart3 } from "lucide-react";
+import { Loader2, CheckCircle2, RefreshCw, TrendingUp, Lock, Zap, Link2, Layers3, BarChart3 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";

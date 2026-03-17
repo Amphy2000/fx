@@ -59,10 +59,11 @@ serve(async (req) => {
           if (deal.type !== "DEAL_TYPE_SELL" && deal.type !== "DEAL_TYPE_BUY") continue;
           if (!deal.positionId) continue;
 
+          const ticketNumber = deal.positionId?.toString();
           const { data: existingTrade } = await supabase
             .from("trades")
             .select("id")
-            .eq("ticket_number", deal.positionId)
+            .eq("ticket_number", ticketNumber)
             .eq("mt5_account_id", account.id)
             .maybeSingle();
 
@@ -70,7 +71,7 @@ serve(async (req) => {
           const tradeData = {
             user_id: account.user_id,
             mt5_account_id: account.id,
-            ticket_number: deal.positionId,
+            ticket_number: ticketNumber,
             pair: deal.symbol || "UNKNOWN",
             direction: deal.type === "DEAL_TYPE_BUY" ? "buy" : "sell",
             entry_price: deal.price || 0,
