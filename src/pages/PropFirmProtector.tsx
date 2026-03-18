@@ -1,22 +1,31 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Layout } from "@/components/Layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Settings2, Plus, Copy, CheckCircle2, Fingerprint, Scale, Trophy, Bell, BookOpen, Trash2 } from "lucide-react";
-import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { ChallengePhaseTracker } from "@/components/prop-firm/ChallengePhaseTracker";
-import { PreTradeCheckpoint } from "@/components/prop-firm/PreTradeCheckpoint";
-import { BreachAlerts } from "@/components/prop-firm/BreachAlerts";
-import { RecoveryRoadmap } from "@/components/prop-firm/RecoveryRoadmap";
-import { TradeJournalSync } from "@/components/prop-firm/TradeJournalSync";
+import { toast } from "sonner";
+import {
+  Shield,
+  Copy,
+  CheckCircle2,
+  Target,
+  Calendar,
+  TrendingUp,
+  AlertTriangle,
+  Plus,
+  Trash2,
+  ChevronDown,
+  Zap,
+  Trophy,
+  Clock,
+  Flame,
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,18 +37,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { motion, AnimatePresence } from "framer-motion";
 
-const PROP_FIRM_PRESETS = {
-  custom: { name: "Custom", dailyDD: 5, totalDD: 10 },
-  ftmo: { name: "FTMO", dailyDD: 5, totalDD: 10 },
-  fundedNext: { name: "Funded Next", dailyDD: 5, totalDD: 10 },
-  theForexFunder: { name: "The Funded Trader", dailyDD: 5, totalDD: 10 },
-  e8Funding: { name: "E8 Funding", dailyDD: 5, totalDD: 8 },
-  myForexFunds: { name: "My Forex Funds", dailyDD: 5, totalDD: 12 },
-  trueForexFunds: { name: "True Forex Funds", dailyDD: 5, totalDD: 10 },
+const PROP_FIRM_PRESETS: Record<string, { name: string; dailyDD: number; totalDD: number; profitTarget: number }> = {
+  ftmo: { name: "FTMO", dailyDD: 5, totalDD: 10, profitTarget: 10 },
+  fundedNext: { name: "Funded Next", dailyDD: 5, totalDD: 10, profitTarget: 10 },
+  theForexFunder: { name: "The Funded Trader", dailyDD: 5, totalDD: 10, profitTarget: 10 },
+  e8Funding: { name: "E8 Funding", dailyDD: 5, totalDD: 8, profitTarget: 8 },
+  myForexFunds: { name: "My Forex Funds", dailyDD: 5, totalDD: 12, profitTarget: 8 },
+  trueForexFunds: { name: "True Forex Funds", dailyDD: 5, totalDD: 10, profitTarget: 10 },
+  custom: { name: "Custom", dailyDD: 5, totalDD: 10, profitTarget: 10 },
 };
 
-const ASSET_CLASSES = {
+const ASSET_CLASSES: Record<string, { name: string; pipValue: number }> = {
   forex: { name: "Forex Majors", pipValue: 10 },
   gold: { name: "Gold (XAUUSD)", pipValue: 1 },
   indices: { name: "Indices (US30)", pipValue: 1 },
@@ -47,7 +57,7 @@ const ASSET_CLASSES = {
 
 const ACCOUNT_SIZES = [10000, 25000, 50000, 100000, 200000];
 
-const NumericInput = ({ value, onChange, className, placeholder }: { value: number, onChange: (n: number) => void, className?: string, placeholder?: string }) => {
+const NumericInput = ({ value, onChange, className, placeholder }: { value: number; onChange: (n: number) => void; className?: string; placeholder?: string }) => {
   const [localVal, setLocalVal] = useState(value.toString());
   useEffect(() => {
     if (parseFloat(localVal) !== value) setLocalVal(value.toString());
@@ -58,41 +68,80 @@ const NumericInput = ({ value, onChange, className, placeholder }: { value: numb
       inputMode="decimal"
       value={localVal}
       placeholder={placeholder}
-      className={`bg-muted/10 border-border/40 font-bold ${className}`}
+      className={`bg-muted/30 border-border/40 font-bold ${className}`}
       onChange={(e) => {
         const v = e.target.value;
         if (v === "" || v === "." || v === "0.") { setLocalVal(v); onChange(0); return; }
-        if (/^\d*\.?\d*$/.test(v)) {
-          setLocalVal(v);
-          const num = parseFloat(v);
-          if (!isNaN(num)) onChange(num);
-        }
+        if (/^\d*\.?\d*$/.test(v)) { setLocalVal(v); const num = parseFloat(v); if (!isNaN(num)) onChange(num); }
       }}
     />
   );
 };
 
+// Drawdown gauge component
+const DrawdownGauge = ({ label, usedPercent, remaining, color }: { label: string; usedPercent: number; remaining: number; color: "daily" | "total" }) => {
+  const severity = usedPercent >= 90 ? "critical" : usedPercent >= 75 ? "danger" : usedPercent >= 50 ? "warning" : "safe";
+  const barColor = severity === "critical" ? "bg-destructive" : severity === "danger" ? "bg-destructive/80" : severity === "warning" ? "bg-chart-4" : "bg-success";
+  
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</span>
+        <div className="flex items-center gap-2">
+          <span className={`text-sm font-black ${severity === "safe" ? "text-success" : severity === "warning" ? "text-chart-4" : "text-destructive"}`}>
+            ${remaining.toFixed(0)}
+          </span>
+          <Badge className={`text-[9px] px-1.5 py-0 ${
+            severity === "safe" ? "bg-success/10 text-success border-success/20" : 
+            severity === "warning" ? "bg-chart-4/10 text-chart-4 border-chart-4/20" : 
+            "bg-destructive/10 text-destructive border-destructive/20"
+          }`}>
+            {usedPercent.toFixed(0)}% used
+          </Badge>
+        </div>
+      </div>
+      <div className="relative h-3 bg-muted rounded-full overflow-hidden">
+        <motion.div
+          className={`absolute left-0 top-0 h-full rounded-full ${barColor}`}
+          initial={{ width: 0 }}
+          animate={{ width: `${Math.min(usedPercent, 100)}%` }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+        />
+        <div className="absolute left-[50%] top-0 h-full w-px bg-chart-4/30" />
+        <div className="absolute left-[75%] top-0 h-full w-px bg-destructive/30" />
+        <div className="absolute left-[90%] top-0 h-full w-px bg-destructive/60" />
+      </div>
+    </div>
+  );
+};
+
 const PropFirmProtector = () => {
   const [userId, setUserId] = useState<string | null>(null);
-  const [selectedFirm, setSelectedFirm] = useState<string>("ftmo");
-  const [assetClass, setAssetClass] = useState<string>("forex");
-  const [accountSize, setAccountSize] = useState<number>(100000);
-  const [currentBalance, setCurrentBalance] = useState<number>(100000);
-  const [startOfDayBalance, setStartOfDayBalance] = useState<number>(100000);
-  const [maxDailyDrawdown, setMaxDailyDrawdown] = useState<number>(5);
-  const [maxTotalDrawdown, setMaxTotalDrawdown] = useState<number>(10);
-  const [profitTargetPercent, setProfitTargetPercent] = useState<number>(10);
-  const [stopLossPips, setStopLossPips] = useState<number>(20);
-  const [riskPerTrade, setRiskPerTrade] = useState<number>(1);
-  const [hypotheticalLotSize, setHypotheticalLotSize] = useState<number>(0);
-  const [showCheckpoint, setShowCheckpoint] = useState(false);
+  const [selectedFirm, setSelectedFirm] = useState("ftmo");
+  const [assetClass, setAssetClass] = useState("forex");
+  const [accountSize, setAccountSize] = useState(100000);
+  const [currentBalance, setCurrentBalance] = useState(100000);
+  const [startOfDayBalance, setStartOfDayBalance] = useState(100000);
+  const [maxDailyDrawdown, setMaxDailyDrawdown] = useState(5);
+  const [maxTotalDrawdown, setMaxTotalDrawdown] = useState(10);
+  const [profitTargetPercent, setProfitTargetPercent] = useState(10);
+  const [stopLossPips, setStopLossPips] = useState(20);
+  const [riskPerTrade, setRiskPerTrade] = useState(1);
+  const [hasCopied, setHasCopied] = useState(false);
+  const [showSetup, setShowSetup] = useState(false);
 
-  const [currentAccountSlot, setCurrentAccountSlot] = useState<number>(0);
+  // Challenge tracker state
+  const [startDate, setStartDate] = useState(() => {
+    const saved = localStorage.getItem("propFirmChallengeStart");
+    return saved || new Date().toISOString().split("T")[0];
+  });
+  const [challengeDays, setChallengeDays] = useState(30);
+
+  // Multi-account state
+  const [currentAccountSlot, setCurrentAccountSlot] = useState(0);
   const [accountNames, setAccountNames] = useState<string[]>(["Challenge 1"]);
   const isSavingLocked = useRef(false);
-  const [hasCopied, setHasCopied] = useState(false);
 
-  // Fetch user
   useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser();
@@ -101,14 +150,11 @@ const PropFirmProtector = () => {
     getUser();
   }, []);
 
-  // Persistence logic with safety checks
+  // Load/save persistence
   useEffect(() => {
     try {
       const savedNames = localStorage.getItem("propFirmAccountNames");
-      if (savedNames) {
-        const parsed = JSON.parse(savedNames);
-        if (Array.isArray(parsed)) setAccountNames(parsed);
-      }
+      if (savedNames) { const parsed = JSON.parse(savedNames); if (Array.isArray(parsed)) setAccountNames(parsed); }
       const savedSettings = localStorage.getItem(`account_slot_${currentAccountSlot}`);
       if (savedSettings) {
         const p = JSON.parse(savedSettings);
@@ -123,6 +169,8 @@ const PropFirmProtector = () => {
           setProfitTargetPercent(Number(p.profitTargetPercent) || 10);
           setStopLossPips(Number(p.stopLossPips) || 20);
           setRiskPerTrade(Number(p.riskPerTrade) || 1);
+          setStartDate(p.startDate || new Date().toISOString().split("T")[0]);
+          setChallengeDays(Number(p.challengeDays) || 30);
         }
       }
     } catch (e) { console.error("Restore failed", e); }
@@ -130,11 +178,16 @@ const PropFirmProtector = () => {
 
   useEffect(() => {
     if (isSavingLocked.current) return;
-    const settings = { selectedFirm, assetClass, accountSize, currentBalance, startOfDayBalance, maxDailyDrawdown, maxTotalDrawdown, profitTargetPercent, stopLossPips, riskPerTrade };
+    const settings = { selectedFirm, assetClass, accountSize, currentBalance, startOfDayBalance, maxDailyDrawdown, maxTotalDrawdown, profitTargetPercent, stopLossPips, riskPerTrade, startDate, challengeDays };
     localStorage.setItem(`account_slot_${currentAccountSlot}`, JSON.stringify(settings));
     localStorage.setItem("propFirmAccountNames", JSON.stringify(accountNames));
-  }, [currentAccountSlot, selectedFirm, assetClass, accountSize, currentBalance, startOfDayBalance, maxDailyDrawdown, maxTotalDrawdown, profitTargetPercent, stopLossPips, riskPerTrade, accountNames]);
+  }, [currentAccountSlot, selectedFirm, assetClass, accountSize, currentBalance, startOfDayBalance, maxDailyDrawdown, maxTotalDrawdown, profitTargetPercent, stopLossPips, riskPerTrade, accountNames, startDate, challengeDays]);
 
+  useEffect(() => {
+    localStorage.setItem("propFirmChallengeStart", startDate);
+  }, [startDate]);
+
+  // All calculations
   const calcs = useMemo(() => {
     const accSize = Number(accountSize) || 100000;
     const currBal = Number(currentBalance) || accSize;
@@ -143,35 +196,56 @@ const PropFirmProtector = () => {
     const dailyLimit = startBal * (maxDailyDrawdown / 100);
     const dailyFloor = startBal - dailyLimit;
     const dailyRemaining = Math.max(0, currBal - dailyFloor);
-
     const totalLimit = accSize * (maxTotalDrawdown / 100);
     const totalFloor = accSize - totalLimit;
     const totalRemaining = Math.max(0, currBal - totalFloor);
 
-    const targetAmt = accSize * (profitTargetPercent / 100);
-    const remainingProfit = Math.max(0, (accSize + targetAmt) - currBal);
+    const profitTarget = accSize * (profitTargetPercent / 100);
+    const currentProfit = currBal - accSize;
+    const remainingProfit = Math.max(0, profitTarget - currentProfit);
+    const profitProgress = Math.max(0, Math.min(100, (currentProfit / profitTarget) * 100));
 
     const riskAmt = currBal * (riskPerTrade / 100);
     const maxDrawdownPossible = Math.min(dailyRemaining, totalRemaining);
     const safeRisk = Math.min(riskAmt, maxDrawdownPossible * 0.95);
-
-    const asset = ASSET_CLASSES[assetClass as keyof typeof ASSET_CLASSES] || ASSET_CLASSES.forex;
+    const asset = ASSET_CLASSES[assetClass] || ASSET_CLASSES.forex;
     const sl = Number(stopLossPips) || 1;
-    const suggestedLots = safeRisk / (sl * asset.pipValue);
+    const suggestedLots = Math.max(0, safeRisk / (sl * asset.pipValue));
 
-    const hLoss = (Number(hypotheticalLotSize) || 0) * sl * asset.pipValue;
     const dailyProg = dailyLimit > 0 ? ((startBal - currBal) / dailyLimit) * 100 : 0;
-    const totalProg = targetAmt > 0 ? ((accSize + targetAmt - currBal) / targetAmt) * 100 : 0;
+    const totalProg = totalLimit > 0 ? ((accSize - currBal) / totalLimit) * 100 : 0;
+
+    // Challenge calculations
+    const start = new Date(startDate);
+    const end = new Date(start);
+    end.setDate(end.getDate() + challengeDays);
+    const now = new Date();
+    const daysElapsed = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    const daysRemaining = Math.max(0, challengeDays - daysElapsed);
+    const timeProgress = Math.min(100, (daysElapsed / challengeDays) * 100);
+    const dailyTargetNeeded = daysRemaining > 0 ? remainingProfit / daysRemaining : 0;
+    const onTrack = profitProgress >= timeProgress * 0.8;
+
+    // Recovery
+    const isInDrawdown = currentProfit < 0;
+    const drawdownAmount = Math.abs(Math.min(0, currentProfit));
+    const drawdownPercent = (drawdownAmount / accSize) * 100;
+    const bufferPercent = totalLimit > 0 ? ((totalRemaining) / totalLimit) * 100 : 100;
+
+    // How many losses can I afford
+    const lossesToDailyBreach = safeRisk > 0 ? Math.floor(dailyRemaining / safeRisk) : 99;
+    const lossesToTotalBreach = safeRisk > 0 ? Math.floor(totalRemaining / safeRisk) : 99;
 
     return {
-      dailyRemaining, totalRemaining, remainingProfit, safeRisk,
-      suggestedLots: Math.max(0, suggestedLots),
-      dailyLimit, hLoss,
-      dailyProg: Math.max(0, Math.min(100, dailyProg)),
-      totalProg: Math.max(0, Math.min(100, 100 - totalProg)),
-      isImpactSafe: (dailyRemaining - hLoss) > (dailyLimit * 0.05)
+      dailyRemaining, totalRemaining, remainingProfit, safeRisk, suggestedLots,
+      dailyLimit, dailyProg: Math.max(0, Math.min(100, dailyProg)),
+      totalProg: Math.max(0, Math.min(100, totalProg)),
+      profitProgress, currentProfit, profitTarget,
+      daysRemaining, dailyTargetNeeded, onTrack, timeProgress,
+      isInDrawdown, drawdownAmount, drawdownPercent, bufferPercent,
+      lossesToDailyBreach, lossesToTotalBreach,
     };
-  }, [accountSize, currentBalance, startOfDayBalance, maxDailyDrawdown, maxTotalDrawdown, profitTargetPercent, stopLossPips, assetClass, riskPerTrade, hypotheticalLotSize]);
+  }, [accountSize, currentBalance, startOfDayBalance, maxDailyDrawdown, maxTotalDrawdown, profitTargetPercent, stopLossPips, assetClass, riskPerTrade, startDate, challengeDays]);
 
   const copySize = () => {
     navigator.clipboard.writeText(calcs.suggestedLots.toFixed(2));
@@ -180,289 +254,344 @@ const PropFirmProtector = () => {
     toast.success("Lot size copied!");
   };
 
-  const handleRiskAdjustment = (suggestedRisk: number, reason: string) => {
-    setRiskPerTrade(suggestedRisk);
-    toast.success(`Risk adjusted to ${suggestedRisk.toFixed(2)}%`, { description: reason });
-  };
+  const overallSeverity = calcs.dailyProg >= 75 || calcs.totalProg >= 75 ? "danger" : calcs.dailyProg >= 50 || calcs.totalProg >= 50 ? "warning" : "safe";
 
   return (
     <Layout>
-      <div className="container mx-auto p-4 md:p-6 max-w-[1600px] space-y-8 animate-in fade-in duration-500">
+      <div className="container mx-auto p-4 md:p-6 max-w-5xl space-y-6 animate-in fade-in duration-500">
 
-        {/* HEADER */}
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-6 border-b">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-slate-900 rounded-xl border border-white/10 shadow-xl"><Shield className="h-6 w-6 text-primary" /></div>
+        {/* COMPACT HEADER */}
+        <header className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-xl ${
+              overallSeverity === "danger" ? "bg-destructive/20" : overallSeverity === "warning" ? "bg-chart-4/20" : "bg-success/20"
+            }`}>
+              <Shield className={`h-5 w-5 ${
+                overallSeverity === "danger" ? "text-destructive" : overallSeverity === "warning" ? "text-chart-4" : "text-success"
+              }`} />
+            </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-black tracking-tight">Prop Firm Guardian</h1>
-                <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px] px-2 py-0">PRO</Badge>
-              </div>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{accountNames[currentAccountSlot]} • {PROP_FIRM_PRESETS[selectedFirm as keyof typeof PROP_FIRM_PRESETS]?.name}</p>
+              <h1 className="text-xl font-black tracking-tight text-foreground">Prop Guardian</h1>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                {accountNames[currentAccountSlot]} • {PROP_FIRM_PRESETS[selectedFirm]?.name}
+              </p>
             </div>
           </div>
-          <div className="flex bg-muted/30 p-1 rounded-xl border items-center gap-1 overflow-x-auto max-w-full">
-            {accountNames.map((n, i) => (
-              <div key={i} className="relative group">
-                <Button 
-                  variant={currentAccountSlot === i ? "default" : "ghost"} 
-                  size="sm" 
-                  onClick={() => setCurrentAccountSlot(i)} 
-                  className="h-8 px-4 text-[10px] font-bold uppercase rounded-lg pr-8"
-                >
-                  {n}
-                </Button>
-                {accountNames.length > 1 && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="absolute right-0 top-0 h-8 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete "{n}"?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will permanently delete this account and all its settings. This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => {
-                            const newNames = accountNames.filter((_, idx) => idx !== i);
-                            setAccountNames(newNames);
-                            localStorage.removeItem(`account_slot_${i}`);
-                            if (currentAccountSlot >= newNames.length) {
-                              setCurrentAccountSlot(Math.max(0, newNames.length - 1));
-                            } else if (currentAccountSlot === i) {
-                              setCurrentAccountSlot(0);
-                            }
-                            toast.success(`"${n}" deleted successfully`);
-                          }}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
-              </div>
-            ))}
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => { const n = prompt("Account Name:"); if (n) setAccountNames([...accountNames, n]); }}><Plus className="h-4 w-4" /></Button>
-          </div>
+          <Button variant="outline" size="sm" onClick={() => setShowSetup(!showSetup)} className="text-[10px] font-bold uppercase gap-1">
+            <ChevronDown className={`h-3 w-3 transition-transform ${showSetup ? "rotate-180" : ""}`} />
+            Setup
+          </Button>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* SIDEBAR - Settings */}
-          <aside className="lg:col-span-3 space-y-6">
-            <Card className="rounded-2xl border-none shadow-sm bg-card">
-              <CardHeader className="pb-3 border-b bg-muted/5"><CardTitle className="text-[10px] font-black uppercase text-muted-foreground flex items-center gap-2"><Settings2 className="h-3.5 w-3.5" /> Account Setup</CardTitle></CardHeader>
-              <CardContent className="p-5 space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] uppercase font-black opacity-50">Quick Size</Label>
+        {/* ACCOUNT TABS */}
+        <div className="flex items-center gap-1 overflow-x-auto pb-1">
+          {accountNames.map((n, i) => (
+            <div key={i} className="relative group flex-shrink-0">
+              <Button
+                variant={currentAccountSlot === i ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setCurrentAccountSlot(i)}
+                className="h-8 px-3 text-[10px] font-bold uppercase rounded-lg"
+              >
+                {n}
+              </Button>
+              {accountNames.length > 1 && currentAccountSlot === i && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive/80 text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                      <Trash2 className="h-2.5 w-2.5" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete "{n}"?</AlertDialogTitle>
+                      <AlertDialogDescription>This will permanently delete this account profile.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => {
+                        const newNames = accountNames.filter((_, idx) => idx !== i);
+                        setAccountNames(newNames);
+                        localStorage.removeItem(`account_slot_${i}`);
+                        setCurrentAccountSlot(Math.max(0, newNames.length - 1));
+                        toast.success(`"${n}" deleted`);
+                      }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+          ))}
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary flex-shrink-0" onClick={() => {
+            const n = prompt("Account Name:");
+            if (n) { setAccountNames([...accountNames, n]); setCurrentAccountSlot(accountNames.length); }
+          }}>
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* COLLAPSIBLE SETUP */}
+        <AnimatePresence>
+          {showSetup && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+              <Card className="border-border/40">
+                <CardContent className="p-4 space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Prop Firm</Label>
+                      <Select value={selectedFirm} onValueChange={v => {
+                        setSelectedFirm(v);
+                        const f = PROP_FIRM_PRESETS[v];
+                        if (f) { setMaxDailyDrawdown(f.dailyDD); setMaxTotalDrawdown(f.totalDD); setProfitTargetPercent(f.profitTarget); }
+                      }}>
+                        <SelectTrigger className="h-9 font-bold"><SelectValue /></SelectTrigger>
+                        <SelectContent>{Object.entries(PROP_FIRM_PRESETS).map(([k, v]) => (<SelectItem key={k} value={k}>{v.name}</SelectItem>))}</SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Asset</Label>
+                      <Select value={assetClass} onValueChange={setAssetClass}>
+                        <SelectTrigger className="h-9 font-bold"><SelectValue /></SelectTrigger>
+                        <SelectContent>{Object.entries(ASSET_CLASSES).map(([k, v]) => (<SelectItem key={k} value={k}>{v.name}</SelectItem>))}</SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Challenge Start</Label>
+                      <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="h-9 font-bold" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Challenge Days</Label>
+                      <NumericInput value={challengeDays} onChange={setChallengeDays} className="h-9" />
+                    </div>
+                  </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {ACCOUNT_SIZES.map((size) => (
-                      <Button
-                        key={size}
-                        variant={accountSize === size ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => { setAccountSize(size); setCurrentBalance(size); setStartOfDayBalance(size); }}
-                        className="h-7 px-2 text-[10px] font-bold"
-                      >
+                    {ACCOUNT_SIZES.map(size => (
+                      <Button key={size} variant={accountSize === size ? "default" : "outline"} size="sm" className="h-7 px-2.5 text-[10px] font-bold"
+                        onClick={() => { setAccountSize(size); setCurrentBalance(size); setStartOfDayBalance(size); }}>
                         ${(size / 1000)}k
                       </Button>
                     ))}
                   </div>
-                </div>
-                <div className="space-y-1"><Label className="text-[10px] uppercase font-black opacity-50">Current Balance ($)</Label><NumericInput value={currentBalance} onChange={setCurrentBalance} className="h-9" /></div>
-                <div className="space-y-1"><Label className="text-[10px] uppercase font-black opacity-50">Start of Day ($)</Label><NumericInput value={startOfDayBalance} onChange={setStartOfDayBalance} className="h-8" /></div>
-                <div className="space-y-1"><Label className="text-[10px] uppercase font-black opacity-50">Stop Loss (pips)</Label><NumericInput value={stopLossPips} onChange={setStopLossPips} className="h-8" /></div>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-[10px] font-black uppercase opacity-50"><span>Risk per Trade</span><span className="text-primary">{riskPerTrade}%</span></div>
-                  <Slider value={[riskPerTrade]} min={0.1} max={3} step={0.1} onValueChange={v => setRiskPerTrade(v[0])} />
-                </div>
-                <div className="space-y-1"><Label className="text-[10px] uppercase font-black opacity-50">Asset Class</Label>
-                  <Select value={assetClass} onValueChange={setAssetClass}><SelectTrigger className="h-8 font-bold"><SelectValue /></SelectTrigger>
-                    <SelectContent>{Object.entries(ASSET_CLASSES).map(([k, v]) => (<SelectItem key={k} value={k}>{v.name}</SelectItem>))}</SelectContent></Select>
-                </div>
-                <div className="space-y-1"><Label className="text-[10px] uppercase font-black opacity-50">Prop Firm</Label>
-                  <Select value={selectedFirm} onValueChange={v => { setSelectedFirm(v); const f = PROP_FIRM_PRESETS[v as keyof typeof PROP_FIRM_PRESETS]; if (f) { setMaxDailyDrawdown(f.dailyDD); setMaxTotalDrawdown(f.totalDD); } }}><SelectTrigger className="h-8 font-bold"><SelectValue /></SelectTrigger>
-                    <SelectContent>{Object.entries(PROP_FIRM_PRESETS).map(([k, v]) => (<SelectItem key={k} value={k}>{v.name}</SelectItem>))}</SelectContent></Select>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Pre-Trade Shield Card */}
-            <Card className="bg-slate-900 border-none rounded-2xl overflow-hidden">
-              <CardHeader className="bg-primary/20 p-3"><CardTitle className="text-[10px] font-black uppercase text-white tracking-widest flex items-center gap-2"><Shield className="h-3 w-3" /> Pre-Trade Test</CardTitle></CardHeader>
-              <CardContent className="p-4 space-y-3">
-                <NumericInput value={hypotheticalLotSize} onChange={setHypotheticalLotSize} placeholder="Test Lot Size" className="bg-white/5 border-white/10 text-white h-8" />
-                {hypotheticalLotSize > 0 && (
-                  <>
-                    <div className={`p-3 rounded-xl border ${calcs.isImpactSafe ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
-                      <p className="text-[10px] font-black uppercase">{calcs.isImpactSafe ? '✓ Safe to Execute' : '✕ Risk Too High'}</p>
-                      <p className="text-xs font-bold mt-1">Potential Loss: -${calcs.hLoss.toFixed(0)}</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Current Balance</Label>
+                      <NumericInput value={currentBalance} onChange={setCurrentBalance} className="h-9" />
                     </div>
-                    <Button 
-                      className="w-full h-9 text-[10px] font-bold" 
-                      variant="outline"
-                      onClick={() => setShowCheckpoint(true)}
-                    >
-                      Open Full Checkpoint
-                    </Button>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </aside>
-
-          {/* MAIN CONTENT */}
-          <main className="lg:col-span-9 space-y-6">
-            {/* Hero Lot Size Card */}
-            <Card className="bg-slate-950 border-none rounded-[32px] overflow-hidden relative group">
-              <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none transition-transform group-hover:scale-110"><Fingerprint className="h-48 w-48 text-primary" /></div>
-              <CardContent className="p-10 flex flex-col md:flex-row items-center justify-between gap-10">
-                <div className="w-full text-center md:text-left">
-                  <Badge className="bg-primary text-white border-none px-3 py-1 mb-6 text-[10px] font-black uppercase tracking-widest">Recommended Lot Size</Badge>
-                  <div className="flex items-center justify-center md:justify-start gap-6 flex-wrap">
-                    <h2 className="text-8xl md:text-9xl font-black tracking-tighter text-white drop-shadow-[0_10px_30px_rgba(59,130,246,0.2)]">{calcs.suggestedLots.toFixed(2)}</h2>
-                    <Button size="icon" className="h-16 w-16 rounded-2xl bg-white/5 border border-white/10 text-white hover:bg-white/10" onClick={copySize}>{hasCopied ? <CheckCircle2 className="h-7 w-7 text-green-500" /> : <Copy className="h-7 w-7" />}</Button>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Start of Day</Label>
+                      <NumericInput value={startOfDayBalance} onChange={setStartOfDayBalance} className="h-9" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Stop Loss (pips)</Label>
+                      <NumericInput value={stopLossPips} onChange={setStopLossPips} className="h-9" />
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-8 mt-10 pt-8 border-t border-white/5 text-left">
-                    <div className="space-y-1"><p className="text-[10px] font-black opacity-30 text-white uppercase tracking-widest">Risk Amount</p><p className="text-2xl font-black text-white">${calcs.safeRisk.toFixed(0)}</p></div>
-                    <div className="space-y-1"><p className="text-[10px] font-black opacity-30 text-white uppercase tracking-widest">Daily Limit</p><p className="text-2xl font-black text-white">${calcs.dailyLimit.toFixed(0)}</p></div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[10px] font-bold uppercase text-muted-foreground">
+                      <span>Risk per Trade</span><span className="text-primary">{riskPerTrade}%</span>
+                    </div>
+                    <Slider value={[riskPerTrade]} min={0.1} max={3} step={0.1} onValueChange={v => setRiskPerTrade(v[0])} />
                   </div>
-                </div>
-                <div className="w-full md:w-[240px] bg-white/5 p-10 rounded-[40px] border border-white/10 text-center backdrop-blur-md">
-                  <p className="text-[10px] font-black opacity-40 text-white uppercase tracking-[0.3em] mb-2">Stop Loss</p>
-                  <p className="text-8xl font-black text-primary leading-none">{stopLossPips}</p>
-                  <p className="text-[10px] font-bold text-primary/40 uppercase mt-6 italic">Pips</p>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-            {/* Status Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="p-5 rounded-2xl border-l-4 border-orange-500 bg-card">
-                <p className="text-[10px] font-black uppercase opacity-40 tracking-widest mb-3 flex justify-between">
-                  Daily Buffer <Badge className="h-4 px-1 text-[8px] border-none bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400">{calcs.dailyProg.toFixed(1)}% used</Badge>
-                </p>
-                <p className="text-3xl font-black tracking-tighter mb-3">${calcs.dailyRemaining.toFixed(0)}</p>
-                <Progress value={calcs.dailyProg} className="h-1.5" />
-              </Card>
-              <Card className="p-5 rounded-2xl border-l-4 border-blue-500 bg-card">
-                <p className="text-[10px] font-black uppercase opacity-40 tracking-widest mb-3 flex justify-between">
-                  Total Buffer <Badge className="h-4 px-1 text-[8px] border-none bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400">Safe Zone</Badge>
-                </p>
-                <p className="text-3xl font-black tracking-tighter mb-3">${calcs.totalRemaining.toFixed(0)}</p>
-                <Progress value={Math.max(0, 100 - (calcs.totalRemaining / (accountSize * maxTotalDrawdown / 100)) * 100)} className="h-1.5" />
-              </Card>
-              <Card className="p-5 rounded-2xl border-l-4 border-green-500 bg-card">
-                <p className="text-[10px] font-black uppercase opacity-40 tracking-widest mb-3 flex justify-between">
-                  To Target <Badge className="h-4 px-1 text-[8px] border-none bg-green-100 text-green-600 dark:bg-green-500/20 dark:text-green-400">{calcs.totalProg.toFixed(1)}%</Badge>
-                </p>
-                <p className="text-3xl font-black tracking-tighter text-green-600 dark:text-green-400 mb-3">${calcs.remainingProfit.toFixed(0)}</p>
-                <Progress value={calcs.totalProg} className="h-1.5" />
-              </Card>
+        {/* SECTION 1: HEALTH STATUS */}
+        <Card className={`border-none rounded-2xl overflow-hidden ${
+          overallSeverity === "danger" ? "bg-destructive/5 ring-1 ring-destructive/20" : 
+          overallSeverity === "warning" ? "bg-chart-4/5 ring-1 ring-chart-4/20" : "bg-card"
+        }`}>
+          <CardContent className="p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Account Health</h2>
+              {overallSeverity === "danger" && (
+                <motion.div initial={{ scale: 0.8 }} animate={{ scale: [0.8, 1.1, 1] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+                  <Badge className="bg-destructive/20 text-destructive border-destructive/30 text-[10px]">
+                    <AlertTriangle className="h-3 w-3 mr-1" /> DANGER
+                  </Badge>
+                </motion.div>
+              )}
             </div>
+            <DrawdownGauge label="Daily Drawdown" usedPercent={calcs.dailyProg} remaining={calcs.dailyRemaining} color="daily" />
+            <DrawdownGauge label="Total Drawdown" usedPercent={calcs.totalProg} remaining={calcs.totalRemaining} color="total" />
+            
+            {/* Safety summary */}
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/40">
+              <Zap className="h-4 w-4 text-primary flex-shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                You can afford <span className="text-foreground font-bold">{Math.min(calcs.lossesToDailyBreach, calcs.lossesToTotalBreach)}</span> consecutive losses at current risk before hitting a limit.
+                {calcs.lossesToDailyBreach <= 3 && <span className="text-destructive font-bold"> Reduce size!</span>}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
-            <Tabs defaultValue="alerts" className="w-full">
-              <TabsList className="w-full grid grid-cols-2 lg:grid-cols-4 h-auto gap-1 bg-muted/40 p-1.5 rounded-2xl border border-border/40">
-                <TabsTrigger value="alerts" className="rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1 py-2">
-                  <Bell className="h-3 w-3" /> Alerts
-                </TabsTrigger>
-                <TabsTrigger value="journal" className="rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1 py-2">
-                  <BookOpen className="h-3 w-3" /> Journal Sync
-                </TabsTrigger>
-                <TabsTrigger value="challenge" className="rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1 py-2">
-                  <Trophy className="h-3 w-3" /> Challenge
-                </TabsTrigger>
-                <TabsTrigger value="recovery" className="rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-1 py-2">
-                  <Scale className="h-3 w-3" /> Recovery
-                </TabsTrigger>
-              </TabsList>
+        {/* SECTION 2: LOT SIZE CALCULATOR - THE HERO */}
+        <Card className="border-none rounded-2xl bg-card overflow-hidden">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="text-center md:text-left space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary">Safe Lot Size</p>
+                <div className="flex items-center gap-4">
+                  <h2 className="text-7xl md:text-8xl font-black tracking-tighter text-foreground">{calcs.suggestedLots.toFixed(2)}</h2>
+                  <Button size="icon" variant="outline" className="h-12 w-12 rounded-xl" onClick={copySize}>
+                    {hasCopied ? <CheckCircle2 className="h-5 w-5 text-success" /> : <Copy className="h-5 w-5" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Risking ${calcs.safeRisk.toFixed(0)} ({riskPerTrade}%) with {stopLossPips}pip SL on {ASSET_CLASSES[assetClass]?.name}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 w-full md:w-auto">
+                <div className="p-4 rounded-xl bg-muted/30 border border-border/40 text-center min-w-[100px]">
+                  <p className="text-[9px] font-bold uppercase text-muted-foreground">Risk $</p>
+                  <p className="text-xl font-black text-foreground">${calcs.safeRisk.toFixed(0)}</p>
+                </div>
+                <div className="p-4 rounded-xl bg-muted/30 border border-border/40 text-center min-w-[100px]">
+                  <p className="text-[9px] font-bold uppercase text-muted-foreground">Daily Limit</p>
+                  <p className="text-xl font-black text-foreground">${calcs.dailyLimit.toFixed(0)}</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-              <TabsContent value="alerts" className="mt-6">
-                <BreachAlerts
-                  dailyUsedPercent={calcs.dailyProg}
-                  totalUsedPercent={Math.max(0, 100 - (calcs.totalRemaining / (accountSize * maxTotalDrawdown / 100)) * 100)}
-                  dailyRemaining={calcs.dailyRemaining}
-                  totalRemaining={calcs.totalRemaining}
-                  accountName={accountNames[currentAccountSlot]}
-                />
-              </TabsContent>
+        {/* SECTION 3: CHALLENGE PROGRESS or RECOVERY */}
+        {calcs.isInDrawdown ? (
+          /* RECOVERY MODE */
+          <Card className="border-none rounded-2xl overflow-hidden bg-destructive/5 ring-1 ring-destructive/20">
+            <CardContent className="p-6 space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-destructive/20">
+                  <Target className="h-5 w-5 text-destructive" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black text-foreground">Recovery Mode</h2>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+                    ${calcs.drawdownAmount.toFixed(0)} to recover ({calcs.drawdownPercent.toFixed(1)}% down)
+                  </p>
+                </div>
+              </div>
 
-              <TabsContent value="journal" className="mt-6">
-                {userId ? (
-                  <TradeJournalSync
-                    userId={userId}
-                    accountSize={accountSize}
-                    maxDailyDrawdown={maxDailyDrawdown}
-                    maxTotalDrawdown={maxTotalDrawdown}
-                    currentBalance={currentBalance}
-                  />
-                ) : (
-                  <Card className="p-8 text-center bg-slate-900 border-none rounded-3xl">
-                    <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">Sign in to sync your trade journal</p>
-                  </Card>
-                )}
-              </TabsContent>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="p-4 rounded-xl bg-muted/30 border border-border/40 text-center">
+                  <p className="text-2xl font-black text-destructive">-${calcs.drawdownAmount.toFixed(0)}</p>
+                  <p className="text-[9px] font-bold text-muted-foreground uppercase mt-1">Current Gap</p>
+                </div>
+                <div className="p-4 rounded-xl bg-muted/30 border border-border/40 text-center">
+                  <p className="text-2xl font-black text-chart-4">${calcs.totalRemaining.toFixed(0)}</p>
+                  <p className="text-[9px] font-bold text-muted-foreground uppercase mt-1">Buffer Left</p>
+                </div>
+                <div className="p-4 rounded-xl bg-muted/30 border border-border/40 text-center">
+                  <p className="text-2xl font-black text-primary">${calcs.dailyTargetNeeded.toFixed(0)}</p>
+                  <p className="text-[9px] font-bold text-muted-foreground uppercase mt-1">Daily Target</p>
+                </div>
+              </div>
 
-              <TabsContent value="challenge" className="mt-6">
-                <ChallengePhaseTracker
-                  accountSize={accountSize}
-                  currentBalance={currentBalance}
-                  profitTargetPercent={profitTargetPercent}
-                  maxTotalDrawdown={maxTotalDrawdown}
-                />
-              </TabsContent>
+              <div className="p-4 rounded-xl bg-chart-4/10 border border-chart-4/20">
+                <p className="text-sm font-bold text-chart-4 mb-2 flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> Recovery Rules</p>
+                <ul className="space-y-1 text-xs text-muted-foreground">
+                  <li>• Max {Math.min(riskPerTrade, 0.5)}% risk per trade during recovery</li>
+                  <li>• Only take A+ setups – no revenge trades</li>
+                  <li>• Stop after 2 consecutive losses</li>
+                  <li>• Minimum 1:1.5 risk-reward ratio</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          /* CHALLENGE PROGRESS */
+          <Card className="border-none rounded-2xl bg-card overflow-hidden">
+            <CardContent className="p-6 space-y-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-primary/20">
+                    <Trophy className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-foreground">Challenge Progress</h2>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+                      Phase {1} • {calcs.daysRemaining} days remaining
+                    </p>
+                  </div>
+                </div>
+                <Badge className={`text-[10px] px-2.5 py-0.5 ${calcs.onTrack ? "bg-success/10 text-success border-success/20" : "bg-chart-4/10 text-chart-4 border-chart-4/20"}`}>
+                  {calcs.onTrack ? "ON TRACK" : "BEHIND"}
+                </Badge>
+              </div>
 
-              <TabsContent value="recovery" className="mt-6">
-                <RecoveryRoadmap
-                  accountSize={accountSize}
-                  currentBalance={currentBalance}
-                  maxDailyDrawdown={maxDailyDrawdown}
-                  maxTotalDrawdown={maxTotalDrawdown}
-                  riskPerTrade={riskPerTrade}
-                />
-              </TabsContent>
-            </Tabs>
-          </main>
-        </div>
+              {/* Key stats */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="p-4 rounded-xl bg-muted/30 border border-border/40 text-center">
+                  <Calendar className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
+                  <p className="text-2xl font-black text-foreground">{calcs.daysRemaining}</p>
+                  <p className="text-[9px] font-bold text-muted-foreground uppercase">Days Left</p>
+                </div>
+                <div className="p-4 rounded-xl bg-muted/30 border border-border/40 text-center">
+                  <Target className="h-4 w-4 mx-auto text-primary mb-1" />
+                  <p className="text-2xl font-black text-primary">${calcs.remainingProfit.toFixed(0)}</p>
+                  <p className="text-[9px] font-bold text-muted-foreground uppercase">To Target</p>
+                </div>
+                <div className="p-4 rounded-xl bg-muted/30 border border-border/40 text-center">
+                  <TrendingUp className="h-4 w-4 mx-auto text-success mb-1" />
+                  <p className="text-2xl font-black text-success">${calcs.dailyTargetNeeded.toFixed(0)}</p>
+                  <p className="text-[9px] font-bold text-muted-foreground uppercase">Per Day</p>
+                </div>
+              </div>
+
+              {/* Profit progress with time marker */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-[10px] font-bold">
+                  <span className="text-muted-foreground uppercase">Profit Progress</span>
+                  <span className={calcs.profitProgress >= 100 ? "text-success" : calcs.onTrack ? "text-primary" : "text-chart-4"}>
+                    {calcs.profitProgress.toFixed(1)}%
+                  </span>
+                </div>
+                <div className="relative">
+                  <div className="h-3 bg-muted rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full rounded-full bg-primary"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(calcs.profitProgress, 100)}%` }}
+                      transition={{ duration: 0.8 }}
+                    />
+                  </div>
+                  <div className="absolute top-0 w-0.5 h-3 bg-foreground/40 rounded-full" style={{ left: `${calcs.timeProgress}%` }} />
+                </div>
+                <p className="text-[9px] text-muted-foreground">White line = expected progress based on time</p>
+              </div>
+
+              {/* Daily target options */}
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="p-3 rounded-xl bg-muted/20 border border-border/30">
+                  <p className="text-[9px] text-muted-foreground uppercase font-bold">Conservative</p>
+                  <p className="text-lg font-black text-foreground">${(calcs.dailyTargetNeeded * 0.8).toFixed(0)}</p>
+                  <p className="text-[9px] text-muted-foreground">{Math.ceil(calcs.daysRemaining * 1.25)} days</p>
+                </div>
+                <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
+                  <p className="text-[9px] text-primary uppercase font-bold">On Schedule</p>
+                  <p className="text-lg font-black text-primary">${calcs.dailyTargetNeeded.toFixed(0)}</p>
+                  <p className="text-[9px] text-muted-foreground">{calcs.daysRemaining} days</p>
+                </div>
+                <div className="p-3 rounded-xl bg-muted/20 border border-border/30">
+                  <p className="text-[9px] text-muted-foreground uppercase font-bold">Aggressive</p>
+                  <p className="text-lg font-black text-foreground">${(calcs.dailyTargetNeeded * 1.5).toFixed(0)}</p>
+                  <p className="text-[9px] text-muted-foreground">{Math.ceil(calcs.daysRemaining * 0.67)} days</p>
+                </div>
+              </div>
+
+              {/* Status message */}
+              {calcs.profitProgress >= 100 && (
+                <div className="p-4 rounded-xl bg-success/10 border border-success/20">
+                  <p className="text-sm font-bold text-success">🎉 Target Reached! Ready for next phase</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
-
-      {/* Pre-Trade Checkpoint Modal */}
-      <PreTradeCheckpoint
-        isOpen={showCheckpoint}
-        onClose={() => setShowCheckpoint(false)}
-        onProceed={() => {
-          setShowCheckpoint(false);
-          toast.success("Trade approved - execute with confidence!");
-        }}
-        tradeData={{
-          lotSize: hypotheticalLotSize,
-          stopLossPips: stopLossPips,
-          pair: "EURUSD",
-          direction: "buy"
-        }}
-        accountData={{
-          currentBalance,
-          accountSize,
-          dailyLossRemaining: calcs.dailyRemaining,
-          totalLossRemaining: calcs.totalRemaining,
-          maxDailyDrawdown,
-          maxTotalDrawdown
-        }}
-        pipValue={ASSET_CLASSES[assetClass as keyof typeof ASSET_CLASSES]?.pipValue || 10}
-      />
     </Layout>
   );
 };
