@@ -50,7 +50,12 @@ serve(async (req) => {
 
         const metaApiAccountId = await ensureMetaApiAccount(metaapiKey, account);
         await waitForDeployment(metaapiKey, metaApiAccountId);
-        const deals = await fetchDeals(metaapiKey, metaApiAccountId);
+        
+        // Fetch account info (balance/equity) and deals in parallel
+        const [accountInfo, deals] = await Promise.all([
+          fetchAccountInfo(metaapiKey, metaApiAccountId),
+          fetchDeals(metaapiKey, metaApiAccountId),
+        ]);
 
         let imported = 0;
         let updated = 0;
@@ -98,12 +103,15 @@ serve(async (req) => {
           }
         }
 
+        // Update account with balance info from MetaAPI
         await supabase
           .from("mt5_accounts")
           .update({
             last_sync_at: new Date().toISOString(),
             last_sync_status: "success",
             sync_error: null,
+            balance: accountInfo.balance ?? account.balance ?? 0,
+            equity: accountInfo.equity ?? account.equity ?? 0,
           })
           .eq("id", account.id);
 
@@ -232,6 +240,25 @@ async function waitForDeployment(metaapiKey: string, metaApiAccountId: string) {
 
   if (!deployed) {
     throw new Error("Account deployment timeout");
+  }
+}
+
+async function fetchAccountInfo(metaapiKey: string, metaApiAccountId: string) {
+  try {
+    const response = await fetch(
+      `${METAAPI_HISTORY_URL}/${metaApiAccountId}/account-information`,
+      { headers: { "auth-token": metaapiKey } }
+    );
+    if (!response.ok) {
+      console.warn(`Failed to fetch account info: ${response.statusText}`);
+      return { balance: null, equity: null };
+    }
+    const data = await response.json();
+    console.log(`Account info: balance=${data.balance}, equity=${data.equity}`);
+    return { balance: data.balance ?? null, equity: data.equity ?? null };
+  } catch (e) {
+    console.warn("Account info fetch failed:", e);
+    return { balance: null, equity: null };
   }
 }
 

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,26 +18,17 @@ import {
   Calendar,
   TrendingUp,
   AlertTriangle,
-  Plus,
-  Trash2,
   ChevronDown,
   Zap,
   Trophy,
-  Clock,
-  Flame,
+  RefreshCw,
+  Wifi,
+  WifiOff,
+  Link2,
 } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 
 const PROP_FIRM_PRESETS: Record<string, { name: string; dailyDD: number; totalDD: number; profitTarget: number }> = {
   ftmo: { name: "FTMO", dailyDD: 5, totalDD: 10, profitTarget: 10 },
@@ -55,34 +46,28 @@ const ASSET_CLASSES: Record<string, { name: string; pipValue: number }> = {
   indices: { name: "Indices (US30)", pipValue: 1 },
 };
 
-const ACCOUNT_SIZES = [10000, 25000, 50000, 100000, 200000];
-
-const NumericInput = ({ value, onChange, className, placeholder }: { value: number; onChange: (n: number) => void; className?: string; placeholder?: string }) => {
-  const [localVal, setLocalVal] = useState(value.toString());
-  useEffect(() => {
-    if (parseFloat(localVal) !== value) setLocalVal(value.toString());
-  }, [value]);
-  return (
-    <Input
-      type="text"
-      inputMode="decimal"
-      value={localVal}
-      placeholder={placeholder}
-      className={`bg-muted/30 border-border/40 font-bold ${className}`}
-      onChange={(e) => {
-        const v = e.target.value;
-        if (v === "" || v === "." || v === "0.") { setLocalVal(v); onChange(0); return; }
-        if (/^\d*\.?\d*$/.test(v)) { setLocalVal(v); const num = parseFloat(v); if (!isNaN(num)) onChange(num); }
-      }}
-    />
-  );
-};
+interface MT5Account {
+  id: string;
+  account_name: string | null;
+  account_number: string;
+  broker_name: string;
+  server_name: string;
+  balance: number | null;
+  equity: number | null;
+  start_of_day_balance: number | null;
+  last_sync_at: string | null;
+  last_sync_status: string | null;
+  sync_error: string | null;
+  is_active: boolean | null;
+  auto_sync_enabled: boolean | null;
+  account_type: string | null;
+}
 
 // Drawdown gauge component
-const DrawdownGauge = ({ label, usedPercent, remaining, color }: { label: string; usedPercent: number; remaining: number; color: "daily" | "total" }) => {
+const DrawdownGauge = ({ label, usedPercent, remaining }: { label: string; usedPercent: number; remaining: number }) => {
   const severity = usedPercent >= 90 ? "critical" : usedPercent >= 75 ? "danger" : usedPercent >= 50 ? "warning" : "safe";
   const barColor = severity === "critical" ? "bg-destructive" : severity === "danger" ? "bg-destructive/80" : severity === "warning" ? "bg-chart-4" : "bg-success";
-  
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -92,8 +77,8 @@ const DrawdownGauge = ({ label, usedPercent, remaining, color }: { label: string
             ${remaining.toFixed(0)}
           </span>
           <Badge className={`text-[9px] px-1.5 py-0 ${
-            severity === "safe" ? "bg-success/10 text-success border-success/20" : 
-            severity === "warning" ? "bg-chart-4/10 text-chart-4 border-chart-4/20" : 
+            severity === "safe" ? "bg-success/10 text-success border-success/20" :
+            severity === "warning" ? "bg-chart-4/10 text-chart-4 border-chart-4/20" :
             "bg-destructive/10 text-destructive border-destructive/20"
           }`}>
             {usedPercent.toFixed(0)}% used
@@ -116,82 +101,125 @@ const DrawdownGauge = ({ label, usedPercent, remaining, color }: { label: string
 };
 
 const PropFirmProtector = () => {
+  const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
+  const [mt5Accounts, setMt5Accounts] = useState<MT5Account[]>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [hasCopied, setHasCopied] = useState(false);
+  const [showSetup, setShowSetup] = useState(false);
+
+  // Settings that can be overridden per account (stored in localStorage)
   const [selectedFirm, setSelectedFirm] = useState("ftmo");
   const [assetClass, setAssetClass] = useState("forex");
-  const [accountSize, setAccountSize] = useState(100000);
-  const [currentBalance, setCurrentBalance] = useState(100000);
-  const [startOfDayBalance, setStartOfDayBalance] = useState(100000);
   const [maxDailyDrawdown, setMaxDailyDrawdown] = useState(5);
   const [maxTotalDrawdown, setMaxTotalDrawdown] = useState(10);
   const [profitTargetPercent, setProfitTargetPercent] = useState(10);
   const [stopLossPips, setStopLossPips] = useState(20);
   const [riskPerTrade, setRiskPerTrade] = useState(1);
-  const [hasCopied, setHasCopied] = useState(false);
-  const [showSetup, setShowSetup] = useState(false);
+  const [manualAccountSize, setManualAccountSize] = useState(100000);
 
-  // Challenge tracker state
-  const [startDate, setStartDate] = useState(() => {
-    const saved = localStorage.getItem("propFirmChallengeStart");
-    return saved || new Date().toISOString().split("T")[0];
-  });
+  // Challenge tracker
+  const [startDate, setStartDate] = useState(() => localStorage.getItem("propFirmChallengeStart") || new Date().toISOString().split("T")[0]);
   const [challengeDays, setChallengeDays] = useState(30);
 
-  // Multi-account state
-  const [currentAccountSlot, setCurrentAccountSlot] = useState(0);
-  const [accountNames, setAccountNames] = useState<string[]>(["Challenge 1"]);
-  const isSavingLocked = useRef(false);
-
+  // Fetch user + MT5 accounts
   useEffect(() => {
-    const getUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (data.user) setUserId(data.user.id);
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+      setUserId(user.id);
+
+      const { data } = await supabase
+        .from("mt5_accounts")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+
+      if (data && data.length > 0) {
+        setMt5Accounts(data as MT5Account[]);
+        setSelectedAccountId(data[0].id);
+      }
+      setLoading(false);
     };
-    getUser();
+    init();
   }, []);
 
-  // Load/save persistence
+  // Load settings for selected account
   useEffect(() => {
+    if (!selectedAccountId) return;
     try {
-      const savedNames = localStorage.getItem("propFirmAccountNames");
-      if (savedNames) { const parsed = JSON.parse(savedNames); if (Array.isArray(parsed)) setAccountNames(parsed); }
-      const savedSettings = localStorage.getItem(`account_slot_${currentAccountSlot}`);
-      if (savedSettings) {
-        const p = JSON.parse(savedSettings);
-        if (p) {
-          setSelectedFirm(p.selectedFirm || "ftmo");
-          setAssetClass(p.assetClass || "forex");
-          setAccountSize(Number(p.accountSize) || 100000);
-          setCurrentBalance(Number(p.currentBalance) || 100000);
-          setStartOfDayBalance(Number(p.startOfDayBalance) || 100000);
-          setMaxDailyDrawdown(Number(p.maxDailyDrawdown) || 5);
-          setMaxTotalDrawdown(Number(p.maxTotalDrawdown) || 10);
-          setProfitTargetPercent(Number(p.profitTargetPercent) || 10);
-          setStopLossPips(Number(p.stopLossPips) || 20);
-          setRiskPerTrade(Number(p.riskPerTrade) || 1);
-          setStartDate(p.startDate || new Date().toISOString().split("T")[0]);
-          setChallengeDays(Number(p.challengeDays) || 30);
-        }
+      const saved = localStorage.getItem(`prop_settings_${selectedAccountId}`);
+      if (saved) {
+        const p = JSON.parse(saved);
+        setSelectedFirm(p.selectedFirm || "ftmo");
+        setAssetClass(p.assetClass || "forex");
+        setMaxDailyDrawdown(Number(p.maxDailyDrawdown) || 5);
+        setMaxTotalDrawdown(Number(p.maxTotalDrawdown) || 10);
+        setProfitTargetPercent(Number(p.profitTargetPercent) || 10);
+        setStopLossPips(Number(p.stopLossPips) || 20);
+        setRiskPerTrade(Number(p.riskPerTrade) || 1);
+        setManualAccountSize(Number(p.manualAccountSize) || 100000);
+        setStartDate(p.startDate || new Date().toISOString().split("T")[0]);
+        setChallengeDays(Number(p.challengeDays) || 30);
       }
-    } catch (e) { console.error("Restore failed", e); }
-  }, [currentAccountSlot]);
+    } catch (e) { /* ignore */ }
+  }, [selectedAccountId]);
 
+  // Save settings
   useEffect(() => {
-    if (isSavingLocked.current) return;
-    const settings = { selectedFirm, assetClass, accountSize, currentBalance, startOfDayBalance, maxDailyDrawdown, maxTotalDrawdown, profitTargetPercent, stopLossPips, riskPerTrade, startDate, challengeDays };
-    localStorage.setItem(`account_slot_${currentAccountSlot}`, JSON.stringify(settings));
-    localStorage.setItem("propFirmAccountNames", JSON.stringify(accountNames));
-  }, [currentAccountSlot, selectedFirm, assetClass, accountSize, currentBalance, startOfDayBalance, maxDailyDrawdown, maxTotalDrawdown, profitTargetPercent, stopLossPips, riskPerTrade, accountNames, startDate, challengeDays]);
-
-  useEffect(() => {
+    if (!selectedAccountId) return;
+    const settings = { selectedFirm, assetClass, maxDailyDrawdown, maxTotalDrawdown, profitTargetPercent, stopLossPips, riskPerTrade, manualAccountSize, startDate, challengeDays };
+    localStorage.setItem(`prop_settings_${selectedAccountId}`, JSON.stringify(settings));
     localStorage.setItem("propFirmChallengeStart", startDate);
-  }, [startDate]);
+  }, [selectedAccountId, selectedFirm, assetClass, maxDailyDrawdown, maxTotalDrawdown, profitTargetPercent, stopLossPips, riskPerTrade, manualAccountSize, startDate, challengeDays]);
+
+  // Realtime subscription for account updates
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel("prop-mt5-updates")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "mt5_accounts" }, (payload) => {
+        setMt5Accounts(prev => prev.map(a => a.id === payload.new.id ? { ...a, ...payload.new } as MT5Account : a));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [userId]);
+
+  const selectedAccount = mt5Accounts.find(a => a.id === selectedAccountId);
+  const hasAccounts = mt5Accounts.length > 0;
+
+  // Derive account values from MT5 data
+  const accountSize = manualAccountSize;
+  const currentBalance = selectedAccount?.balance || accountSize;
+  const startOfDayBalance = selectedAccount?.start_of_day_balance || currentBalance;
+
+  // Sync account
+  const handleSync = useCallback(async () => {
+    if (!selectedAccountId) return;
+    setSyncing(true);
+    try {
+      const { error } = await supabase.functions.invoke("metaapi-sync", {
+        body: { accountId: selectedAccountId },
+      });
+      if (error) throw error;
+      toast.success("Account synced! Balance updated.");
+      // Refetch
+      const { data } = await supabase.from("mt5_accounts").select("*").eq("id", selectedAccountId).single();
+      if (data) setMt5Accounts(prev => prev.map(a => a.id === data.id ? data as MT5Account : a));
+    } catch (e: any) {
+      toast.error("Sync failed", { description: e.message });
+    }
+    setSyncing(false);
+  }, [selectedAccountId]);
 
   // All calculations
   const calcs = useMemo(() => {
-    const accSize = Number(accountSize) || 100000;
-    const currBal = Number(currentBalance) || accSize;
-    const startBal = Number(startOfDayBalance) || accSize;
+    const accSize = accountSize;
+    const currBal = currentBalance;
+    const startBal = startOfDayBalance;
 
     const dailyLimit = startBal * (maxDailyDrawdown / 100);
     const dailyFloor = startBal - dailyLimit;
@@ -209,16 +237,14 @@ const PropFirmProtector = () => {
     const maxDrawdownPossible = Math.min(dailyRemaining, totalRemaining);
     const safeRisk = Math.min(riskAmt, maxDrawdownPossible * 0.95);
     const asset = ASSET_CLASSES[assetClass] || ASSET_CLASSES.forex;
-    const sl = Number(stopLossPips) || 1;
+    const sl = stopLossPips || 1;
     const suggestedLots = Math.max(0, safeRisk / (sl * asset.pipValue));
 
     const dailyProg = dailyLimit > 0 ? ((startBal - currBal) / dailyLimit) * 100 : 0;
     const totalProg = totalLimit > 0 ? ((accSize - currBal) / totalLimit) * 100 : 0;
 
-    // Challenge calculations
+    // Challenge
     const start = new Date(startDate);
-    const end = new Date(start);
-    end.setDate(end.getDate() + challengeDays);
     const now = new Date();
     const daysElapsed = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
     const daysRemaining = Math.max(0, challengeDays - daysElapsed);
@@ -226,13 +252,10 @@ const PropFirmProtector = () => {
     const dailyTargetNeeded = daysRemaining > 0 ? remainingProfit / daysRemaining : 0;
     const onTrack = profitProgress >= timeProgress * 0.8;
 
-    // Recovery
     const isInDrawdown = currentProfit < 0;
     const drawdownAmount = Math.abs(Math.min(0, currentProfit));
     const drawdownPercent = (drawdownAmount / accSize) * 100;
-    const bufferPercent = totalLimit > 0 ? ((totalRemaining) / totalLimit) * 100 : 100;
 
-    // How many losses can I afford
     const lossesToDailyBreach = safeRisk > 0 ? Math.floor(dailyRemaining / safeRisk) : 99;
     const lossesToTotalBreach = safeRisk > 0 ? Math.floor(totalRemaining / safeRisk) : 99;
 
@@ -242,7 +265,7 @@ const PropFirmProtector = () => {
       totalProg: Math.max(0, Math.min(100, totalProg)),
       profitProgress, currentProfit, profitTarget,
       daysRemaining, dailyTargetNeeded, onTrack, timeProgress,
-      isInDrawdown, drawdownAmount, drawdownPercent, bufferPercent,
+      isInDrawdown, drawdownAmount, drawdownPercent,
       lossesToDailyBreach, lossesToTotalBreach,
     };
   }, [accountSize, currentBalance, startOfDayBalance, maxDailyDrawdown, maxTotalDrawdown, profitTargetPercent, stopLossPips, assetClass, riskPerTrade, startDate, challengeDays]);
@@ -256,11 +279,38 @@ const PropFirmProtector = () => {
 
   const overallSeverity = calcs.dailyProg >= 75 || calcs.totalProg >= 75 ? "danger" : calcs.dailyProg >= 50 || calcs.totalProg >= 50 ? "warning" : "safe";
 
+  // No accounts connected state
+  if (!loading && !hasAccounts) {
+    return (
+      <Layout>
+        <div className="container mx-auto p-6 max-w-2xl">
+          <Card className="border-none rounded-2xl bg-card text-center">
+            <CardContent className="p-10 space-y-6">
+              <div className="p-4 rounded-2xl bg-primary/10 w-fit mx-auto">
+                <Link2 className="h-10 w-10 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-black text-foreground">Connect Your MT5 Account</h1>
+                <p className="text-muted-foreground mt-2 max-w-md mx-auto">
+                  Link your prop firm MT5 account to get automated balance tracking, drawdown alerts, and safe lot size calculations — zero manual input needed.
+                </p>
+              </div>
+              <Button size="lg" className="font-bold" onClick={() => navigate("/integrations")}>
+                <Wifi className="h-4 w-4 mr-2" />
+                Connect MT5 Account
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="container mx-auto p-4 md:p-6 max-w-5xl space-y-6 animate-in fade-in duration-500">
 
-        {/* COMPACT HEADER */}
+        {/* HEADER */}
         <header className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className={`p-2.5 rounded-xl ${
@@ -273,64 +323,75 @@ const PropFirmProtector = () => {
             <div>
               <h1 className="text-xl font-black tracking-tight text-foreground">Prop Guardian</h1>
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                {accountNames[currentAccountSlot]} • {PROP_FIRM_PRESETS[selectedFirm]?.name}
+                {selectedAccount?.account_name || selectedAccount?.account_number} • {PROP_FIRM_PRESETS[selectedFirm]?.name}
               </p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setShowSetup(!showSetup)} className="text-[10px] font-bold uppercase gap-1">
-            <ChevronDown className={`h-3 w-3 transition-transform ${showSetup ? "rotate-180" : ""}`} />
-            Setup
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing} className="text-[10px] font-bold uppercase gap-1">
+              <RefreshCw className={`h-3 w-3 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Syncing" : "Sync"}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setShowSetup(!showSetup)} className="text-[10px] font-bold uppercase gap-1">
+              <ChevronDown className={`h-3 w-3 transition-transform ${showSetup ? "rotate-180" : ""}`} />
+              Rules
+            </Button>
+          </div>
         </header>
 
-        {/* ACCOUNT TABS */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1">
-          {accountNames.map((n, i) => (
-            <div key={i} className="relative group flex-shrink-0">
+        {/* ACCOUNT SELECTOR */}
+        {mt5Accounts.length > 1 && (
+          <div className="flex items-center gap-1 overflow-x-auto pb-1">
+            {mt5Accounts.map(acc => (
               <Button
-                variant={currentAccountSlot === i ? "default" : "ghost"}
+                key={acc.id}
+                variant={selectedAccountId === acc.id ? "default" : "ghost"}
                 size="sm"
-                onClick={() => setCurrentAccountSlot(i)}
-                className="h-8 px-3 text-[10px] font-bold uppercase rounded-lg"
+                onClick={() => setSelectedAccountId(acc.id)}
+                className="h-8 px-3 text-[10px] font-bold uppercase rounded-lg flex-shrink-0 gap-1.5"
               >
-                {n}
+                {acc.last_sync_status === "success" ? (
+                  <Wifi className="h-3 w-3 text-success" />
+                ) : (
+                  <WifiOff className="h-3 w-3 text-destructive" />
+                )}
+                {acc.account_name || acc.account_number}
               </Button>
-              {accountNames.length > 1 && currentAccountSlot === i && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive/80 text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                      <Trash2 className="h-2.5 w-2.5" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete "{n}"?</AlertDialogTitle>
-                      <AlertDialogDescription>This will permanently delete this account profile.</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => {
-                        const newNames = accountNames.filter((_, idx) => idx !== i);
-                        setAccountNames(newNames);
-                        localStorage.removeItem(`account_slot_${i}`);
-                        setCurrentAccountSlot(Math.max(0, newNames.length - 1));
-                        toast.success(`"${n}" deleted`);
-                      }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+            ))}
+          </div>
+        )}
+
+        {/* LIVE BALANCE CARD */}
+        <Card className="border-none rounded-2xl bg-card overflow-hidden">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className={`h-2 w-2 rounded-full ${selectedAccount?.last_sync_status === "success" ? "bg-success animate-pulse" : "bg-muted-foreground"}`} />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  Live Balance • {selectedAccount?.broker_name}
+                </span>
+              </div>
+              {selectedAccount?.last_sync_at && (
+                <span className="text-[9px] text-muted-foreground">
+                  Synced {format(new Date(selectedAccount.last_sync_at), "HH:mm")}
+                </span>
               )}
             </div>
-          ))}
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary flex-shrink-0" onClick={() => {
-            const n = prompt("Account Name:");
-            if (n) { setAccountNames([...accountNames, n]); setCurrentAccountSlot(accountNames.length); }
-          }}>
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
+            <div className="flex items-baseline gap-4">
+              <p className="text-4xl font-black text-foreground">${currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              <p className={`text-sm font-bold ${calcs.currentProfit >= 0 ? "text-success" : "text-destructive"}`}>
+                {calcs.currentProfit >= 0 ? "+" : ""}{calcs.currentProfit.toFixed(2)} ({((calcs.currentProfit / accountSize) * 100).toFixed(2)}%)
+              </p>
+            </div>
+            {selectedAccount?.equity && selectedAccount.equity !== currentBalance && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Equity: ${Number(selectedAccount.equity).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
-        {/* COLLAPSIBLE SETUP */}
+        {/* COLLAPSIBLE RULES SETUP */}
         <AnimatePresence>
           {showSetup && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
@@ -360,30 +421,18 @@ const PropFirmProtector = () => {
                       <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="h-9 font-bold" />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Challenge Days</Label>
-                      <NumericInput value={challengeDays} onChange={setChallengeDays} className="h-9" />
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Account Size</Label>
+                      <Input type="number" value={manualAccountSize} onChange={e => setManualAccountSize(Number(e.target.value) || 100000)} className="h-9 font-bold" />
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {ACCOUNT_SIZES.map(size => (
-                      <Button key={size} variant={accountSize === size ? "default" : "outline"} size="sm" className="h-7 px-2.5 text-[10px] font-bold"
-                        onClick={() => { setAccountSize(size); setCurrentBalance(size); setStartOfDayBalance(size); }}>
-                        ${(size / 1000)}k
-                      </Button>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Current Balance</Label>
-                      <NumericInput value={currentBalance} onChange={setCurrentBalance} className="h-9" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Start of Day</Label>
-                      <NumericInput value={startOfDayBalance} onChange={setStartOfDayBalance} className="h-9" />
-                    </div>
+                  <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-[10px] uppercase font-bold text-muted-foreground">Stop Loss (pips)</Label>
-                      <NumericInput value={stopLossPips} onChange={setStopLossPips} className="h-9" />
+                      <Input type="number" value={stopLossPips} onChange={e => setStopLossPips(Number(e.target.value) || 20)} className="h-9 font-bold" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Challenge Days</Label>
+                      <Input type="number" value={challengeDays} onChange={e => setChallengeDays(Number(e.target.value) || 30)} className="h-9 font-bold" />
                     </div>
                   </div>
                   <div className="space-y-1">
@@ -398,9 +447,9 @@ const PropFirmProtector = () => {
           )}
         </AnimatePresence>
 
-        {/* SECTION 1: HEALTH STATUS */}
+        {/* HEALTH STATUS */}
         <Card className={`border-none rounded-2xl overflow-hidden ${
-          overallSeverity === "danger" ? "bg-destructive/5 ring-1 ring-destructive/20" : 
+          overallSeverity === "danger" ? "bg-destructive/5 ring-1 ring-destructive/20" :
           overallSeverity === "warning" ? "bg-chart-4/5 ring-1 ring-chart-4/20" : "bg-card"
         }`}>
           <CardContent className="p-5 space-y-4">
@@ -414,21 +463,19 @@ const PropFirmProtector = () => {
                 </motion.div>
               )}
             </div>
-            <DrawdownGauge label="Daily Drawdown" usedPercent={calcs.dailyProg} remaining={calcs.dailyRemaining} color="daily" />
-            <DrawdownGauge label="Total Drawdown" usedPercent={calcs.totalProg} remaining={calcs.totalRemaining} color="total" />
-            
-            {/* Safety summary */}
+            <DrawdownGauge label="Daily Drawdown" usedPercent={calcs.dailyProg} remaining={calcs.dailyRemaining} />
+            <DrawdownGauge label="Total Drawdown" usedPercent={calcs.totalProg} remaining={calcs.totalRemaining} />
             <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/40">
               <Zap className="h-4 w-4 text-primary flex-shrink-0" />
               <p className="text-xs text-muted-foreground">
-                You can afford <span className="text-foreground font-bold">{Math.min(calcs.lossesToDailyBreach, calcs.lossesToTotalBreach)}</span> consecutive losses at current risk before hitting a limit.
+                You can afford <span className="text-foreground font-bold">{Math.min(calcs.lossesToDailyBreach, calcs.lossesToTotalBreach)}</span> consecutive losses at current risk.
                 {calcs.lossesToDailyBreach <= 3 && <span className="text-destructive font-bold"> Reduce size!</span>}
               </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* SECTION 2: LOT SIZE CALCULATOR - THE HERO */}
+        {/* LOT SIZE CALCULATOR */}
         <Card className="border-none rounded-2xl bg-card overflow-hidden">
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
@@ -458,9 +505,8 @@ const PropFirmProtector = () => {
           </CardContent>
         </Card>
 
-        {/* SECTION 3: CHALLENGE PROGRESS or RECOVERY */}
+        {/* CHALLENGE PROGRESS or RECOVERY */}
         {calcs.isInDrawdown ? (
-          /* RECOVERY MODE */
           <Card className="border-none rounded-2xl overflow-hidden bg-destructive/5 ring-1 ring-destructive/20">
             <CardContent className="p-6 space-y-5">
               <div className="flex items-center gap-3">
@@ -474,7 +520,6 @@ const PropFirmProtector = () => {
                   </p>
                 </div>
               </div>
-
               <div className="grid grid-cols-3 gap-3">
                 <div className="p-4 rounded-xl bg-muted/30 border border-border/40 text-center">
                   <p className="text-2xl font-black text-destructive">-${calcs.drawdownAmount.toFixed(0)}</p>
@@ -489,7 +534,6 @@ const PropFirmProtector = () => {
                   <p className="text-[9px] font-bold text-muted-foreground uppercase mt-1">Daily Target</p>
                 </div>
               </div>
-
               <div className="p-4 rounded-xl bg-chart-4/10 border border-chart-4/20">
                 <p className="text-sm font-bold text-chart-4 mb-2 flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> Recovery Rules</p>
                 <ul className="space-y-1 text-xs text-muted-foreground">
@@ -502,7 +546,6 @@ const PropFirmProtector = () => {
             </CardContent>
           </Card>
         ) : (
-          /* CHALLENGE PROGRESS */
           <Card className="border-none rounded-2xl bg-card overflow-hidden">
             <CardContent className="p-6 space-y-5">
               <div className="flex items-center justify-between">
@@ -513,7 +556,7 @@ const PropFirmProtector = () => {
                   <div>
                     <h2 className="text-lg font-black text-foreground">Challenge Progress</h2>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
-                      Phase {1} • {calcs.daysRemaining} days remaining
+                      {calcs.daysRemaining} days remaining
                     </p>
                   </div>
                 </div>
@@ -521,8 +564,6 @@ const PropFirmProtector = () => {
                   {calcs.onTrack ? "ON TRACK" : "BEHIND"}
                 </Badge>
               </div>
-
-              {/* Key stats */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="p-4 rounded-xl bg-muted/30 border border-border/40 text-center">
                   <Calendar className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
@@ -540,8 +581,6 @@ const PropFirmProtector = () => {
                   <p className="text-[9px] font-bold text-muted-foreground uppercase">Per Day</p>
                 </div>
               </div>
-
-              {/* Profit progress with time marker */}
               <div className="space-y-2">
                 <div className="flex justify-between text-[10px] font-bold">
                   <span className="text-muted-foreground uppercase">Profit Progress</span>
@@ -551,19 +590,12 @@ const PropFirmProtector = () => {
                 </div>
                 <div className="relative">
                   <div className="h-3 bg-muted rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full rounded-full bg-primary"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.min(calcs.profitProgress, 100)}%` }}
-                      transition={{ duration: 0.8 }}
-                    />
+                    <motion.div className="h-full rounded-full bg-primary" initial={{ width: 0 }} animate={{ width: `${Math.min(calcs.profitProgress, 100)}%` }} transition={{ duration: 0.8 }} />
                   </div>
                   <div className="absolute top-0 w-0.5 h-3 bg-foreground/40 rounded-full" style={{ left: `${calcs.timeProgress}%` }} />
                 </div>
                 <p className="text-[9px] text-muted-foreground">White line = expected progress based on time</p>
               </div>
-
-              {/* Daily target options */}
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="p-3 rounded-xl bg-muted/20 border border-border/30">
                   <p className="text-[9px] text-muted-foreground uppercase font-bold">Conservative</p>
@@ -581,8 +613,6 @@ const PropFirmProtector = () => {
                   <p className="text-[9px] text-muted-foreground">{Math.ceil(calcs.daysRemaining * 0.67)} days</p>
                 </div>
               </div>
-
-              {/* Status message */}
               {calcs.profitProgress >= 100 && (
                 <div className="p-4 rounded-xl bg-success/10 border border-success/20">
                   <p className="text-sm font-bold text-success">🎉 Target Reached! Ready for next phase</p>
