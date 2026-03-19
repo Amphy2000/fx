@@ -2254,15 +2254,18 @@ export type Database = {
           api_key_encrypted: string | null
           api_secret_encrypted: string | null
           auto_sync_enabled: boolean | null
+          balance: number | null
           broker_name: string
           created_at: string | null
           currency: string | null
+          equity: number | null
           id: string
           is_active: boolean | null
           last_sync_at: string | null
           last_sync_status: string | null
           leverage: number | null
           server_name: string
+          start_of_day_balance: number | null
           sync_error: string | null
           sync_interval_minutes: number | null
           updated_at: string | null
@@ -2275,15 +2278,18 @@ export type Database = {
           api_key_encrypted?: string | null
           api_secret_encrypted?: string | null
           auto_sync_enabled?: boolean | null
+          balance?: number | null
           broker_name: string
           created_at?: string | null
           currency?: string | null
+          equity?: number | null
           id?: string
           is_active?: boolean | null
           last_sync_at?: string | null
           last_sync_status?: string | null
           leverage?: number | null
           server_name: string
+          start_of_day_balance?: number | null
           sync_error?: string | null
           sync_interval_minutes?: number | null
           updated_at?: string | null
@@ -2296,15 +2302,18 @@ export type Database = {
           api_key_encrypted?: string | null
           api_secret_encrypted?: string | null
           auto_sync_enabled?: boolean | null
+          balance?: number | null
           broker_name?: string
           created_at?: string | null
           currency?: string | null
+          equity?: number | null
           id?: string
           is_active?: boolean | null
           last_sync_at?: string | null
           last_sync_status?: string | null
           leverage?: number | null
           server_name?: string
+          start_of_day_balance?: number | null
           sync_error?: string | null
           sync_interval_minutes?: number | null
           updated_at?: string | null
