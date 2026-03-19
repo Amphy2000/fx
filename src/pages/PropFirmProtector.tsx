@@ -147,9 +147,10 @@ const PropFirmProtector = () => {
     init();
   }, []);
 
-  // Load settings for selected account
+  // Load settings for selected account — auto-populate account size from MT5 balance if no saved settings
   useEffect(() => {
     if (!selectedAccountId) return;
+    const account = mt5Accounts.find(a => a.id === selectedAccountId);
     try {
       const saved = localStorage.getItem(`prop_settings_${selectedAccountId}`);
       if (saved) {
@@ -161,12 +162,17 @@ const PropFirmProtector = () => {
         setProfitTargetPercent(Number(p.profitTargetPercent) || 10);
         setStopLossPips(Number(p.stopLossPips) || 20);
         setRiskPerTrade(Number(p.riskPerTrade) || 1);
-        setManualAccountSize(Number(p.manualAccountSize) || 100000);
+        setManualAccountSize(Number(p.manualAccountSize) || Number(account?.balance) || 100000);
         setStartDate(p.startDate || new Date().toISOString().split("T")[0]);
         setChallengeDays(Number(p.challengeDays) || 30);
+      } else if (account?.balance) {
+        // First time — auto-detect account size from MT5 balance
+        const roundedBalance = Math.round(Number(account.balance) / 1000) * 1000 || 100000;
+        setManualAccountSize(roundedBalance);
+        setShowSetup(true); // Show rules so user can confirm the auto-detected values
       }
     } catch (e) { /* ignore */ }
-  }, [selectedAccountId]);
+  }, [selectedAccountId, mt5Accounts]);
 
   // Save settings
   useEffect(() => {
