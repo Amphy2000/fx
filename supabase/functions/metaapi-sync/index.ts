@@ -243,6 +243,25 @@ async function waitForDeployment(metaapiKey: string, metaApiAccountId: string) {
   }
 }
 
+async function fetchAccountInfo(metaapiKey: string, metaApiAccountId: string) {
+  try {
+    const response = await fetch(
+      `${METAAPI_HISTORY_URL}/${metaApiAccountId}/account-information`,
+      { headers: { "auth-token": metaapiKey } }
+    );
+    if (!response.ok) {
+      console.warn(`Failed to fetch account info: ${response.statusText}`);
+      return { balance: null, equity: null };
+    }
+    const data = await response.json();
+    console.log(`Account info: balance=${data.balance}, equity=${data.equity}`);
+    return { balance: data.balance ?? null, equity: data.equity ?? null };
+  } catch (e) {
+    console.warn("Account info fetch failed:", e);
+    return { balance: null, equity: null };
+  }
+}
+
 async function fetchDeals(metaapiKey: string, metaApiAccountId: string) {
   const historyResponse = await fetch(
     `${METAAPI_HISTORY_URL}/${metaApiAccountId}/history-storage/deals/time-range?startTime=0`,
