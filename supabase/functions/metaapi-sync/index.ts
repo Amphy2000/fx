@@ -104,15 +104,29 @@ serve(async (req) => {
         }
 
         // Update account with balance info from MetaAPI
+        // Track start_of_day_balance: reset it at the start of each new day
+        const now = new Date();
+        const lastSync = account.last_sync_at ? new Date(account.last_sync_at) : null;
+        const isNewDay = !lastSync || lastSync.toDateString() !== now.toDateString();
+        const newBalance = accountInfo.balance ?? account.balance ?? 0;
+
+        const updateData: Record<string, any> = {
+          last_sync_at: now.toISOString(),
+          last_sync_status: "success",
+          sync_error: null,
+          balance: newBalance,
+          equity: accountInfo.equity ?? account.equity ?? 0,
+        };
+
+        // Set start_of_day_balance on the first sync of each new day
+        if (isNewDay) {
+          updateData.start_of_day_balance = newBalance;
+          console.log(`New day detected for ${account.account_number}, setting start_of_day_balance=${newBalance}`);
+        }
+
         await supabase
           .from("mt5_accounts")
-          .update({
-            last_sync_at: new Date().toISOString(),
-            last_sync_status: "success",
-            sync_error: null,
-            balance: accountInfo.balance ?? account.balance ?? 0,
-            equity: accountInfo.equity ?? account.equity ?? 0,
-          })
+          .update(updateData)
           .eq("id", account.id);
 
         await supabase.from("sync_logs").insert({
