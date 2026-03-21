@@ -1,4 +1,4 @@
-import { LayoutDashboard, Calendar, Settings, Brain, LogOut, CreditCard, BarChart3, BookOpen, Zap, TrendingUp, Shield, Mic, Search, Plug, Heart, ClipboardCheck } from "lucide-react";
+import { LayoutDashboard, Calendar, Settings, Brain, LogOut, CreditCard, BarChart3, BookOpen, Zap, TrendingUp, Shield, Mic, Search, Plug, Heart, ClipboardCheck, MessageSquare } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,25 +8,23 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 const primaryNavItems = [
-  { title: "Prop Firm Protector", url: "/prop-firm-protector", icon: Shield, badge: "Core" },
-  { title: "MT5 Auto-Sync", url: "/integrations", icon: Plug, badge: "Auto" },
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Prop Guardian", url: "/prop-firm-protector", icon: Shield, badge: "Core" },
   { title: "Trade Calendar", url: "/trade-calendar", icon: Calendar },
+  { title: "Daily Check-In", url: "/check-in", icon: Heart },
+];
+
+const toolsNavItems = [
+  { title: "MT5 Accounts", url: "/integrations", icon: Plug, badge: "Auto" },
+  { title: "AI Journal", url: "/ai-journal", icon: Brain },
+  { title: "AI Setup Analyzer", url: "/ai-setup-analyzer", icon: Zap },
+  { title: "Voice Memos", url: "/voice-memos", icon: Mic },
   { title: "Weekly Summary", url: "/weekly-summary", icon: BarChart3 },
 ];
 
-const disciplineNavItems = [
-  { title: "Daily Check-In", url: "/check-in", icon: Heart },
-  { title: "Trading Routine", url: "/routine", icon: ClipboardCheck },
-  { title: "Voice Memos", url: "/voice-memos", icon: Mic },
-  { title: "AI Journal", url: "/ai-journal", icon: Brain },
-  { title: "AI Setup Analyzer", url: "/ai-setup-analyzer", icon: Zap },
-];
-
 const secondaryNavItems = [
-  { title: "Advanced Analytics", url: "/analytics/advanced", icon: TrendingUp },
   { title: "Settings", url: "/settings", icon: Settings },
-  { title: "Pricing", url: "/pricing", icon: CreditCard },
+  { title: "Feedback", url: "/feedback", icon: MessageSquare },
 ];
 
 export function AppSidebar() {
@@ -166,9 +164,9 @@ export function AppSidebar() {
     </SidebarHeader>
 
     <SidebarContent>
-      {renderNavGroup("Core", primaryNavItems)}
-      {renderNavGroup("Discipline", disciplineNavItems)}
-      {renderNavGroup("Secondary", secondaryNavItems)}
+      {renderNavGroup("Main", primaryNavItems)}
+      {renderNavGroup("Tools", toolsNavItems)}
+      {renderNavGroup("More", secondaryNavItems)}
 
       {isAdmin ? renderNavGroup("Admin", [{ title: "Admin", url: "/admin", icon: Settings }]) : null}
       <EducationGroup />
