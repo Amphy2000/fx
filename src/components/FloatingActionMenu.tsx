@@ -34,7 +34,6 @@ export const FloatingActionMenu = () => {
         setIsOpen(false);
       },
       color: "bg-primary hover:bg-primary/90",
-      component: "voice"
     },
     {
       icon: TrendingUp,
@@ -46,24 +45,6 @@ export const FloatingActionMenu = () => {
       color: "bg-green-600 hover:bg-green-700"
     },
     {
-      icon: Sparkles,
-      label: "AI Setup Analyzer",
-      action: () => {
-        navigate("/ai-setup-analyzer");
-        setIsOpen(false);
-      },
-      color: "bg-orange-600 hover:bg-orange-700"
-    },
-    {
-      icon: Users,
-      label: "Partners",
-      action: () => {
-        navigate("/accountability-partners");
-        setIsOpen(false);
-      },
-      color: "bg-blue-600 hover:bg-blue-700"
-    },
-    {
       icon: MessageSquare,
       label: "Feedback",
       action: () => {
@@ -71,7 +52,6 @@ export const FloatingActionMenu = () => {
         setIsOpen(false);
       },
       color: "bg-purple-600 hover:bg-purple-700",
-      component: null
     }
   ];
 
