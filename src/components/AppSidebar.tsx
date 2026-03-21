@@ -164,9 +164,9 @@ export function AppSidebar() {
     </SidebarHeader>
 
     <SidebarContent>
-      {renderNavGroup("Core", primaryNavItems)}
-      {renderNavGroup("Discipline", disciplineNavItems)}
-      {renderNavGroup("Secondary", secondaryNavItems)}
+      {renderNavGroup("Main", primaryNavItems)}
+      {renderNavGroup("Tools", toolsNavItems)}
+      {renderNavGroup("More", secondaryNavItems)}
 
       {isAdmin ? renderNavGroup("Admin", [{ title: "Admin", url: "/admin", icon: Settings }]) : null}
       <EducationGroup />
