@@ -7,8 +7,6 @@ import {
   MessageSquare,
   X,
   TrendingUp,
-  Sparkles,
-  Users
 } from "lucide-react";
 import { GlobalVoiceAssistant } from "./GlobalVoiceAssistant";
 import { FeedbackModal } from "./FeedbackModal";
