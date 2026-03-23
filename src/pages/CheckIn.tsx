@@ -134,32 +134,47 @@ const CheckIn = () => {
         body: { checkInData: formData }
       });
 
-      if (error) {
-        if (error.message?.includes('Insufficient AI credits')) {
-          setAiInsight("⚠️ You need 2 AI credits for personalized insights. Showing basic feedback instead.");
-          // Fallback to rule-based
-          if (formData.stress > 7 && formData.sleep_hours < 6) {
-            setAiInsight("⚠️ High stress + low sleep = increased risk of overtrading today. Consider taking it easy.");
-          } else if (formData.confidence < 4 && formData.focus_level < 4) {
-            setAiInsight("💭 Low confidence and focus detected. Maybe skip live trading today.");
-          } else if (formData.stress > 7) {
-            setAiInsight("😰 High stress levels detected. Consider breathing exercises before trading.");
-          } else if (formData.sleep_hours < 6) {
-            setAiInsight("😴 Low sleep hours. Your decision-making may be impaired today.");
-          } else if (formData.confidence >= 7 && formData.focus_level >= 7 && formData.stress < 5) {
-            setAiInsight("✅ You're in great shape! Perfect conditions for focused trading.");
-          } else {
-            setAiInsight("👍 You're doing okay. Stay mindful during your session.");
-          }
+      if (error || !data || (data.insight && data.insight.includes('temporarily unavailable'))) {
+        let prefix = "";
+        if (error?.message?.includes('Insufficient AI credits')) {
+          prefix = "⚠️ You need 2 AI credits for personalized insights. Showing basic feedback instead. ";
         } else {
-          throw error;
+          prefix = "🤖 AI Coach Offline. Showing built-in psychology feedback. ";
         }
+
+        // Fallback to rule-based
+        let ruleBasedFeedback = "";
+        if (formData.stress > 7 && formData.sleep_hours < 6) {
+          ruleBasedFeedback = "High stress + low sleep = increased risk of overtrading today. Consider taking it easy.";
+        } else if (formData.confidence < 4 && formData.focus_level < 4) {
+          ruleBasedFeedback = "Low confidence and focus detected. Maybe skip live trading today.";
+        } else if (formData.stress > 7) {
+          ruleBasedFeedback = "High stress levels detected. Consider breathing exercises before trading.";
+        } else if (formData.sleep_hours < 6) {
+          ruleBasedFeedback = "Low sleep hours. Your decision-making may be impaired today.";
+        } else if (formData.confidence >= 7 && formData.focus_level >= 7 && formData.stress < 5) {
+          ruleBasedFeedback = "✅ You're in great shape! Perfect conditions for focused trading.";
+        } else {
+          ruleBasedFeedback = "👍 You're doing okay. Stay mindful during your session.";
+        }
+        
+        setAiInsight(prefix + ruleBasedFeedback);
       } else {
         setAiInsight(data.insight || "Unable to generate insight at this time.");
       }
     } catch (error) {
       console.error('Error getting AI insight:', error);
-      setAiInsight("Unable to get AI insight. Please try again later.");
+      
+      // Ultimate fallback if fetch completely fails
+      let ruleBasedFeedback = "🤖 AI Coach Offline. ";
+      if (formData.stress > 7 && formData.sleep_hours < 6) {
+        ruleBasedFeedback += "High stress + low sleep = increased risk of overtrading today. Consider taking it easy.";
+      } else if (formData.confidence >= 7 && formData.stress < 5) {
+        ruleBasedFeedback += "✅ You're in great shape! Perfect conditions for focused trading.";
+      } else {
+        ruleBasedFeedback += "👍 You're doing okay. Stay mindful during your session.";
+      }
+      setAiInsight(ruleBasedFeedback);
     } finally {
       setInsightLoading(false);
     }
