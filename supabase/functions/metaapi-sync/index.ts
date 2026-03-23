@@ -60,9 +60,62 @@ serve(async (req) => {
         let imported = 0;
         let updated = 0;
 
-        for (const deal of deals) {
+        // Fetch today's daily check-in mood to use as a baseline 'emotion_before'
+        const todayStr = new Date().toISOString().split('T')[0];
+        const { data: todayCheckin } = await supabase
+          .from("daily_checkins")
+          .select("mood")
+          .eq("user_id", account.user_id)
+          .eq("check_in_date", todayStr)
+          .maybeSingle();
+        
+        const dailyMood = todayCheckin?.mood || null;
+
+        let lastLossTime: Date | null = null;
+        let lastLossPair: string | null = null;
+        let totalVolume = 0;
+        let validTradeCount = 0;
+
+        // Sort deals by time ascending to ensure accurate chronological behavioral inference
+        const sortedDeals = [...(deals || [])].sort((a, b) => new Date(a.time || 0).getTime() - new Date(b.time || 0).getTime());
+
+        for (const deal of sortedDeals) {
           if (deal.type !== "DEAL_TYPE_SELL" && deal.type !== "DEAL_TYPE_BUY") continue;
           if (!deal.positionId) continue;
+
+          // --- AI Behavioral Inference Logic ---
+          const tradeTimestamp = new Date(deal.time || new Date());
+          const pair = deal.symbol || "UNKNOWN";
+          const profit = deal.profit || 0;
+          const isLoss = profit < 0;
+          
+          totalVolume += deal.volume || 0;
+          validTradeCount++;
+          const avgVolume = validTradeCount > 1 ? (totalVolume - (deal.volume || 0)) / (validTradeCount - 1) : (deal.volume || 0);
+
+          let inferredEmotion = null;
+          let autoComment = deal.comment || null;
+
+          // 1. Revenge Trading (Opening same pair < 15 mins after a loss)
+          if (lastLossTime && lastLossPair === pair) {
+            const minutesSinceLoss = (tradeTimestamp.getTime() - lastLossTime.getTime()) / (1000 * 60);
+            if (minutesSinceLoss < 15) {
+                inferredEmotion = "🤬 Revenge";
+                autoComment = (autoComment ? autoComment + " | " : "") + "AI Flag: High probability of revenge trading detected (quick re-entry after loss).";
+            }
+          }
+
+          // 2. Overconfidence / Greed (Lot size is substantially larger than recent average)
+          if (!inferredEmotion && avgVolume > 0 && deal.volume >= avgVolume * 2) {
+              inferredEmotion = "🤑 Overconfident";
+              autoComment = (autoComment ? autoComment + " | " : "") + "AI Flag: Lot size significantly larger than recent average. Check for overconfidence/greed.";
+          }
+
+          if (isLoss) {
+              lastLossTime = tradeTimestamp;
+              lastLossPair = pair;
+          }
+          // --- End AI Logic ---
 
           const ticketNumber = deal.positionId?.toString();
           const { data: existingTrade } = await supabase
@@ -72,25 +125,26 @@ serve(async (req) => {
             .eq("mt5_account_id", account.id)
             .maybeSingle();
 
-          const tradeTimestamp = deal.time || new Date().toISOString();
           const tradeData = {
             user_id: account.user_id,
             mt5_account_id: account.id,
             ticket_number: ticketNumber,
-            pair: deal.symbol || "UNKNOWN",
+            pair: pair,
             direction: deal.type === "DEAL_TYPE_BUY" ? "buy" : "sell",
             entry_price: deal.price || 0,
             exit_price: deal.price || 0,
             volume: deal.volume || 0,
-            profit_loss: deal.profit || 0,
+            profit_loss: profit,
             commission: deal.commission || 0,
             swap: deal.swap || 0,
-            open_time: tradeTimestamp,
-            close_time: tradeTimestamp,
-            result: (deal.profit || 0) > 0 ? "win" : (deal.profit || 0) < 0 ? "loss" : "breakeven",
+            open_time: tradeTimestamp.toISOString(),
+            close_time: tradeTimestamp.toISOString(),
+            result: profit > 0 ? "win" : profit < 0 ? "loss" : "breakeven",
             is_auto_synced: true,
-            comment: deal.comment || null,
-            created_at: tradeTimestamp,
+            comment: autoComment,
+            emotion_before: dailyMood,
+            emotion_after: inferredEmotion,
+            created_at: tradeTimestamp.toISOString(),
             updated_at: new Date().toISOString(),
           };
 
