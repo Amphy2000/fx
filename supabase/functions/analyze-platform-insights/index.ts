@@ -69,25 +69,20 @@ serve(async (req) => {
 
     console.log('Authenticated user:', user.id);
 
-    // Check admin role using the security definer function
+    // Check admin role using the security definer function or super admin bypass
     const { data: hasAdminRole, error: roleError } = await supabaseClient
       .rpc('has_role', { 
         _user_id: user.id, 
         _role: 'admin' 
       });
 
+    const isSuperAdmin = user.email === 'amphy2000@gmail.com';
+
     if (roleError) {
       console.error('Role check error:', roleError);
-      return new Response(
-        JSON.stringify({ error: `Failed to verify admin access: ${roleError.message}` }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
     }
 
-    if (!hasAdminRole) {
+    if (!hasAdminRole && !isSuperAdmin) {
       console.error('User does not have admin role:', user.id);
       return new Response(
         JSON.stringify({ error: 'Unauthorized: Admin access required' }),
@@ -106,7 +101,12 @@ serve(async (req) => {
 
     console.log('Gathering analytics data...');
 
-    // Parallel data gathering
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Parallel data gathering (using admin client to bypass RLS)
     const [
       profilesData,
       tradesData,
@@ -122,19 +122,19 @@ serve(async (req) => {
       interceptionsData,
       setupsData,
     ] = await Promise.all([
-      supabaseClient.from('profiles').select('id, created_at, subscription_tier, ai_credits'),
-      supabaseClient.from('trades').select('id, user_id, created_at').gte('created_at', startDate.toISOString()),
-      supabaseClient.from('journal_entries').select('id, user_id, created_at').gte('created_at', startDate.toISOString()),
-      supabaseClient.from('daily_checkins').select('id, user_id, check_in_date').gte('check_in_date', startDate.toISOString()),
-      supabaseClient.from('credit_earnings').select('earning_type, credits_earned, user_id').gte('earned_at', startDate.toISOString()),
-      supabaseClient.from('chat_conversations').select('id, user_id, created_at').gte('created_at', startDate.toISOString()),
-      supabaseClient.from('trade_insights').select('id, user_id, created_at').gte('created_at', startDate.toISOString()),
-      supabaseClient.from('accountability_partnerships').select('id, status, created_at'),
-      supabaseClient.from('accountability_groups').select('id, created_at'),
-      supabaseClient.from('mt5_accounts').select('id, user_id, created_at'),
-      supabaseClient.from('achievements').select('id, user_id, earned_at').gte('earned_at', startDate.toISOString()),
-      supabaseClient.from('trade_interceptions').select('id, user_id, created_at').gte('created_at', startDate.toISOString()),
-      supabaseClient.from('setups').select('id, user_id, created_at').gte('created_at', startDate.toISOString()),
+      supabaseAdmin.from('profiles').select('id, created_at, subscription_tier, ai_credits'),
+      supabaseAdmin.from('trades').select('id, user_id, created_at').gte('created_at', startDate.toISOString()),
+      supabaseAdmin.from('journal_entries').select('id, user_id, created_at').gte('created_at', startDate.toISOString()),
+      supabaseAdmin.from('daily_checkins').select('id, user_id, check_in_date').gte('check_in_date', startDate.toISOString()),
+      supabaseAdmin.from('credit_earnings').select('earning_type, credits_earned, user_id').gte('earned_at', startDate.toISOString()),
+      supabaseAdmin.from('chat_conversations').select('id, user_id, created_at').gte('created_at', startDate.toISOString()),
+      supabaseAdmin.from('trade_insights').select('id, user_id, created_at').gte('created_at', startDate.toISOString()),
+      supabaseAdmin.from('accountability_partnerships').select('id, status, created_at'),
+      supabaseAdmin.from('accountability_groups').select('id, created_at'),
+      supabaseAdmin.from('mt5_accounts').select('id, user_id, created_at'),
+      supabaseAdmin.from('achievements').select('id, user_id, earned_at').gte('earned_at', startDate.toISOString()),
+      supabaseAdmin.from('trade_interceptions').select('id, user_id, created_at').gte('created_at', startDate.toISOString()),
+      supabaseAdmin.from('setups').select('id, user_id, created_at').gte('created_at', startDate.toISOString()),
     ]);
 
     // Calculate metrics
@@ -235,10 +235,12 @@ serve(async (req) => {
 
     console.log('Analyzing data with AI...');
 
-    // Call Lovable AI for insights
+    // Use Gemini API directly instead of Lovable if possible, or fallback to LOVABLE_API_KEY
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    
+    if (!GEMINI_API_KEY && !LOVABLE_API_KEY) {
+      throw new Error('AI API keys not configured');
     }
 
     const aiPrompt = `You are an expert product analyst for Amphy AI, a comprehensive trading psychology platform. 
@@ -293,21 +295,36 @@ Focus on:
 4. New feature ideas based on user behavior patterns
 5. Drop-off points and friction in user journeys`;
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: 'You are a product analytics expert. Always respond with valid JSON only.' },
-          { role: 'user', content: aiPrompt }
-        ],
-        response_format: { type: "json_object" },
-      }),
-    });
+    const endpoint = GEMINI_API_KEY 
+      ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`
+      : 'https://ai.gateway.lovable.dev/v1/chat/completions';
+
+    let aiResponse;
+    if (GEMINI_API_KEY) {
+      aiResponse = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `${aiPrompt}\n\nIMPORTANT: Respond with ONLY valid JSON.` }] }]
+        }),
+      });
+    } else {
+      aiResponse = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.0-flash-exp',
+          messages: [
+            { role: 'system', content: 'You are a product analytics expert. Always respond with valid JSON only.' },
+            { role: 'user', content: aiPrompt }
+          ],
+          response_format: { type: "json_object" },
+        }),
+      });
+    }
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
@@ -316,7 +333,22 @@ Focus on:
     }
 
     const aiData = await aiResponse.json();
-    const aiInsights = JSON.parse(aiData.choices[0].message.content);
+    let aiInsights;
+    
+    try {
+      if (GEMINI_API_KEY) {
+        let content = aiData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+        // Remove potential markdown code blocks
+        content = content.replace(/```json\n|\n```|```/g, '').trim();
+        aiInsights = JSON.parse(content);
+      } else {
+        aiInsights = JSON.parse(aiData.choices[0].message.content);
+      }
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', parseError);
+      console.log('Original response:', JSON.stringify(aiData));
+      throw new Error('AI produced invalid JSON output');
+    }
 
     console.log('Analysis complete');
 

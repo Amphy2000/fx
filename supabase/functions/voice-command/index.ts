@@ -41,118 +41,55 @@ serve(async (req) => {
 
     console.log('Processing voice command:', command);
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    if (!GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY not configured');
     }
 
-    // Parse command using Lovable AI with tool calling
-    const parseResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [{
-          role: 'system',
-          content: `You are a voice command parser for a trading journal app. Parse user commands and determine the action and parameters.`
-        }, {
-          role: 'user',
-          content: command
-        }],
-        tools: [{
-          type: "function",
-          function: {
-            name: "execute_app_command",
-            description: "Execute any app command including navigation, trade management, journal entries, analytics, and settings",
-            parameters: {
-              type: "object",
-              properties: {
-                action: {
-                  type: "string",
-                  enum: [
-                    "navigate", "delete_last", "show_wins", "show_losses", "count_trades", 
-                    "show_recent", "show_stats", "mark_last_as", "close_trade", "add_trade",
-                    "add_journal", "show_journal", "show_analytics", "export_data", "show_targets",
-                    "show_achievements", "show_leaderboard", "show_streaks"
-                  ],
-                  description: "The action to perform"
-                },
-                destination: {
-                  type: "string",
-                  enum: [
-                    "dashboard", "journal", "analytics", "targets", "achievements", 
-                    "leaderboard", "streaks", "settings", "pricing", "integrations",
-                    "calendar", "weekly_summary", "patterns", "setups", "routine", 
-                    "checkin", "ai_coach", "ai_chat"
-                  ],
-                  description: "Navigation destination (for navigate action)"
-                },
-                timeframe: {
-                  type: "string",
-                  enum: ["today", "this_week", "this_month", "all"],
-                  description: "Time period for queries"
-                },
-                result_filter: {
-                  type: "string",
-                  enum: ["win", "loss", "breakeven", "all"],
-                  description: "Filter by trade result"
-                },
-                result_value: {
-                  type: "string",
-                  enum: ["win", "loss", "breakeven"],
-                  description: "Result to mark the trade as"
-                },
-                profit_amount: {
-                  type: "number",
-                  description: "Profit/loss amount"
-                },
-                exit_price: {
-                  type: "number",
-                  description: "Exit price"
-                },
-                trade_data: {
-                  type: "object",
-                  description: "Trade data for adding new trade"
-                },
-                journal_data: {
-                  type: "object",
-                  description: "Journal entry data"
-                },
-                export_format: {
-                  type: "string",
-                  enum: ["json", "csv"],
-                  description: "Export format"
-                }
-              },
-              required: ["action"],
-              additionalProperties: false
-            }
-          }
-        }],
-        tool_choice: { type: "function", function: { name: "execute_app_command" } }
-      })
-    });
+    // Parse command using Gemini - ask it to return structured JSON
+    const parseResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            role: 'user',
+            parts: [{ text: `You are a voice command parser for a trading journal app. Parse this command and return ONLY valid JSON with no markdown code blocks.
+
+Command: "${command}"
+
+Return JSON like: {"action": "navigate", "destination": "dashboard"} or {"action": "show_stats", "timeframe": "today"} or {"action": "count_trades", "timeframe": "this_week", "result_filter": "win"}
+
+Valid actions: navigate, delete_last, show_wins, show_losses, count_trades, show_recent, show_stats, mark_last_as, close_trade, add_trade, add_journal, show_journal, show_analytics, export_data, show_targets, show_achievements, show_leaderboard, show_streaks
+Valid destinations: dashboard, journal, analytics, targets, achievements, leaderboard, streaks, settings, pricing, integrations, calendar, weekly_summary, patterns, setups, routine, checkin, ai_coach, ai_chat
+Valid timeframes: today, this_week, this_month, all
+Valid result_filter: win, loss, breakeven, all` }]
+          }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 256 }
+        })
+      }
+    );
 
     if (!parseResponse.ok) {
-      throw new Error(`AI parsing failed: ${await parseResponse.text()}`);
+      throw new Error(`Gemini parsing failed: ${await parseResponse.text()}`);
     }
 
     const parseResult = await parseResponse.json();
-    const toolCall = parseResult.choices[0].message.tool_calls?.[0];
-    
-    if (!toolCall) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        message: "I couldn't understand that command. Try: 'go to journal', 'show my stats', 'add a trade', 'what's my streak?', or 'export data'" 
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    let rawText = parseResult.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    // Strip any markdown code blocks
+    rawText = rawText.replace(/```json\n?|\n?```/g, '').trim();
+
+    let params: any = {};
+    try {
+      params = JSON.parse(rawText);
+    } catch {
+      return new Response(JSON.stringify({
+        success: false,
+        message: "I couldn't understand that command. Try: 'go to journal', 'show my stats', 'what's my streak?', or 'show my trades this week'"
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const params = JSON.parse(toolCall.function.arguments);
     const { action, timeframe = 'all', result_filter = 'all', destination, export_format } = params;
 
     console.log('Parsed command:', params);

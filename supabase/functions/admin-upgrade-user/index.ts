@@ -29,17 +29,23 @@ Deno.serve(async (req) => {
       }
     );
 
-    // Verify admin user
+    // Use anon client to verify user token
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    );
+
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('No authorization header');
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
 
     if (userError || !user) {
-      throw new Error('Invalid user');
+      console.error('Auth error:', userError);
+      throw new Error('Invalid user token');
     }
 
     // Check if user is admin

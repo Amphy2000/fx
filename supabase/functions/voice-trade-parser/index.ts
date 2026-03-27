@@ -68,10 +68,10 @@ serve(async (req) => {
     formData.append('model', 'whisper-1');
 
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    
-    if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
-    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+
+    if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured for audio transcription');
+    if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not configured');
 
     const whisperResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
@@ -85,32 +85,32 @@ serve(async (req) => {
 
     const { text: transcript } = await whisperResponse.json();
 
-    // Parse trade data using AI
-    const parseResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [{
-          role: 'system',
-          content: `Extract trading data from voice transcript. Return JSON with: pair, direction (buy/sell), entry_price, stop_loss, take_profit. 
-          Examples:
-          - "long EURUSD at 1.0950 stop 1.0920 target 1.1000" -> {"pair":"EURUSD","direction":"buy","entry_price":"1.0950","stop_loss":"1.0920","take_profit":"1.1000"}
-          - "short gold 2050 stop 2060 tp 2030" -> {"pair":"XAUUSD","direction":"sell","entry_price":"2050","stop_loss":"2060","take_profit":"2030"}
-          If data is missing, set to null. Always return valid JSON.`
-        }, {
-          role: 'user',
-          content: transcript
-        }],
-        temperature: 0.1
-      })
-    });
+    // Parse trade data using Gemini
+    const parseResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            role: 'user',
+            parts: [{ text: `Extract trading data from this voice transcript and return ONLY valid JSON with no markdown.
+
+Transcript: "${transcript}"
+
+Examples:
+- "long EURUSD at 1.0950 stop 1.0920 target 1.1000" → {"pair":"EURUSD","direction":"buy","entry_price":"1.0950","stop_loss":"1.0920","take_profit":"1.1000"}
+- "short gold 2050 stop 2060 tp 2030" → {"pair":"XAUUSD","direction":"sell","entry_price":"2050","stop_loss":"2060","take_profit":"2030"}
+
+If data is missing, set to null. Return ONLY valid JSON.` }]
+          }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 256 }
+        })
+      }
+    );
 
     const parseResult = await parseResponse.json();
-    const tradeDataText = parseResult.choices?.[0]?.message?.content;
+    let tradeDataText = parseResult.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
     
     let tradeData;
     try {

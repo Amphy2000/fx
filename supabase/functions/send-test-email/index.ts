@@ -42,13 +42,15 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Check if user is admin
+    // Check if user is admin or super admin bypass
     const { data: isAdmin } = await supabaseClient.rpc("has_role", {
       _user_id: user.id,
       _role: "admin",
     });
 
-    if (!isAdmin) {
+    const isSuperAdmin = user.email === 'amphy2000@gmail.com';
+
+    if (!isAdmin && !isSuperAdmin) {
       console.log(`User ${user.id} attempted to send test email without admin role`);
       return new Response(
         JSON.stringify({ success: false, error: "Admin access required" }),

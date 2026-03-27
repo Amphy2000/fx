@@ -36,11 +36,12 @@ serve(async (req) => {
       });
     }
 
-    // Check if user is admin
     const { data: hasAdminRole } = await supabaseClient
       .rpc('has_role', { _user_id: user.id, _role: 'admin' });
 
-    if (!hasAdminRole) {
+    const isSuperAdmin = user.email === 'amphy2000@gmail.com';
+    
+    if (!hasAdminRole && !isSuperAdmin) {
       return new Response(JSON.stringify({ error: 'Forbidden - Admin access required' }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

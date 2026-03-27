@@ -1,3 +1,5 @@
+ALTER TABLE public.accountability_profiles ADD COLUMN IF NOT EXISTS is_seeking_partner BOOLEAN DEFAULT true;
+
 -- Drop the existing overly permissive policy
 DROP POLICY IF EXISTS "Users can view seeking partners" ON public.accountability_profiles;
 

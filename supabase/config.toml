@@ -1,4 +1,4 @@
-project_id = "yvclpmdgrwugayrvjtqg"
+project_id = "nrwgwenyphmbxaddyrcu"
 
 [functions.flutterwave-webhook]
 verify_jwt = false
@@ -12,17 +12,6 @@ verify_jwt = false
 [functions.get-vapid-public-key]
 verify_jwt = false
 
-[functions.subscribe-push]
-verify_jwt = true
-
-[functions.send-push-notification]
-verify_jwt = true
-
-[functions.track-notification-click]
-verify_jwt = true
-
-[functions.process-scheduled-notifications]
-verify_jwt = false
 
 [functions.analyze-trade]
 verify_jwt = true
@@ -206,9 +195,6 @@ verify_jwt = true
 [functions.create-realtime-session]
 verify_jwt = true
 
-[functions.calculate-partner-progress]
-verify_jwt = false
-
 [functions.send-accountability-reminders]
 verify_jwt = false
 
@@ -217,3 +203,25 @@ verify_jwt = false
 
 [functions.send-daily-reminders]
 verify_jwt = false
+
+[functions.debug-network]
+enabled = true
+verify_jwt = true
+import_map = "./functions/debug-network/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/debug-network/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/debug-network/*.html" ]
+
+[functions.ping-ai]
+enabled = true
+verify_jwt = true
+import_map = "./functions/ping-ai/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/ping-ai/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/ping-ai/*.html" ]

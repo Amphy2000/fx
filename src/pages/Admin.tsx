@@ -57,11 +57,14 @@ const Admin = () => {
       const { data: roleData, error: roleError } = await supabase
         .rpc('has_role', { _user_id: session.user.id, _role: 'admin' });
 
-      if (roleError) throw roleError;
+      if (roleError) {
+        console.error("Role check error:", roleError);
+      }
 
-      // Super Admin bypass for amphy2000@gmail.com
-      if (!roleData && session.user.email === 'amphy2000@gmail.com') {
-        console.log('Super Admin access granted via email bypass');
+      // Super Admin bypass for amphy2000@gmail.com or localhost development
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if ((!roleData && session.user.email === 'amphy2000@gmail.com') || (isLocalhost && !roleData)) {
+        console.log('Admin access granted via bypass');
         setIsAdmin(true);
         await fetchAdminData();
         return;

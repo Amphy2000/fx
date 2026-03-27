@@ -1,5 +1,27 @@
 -- Phase 2: Partner Goals and Check-ins Schema
 
+-- Ensure core accountability tables exist
+CREATE TABLE IF NOT EXISTS public.accountability_profiles (
+  id UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+  status TEXT DEFAULT 'seeking',
+  is_seeking_partner BOOLEAN DEFAULT true,
+  trading_style TEXT,
+  experience_level TEXT,
+  timezone TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  notification_preferences JSONB DEFAULT '{}'::jsonb
+);
+
+CREATE TABLE IF NOT EXISTS public.accountability_partnerships (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  partner_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Partner goals table
 CREATE TABLE IF NOT EXISTS partner_goals (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

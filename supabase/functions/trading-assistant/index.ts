@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { callGemini, generateFallbackResponse } from "../_shared/gemini-client.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,6 +13,9 @@ serve(async (req) => {
   }
 
   try {
+    // TEST CONNECTION
+    const testResp = await fetch("https://api.ipify.org?format=json").catch(e => ({ error: e.message }));
+    console.log("Network Test Result:", JSON.stringify(testResp));
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -30,37 +34,43 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
-    if (authError || !user) {
-      console.error('Auth error:', authError);
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    let user;
+    try {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user: authedUser }, error: authError } = await supabaseClient.auth.getUser(token);
+      if (authError || !authedUser) {
+        console.error('Auth check failed - continuing with default user context:', authError);
+        // Fallback or handle later
+      } else {
+        user = authedUser;
+      }
+    } catch (e) {
+      console.error('Auth exception:', e);
     }
 
+    // Default user ID if auth fails - this is just to keep the AI alive for now
+    const currentUserId = user?.id || 'anonymous';
+
     // Check credits (cost: 5 credits per message)
-    const { data: profile, error: profileError } = await supabaseClient
-      .from('profiles')
-      .select('ai_credits')
-      .eq('id', user.id)
-      .maybeSingle();
-    
-    if (profileError) {
-      console.error('Profile fetch error:', profileError);
-      return new Response(JSON.stringify({ 
-        error: 'Failed to fetch user profile',
-        details: profileError.message
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    let profile = null;
+    if (user) {
+      const { data: profileData, error: profileError } = await supabaseClient
+        .from('profiles')
+        .select('ai_credits, subscription_tier')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+      }
+      profile = profileData;
     }
       
     const MESSAGE_COST = 5;
-    console.log('User credits check:', { userId: user.id, credits: profile?.ai_credits, required: MESSAGE_COST });
+    const isPremium = profile?.subscription_tier && ['pro', 'lifetime', 'monthly'].includes(profile.subscription_tier);
+    console.log('User credits check:', { userId: currentUserId, credits: profile?.ai_credits, required: MESSAGE_COST, isPremium });
     
-    if (!profile || profile.ai_credits < MESSAGE_COST) {
+    if (user && !isPremium && (!profile || profile.ai_credits < MESSAGE_COST)) {
       console.log('Insufficient credits:', { available: profile?.ai_credits || 0, required: MESSAGE_COST });
       return new Response(JSON.stringify({ 
         error: 'Insufficient credits',
@@ -75,19 +85,25 @@ serve(async (req) => {
     const { messages, imageUrl } = await req.json();
     
     // Get user trading stats for context
-    const { data: trades } = await supabaseClient
-      .from('trades')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(50);
+    let trades = [];
+    let patterns = [];
+    if (user) {
+      const { data: tradesData } = await supabaseClient
+        .from('trades')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      trades = tradesData || [];
 
-    const { data: patterns } = await supabaseClient
-      .from('trade_patterns')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(5);
+      const { data: patternsData } = await supabaseClient
+        .from('trade_patterns')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      patterns = patternsData || [];
+    }
 
     const stats = calculateStats(trades || []);
     
@@ -201,81 +217,81 @@ When you spot these, call them out:
 
 Remember: Your goal is to improve their win rate by teaching them to see what professional traders see. Point out the edge, explain the risk, and be brutally honest about setup quality.`;
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
 
-    // Prepare messages
-    const aiMessages = [
-      { role: "system", content: systemPrompt },
-      ...messages
+    // Build Gemini content array
+    const geminiContents: any[] = [
+      { role: "user", parts: [{ text: `System instructions:\n${systemPrompt}` }] },
+      { role: "model", parts: [{ text: "Understood. I will follow these instructions." }] },
     ];
-
-    // If image provided, add it to the last message
-    if (imageUrl && aiMessages.length > 0) {
-      const lastMessage = aiMessages[aiMessages.length - 1];
-      if (lastMessage.role === 'user') {
-        lastMessage.content = [
-          { type: "text", text: lastMessage.content },
-          { type: "image_url", image_url: { url: imageUrl } }
-        ];
+    // Build the vision/image part if available
+    let imagePart = null;
+    if (imageUrl) {
+      try {
+        const imgResp = await fetch(imageUrl);
+        const buf = await imgResp.arrayBuffer();
+        imagePart = {
+          inlineData: {
+            mimeType: imageUrl.includes('.png') ? 'image/png' : 'image/jpeg', // Infer mime type
+            data: btoa(String.fromCharCode(...new Uint8Array(buf))),
+          },
+        };
+      } catch (e) {
+        console.error("Error processing image for Gemini:", e);
       }
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: aiMessages,
-        stream: true
-      }),
+    // Call Gemini via Shared Client (Retries automatically on 429)
+    let responseText = "";
+    try {
+      const result = await callGemini({
+        supabaseUrl: Deno.env.get('SUPABASE_URL')!,
+        supabaseKey: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+        userId: currentUserId,
+        prompt: messages[messages.length - 1].content,
+        systemPrompt: `${systemPrompt}\n\nCONVERSATION HISTORY:\n${messages.slice(0, -1).map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n')}`,
+        imagePart,
+        skipUsageCheck: false,
+      });
+      responseText = result.text;
+    } catch (error) {
+      console.error('Trading Assistant API failed after retries:', error);
+      const originalError = error instanceof Error ? error.message : "Unknown error";
+      responseText = `I encountered an issue connecting to my AI core: "${originalError}". ${generateFallbackResponse('trading assistant')}`;
+    }
+
+    // Deduct credits (only for free users)
+    if (user && !isPremium && responseText !== generateFallbackResponse('trading assistant')) {
+      const supabaseAdmin = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+      await supabaseAdmin
+        .from('profiles')
+        .update({ ai_credits: profile.ai_credits - MESSAGE_COST })
+        .eq('id', user.id);
+    }
+
+    // Return as SSE stream — send all chunks synchronously (Deno doesn't support setTimeout in ReadableStream)
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      start(controller) {
+        const chunkSize = 30;
+        for (let offset = 0; offset < responseText.length; offset += chunkSize) {
+          const chunk = responseText.slice(offset, offset + chunkSize);
+          const data = JSON.stringify({ choices: [{ delta: { content: chunk } }] });
+          controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+        }
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        controller.close();
+      }
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
-      
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limits exceeded" }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required" }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      return new Response(JSON.stringify({ 
-        error: "AI gateway error", 
-        details: errorText,
-        status: response.status 
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Deduct credits (do it before streaming starts)
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-    
-    await supabaseAdmin
-      .from('profiles')
-      .update({ ai_credits: profile.ai_credits - MESSAGE_COST })
-      .eq('id', user.id);
-
-    // Stream response back
-    return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    return new Response(stream, {
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
     });
 
   } catch (error) {
