@@ -13,7 +13,10 @@ export async function callAI(
 
         console.log(`[AI Bridge] Calling Supabase Edge: ${endpoint}`);
         const { data, error } = await supabase.functions.invoke(endpoint, {
-            body: payload
+            body: payload,
+            headers: {
+                Authorization: `Bearer ${session.access_token}`
+            }
         });
 
         if (error) {
