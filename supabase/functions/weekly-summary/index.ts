@@ -32,7 +32,7 @@ async function callGemini(prompt: string, systemPrompt: string, apiKey: string):
 
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const response = await fetch(`${GEMINI_API_URL}/gemini-2.0-flash-lite:generateContent?key=${apiKey}`, {
+      const response = await fetch(`${GEMINI_API_URL}/gemini-1.5-flash:generateContent?key=${apiKey}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contents, generationConfig: { temperature: 0.7, maxOutputTokens: 512 } }),

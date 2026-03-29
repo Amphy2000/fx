@@ -68,7 +68,7 @@ async function callGemini(messages: any[], apiKey: string): Promise<string> {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const response = await fetch(
-        `${GEMINI_API_URL}/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
+        `${GEMINI_API_URL}/gemini-1.5-flash:generateContent?key=${apiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

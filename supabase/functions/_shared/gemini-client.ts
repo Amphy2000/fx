@@ -62,7 +62,7 @@ export async function callGemini({
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -78,6 +78,7 @@ export async function callGemini({
 
       if (!response.ok) {
         const errorBody = await response.json().catch(() => ({}));
+        const errorMessage = errorBody?.error?.message || JSON.stringify(errorBody);
         console.error(`Gemini API Error: HTTP ${response.status}`, errorBody);
         
         if (!skipUsageCheck) {
@@ -86,7 +87,7 @@ export async function callGemini({
             request_type: imagePart ? 'vision_analysis' : 'text_analysis',
             request_hash: cacheKey,
             prompt_text: prompt.substring(0, 500),
-            response_text: `Status: ${response.status} | Body: ${JSON.stringify(errorBody)}`,
+            response_text: `Status: ${response.status} | Body: ${errorMessage}`,
             status: 'error'
           }).then(({ error }) => { if (error) console.error("Logging failed:", error); });
         }
@@ -96,13 +97,13 @@ export async function callGemini({
           await new Promise(r => setTimeout(r, waitTime));
           continue;
         }
-        throw new Error(`Gemini API error: ${response.status} - ${JSON.stringify(errorBody)}`);
+        throw new Error(`Gemini API error: ${response.status} - ${errorMessage}`);
       }
 
       const data = await response.json();
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!text) {
-        throw new Error("Empty response from Gemini");
+        throw new Error("Empty response from Gemini. This might be due to safety filters blocking the content.");
       }
 
       if (!skipUsageCheck) {

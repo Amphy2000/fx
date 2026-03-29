@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
 export default async function handler(req: any, res: any) {
     // 1. Set CORS headers

@@ -264,7 +264,7 @@ This is REAL money and you know THIS trader. Prioritize their historical success
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
+            model: 'google/gemini-1.5-flash',
             messages: [
               { role: 'system', content: 'You are an expert forex trading copilot providing pre-trade analysis.' },
               { role: 'user', content: prompt }
