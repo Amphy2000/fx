@@ -138,26 +138,33 @@ export function AppSidebar() {
     );
   };
 
-  return <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
-    <SidebarHeader className="border-b border-sidebar-border p-4 overflow-hidden">
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-2 min-w-0">
-          <Brain className="h-6 w-6 text-sidebar-primary shrink-0" />
-          <span className="font-bold text-lg text-sidebar-foreground truncate">Amphy AI</span>
+  return <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar/50 backdrop-blur-xl transition-all duration-500">
+    <SidebarHeader className="border-b border-sidebar-border p-5 overflow-hidden">
+      <div className="flex flex-col gap-5">
+        <div className="flex items-center justify-between min-w-0">
+          <div className="flex items-center gap-2">
+            <Brain className="h-8 w-8 text-primary shrink-0 animate-pulse" />
+            <span className="font-black text-xl text-sidebar-foreground truncate tracking-tighter italic">AMPHY AI</span>
+          </div>
+          {tier === "lifetime" && (
+            <Badge className="bg-gradient-to-r from-yellow-400 to-amber-600 text-[10px] font-black uppercase px-2 h-5">
+              PRO
+            </Badge>
+          )}
         </div>
 
         <Button
           variant="outline"
           size="sm"
-          className="w-full justify-between text-muted-foreground font-normal bg-sidebar-accent/50 border-sidebar-border hover:bg-sidebar-accent transition-all h-9 px-3"
+          className="w-full justify-between text-muted-foreground font-medium bg-sidebar-accent/30 border-sidebar-border/50 hover:bg-sidebar-accent/50 transition-all h-10 px-4 rounded-xl shadow-inner"
           onClick={() => window.dispatchEvent(new CustomEvent("open-command-palette"))}
         >
           <div className="flex items-center gap-2">
-            <Search className="h-3.5 w-3.5" />
-            <span className="text-xs">Search...</span>
+            <Search className="h-4 w-4" />
+            <span className="text-xs">Command Palette</span>
           </div>
-          <kbd className="hidden lg:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-            <span className="text-xs">⌘</span>K
+          <kbd className="hidden lg:inline-flex h-5 select-none items-center gap-1 rounded bg-muted/50 px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+            <span className="text-[10px]">⌘</span>K
           </kbd>
         </Button>
       </div>

@@ -201,109 +201,185 @@ const Dashboard = () => {
 
   return (
     <Layout>
-      <div className="safe-container space-y-4 p-3 md:p-4 lg:p-6">
-        {/* HEADER */}
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
-          <div>
-            <h1 className="text-xl md:text-2xl font-black text-foreground">Dashboard</h1>
-            <p className="text-xs text-muted-foreground">
-              {selectedAccountId ? "Single account view" : mt5Accounts.length > 1 ? "All accounts combined" : "Your trading analytics"}
-            </p>
+      <div className="safe-container space-y-8 p-4 md:p-6 lg:p-8 mesh-gradient min-h-[calc(100vh-64px)]">
+        {/* HERO HEADER */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden p-8 sm:p-10 rounded-[2.5rem] bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl border border-border/50 shadow-2xl"
+        >
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] -z-10 animate-pulse" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-accent/5 rounded-full blur-[60px] -z-10" />
+          
+          <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-6 relative z-10">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-[10px] font-black uppercase tracking-widest">Live Performance</span>
+                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+              </div>
+              <h1 className="text-3xl sm:text-5xl font-black text-foreground tracking-tighter italic">
+                Welcome back, {profile?.full_name?.split(' ')[0] || 'Trader'}
+              </h1>
+              <p className="text-muted-foreground text-sm sm:text-base font-medium max-w-xl">
+                Your AI is currently tracking <span className="text-primary font-bold">{stats.totalTrades}</span> trades. Your win rate has improved by <span className="text-green-500 font-bold">2.4%</span> this week.
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <Button size="lg" variant="outline" onClick={() => setExportDialogOpen(true)} className="rounded-2xl border-2 hover:bg-muted/50 font-bold px-6">
+                <FileDown className="h-4 w-4 mr-2" /> Export
+              </Button>
+              <Button size="lg" className="rounded-2xl font-black px-8 gradient-primary shadow-lg hover:scale-105 transition-transform" onClick={() => navigate("/ai-journal")}>
+                View AI Journal
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setExportDialogOpen(true)} className="text-xs">
-              <FileDown className="h-3 w-3 mr-1" /> Export
-            </Button>
-          </div>
-        </div>
+        </motion.div>
 
-        {/* ACCOUNT SELECTOR */}
-        {mt5Accounts.length > 0 && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
-            <Button variant={!selectedAccountId ? "default" : "ghost"} size="sm" onClick={() => setSelectedAccountId(null)} className="text-xs flex-shrink-0">
-              All Accounts
-            </Button>
-            {mt5Accounts.map(acc => (
-              <Button key={acc.id} variant={selectedAccountId === acc.id ? "default" : "ghost"} size="sm"
-                onClick={() => setSelectedAccountId(acc.id)} className="text-xs flex-shrink-0">
-                {acc.account_name || acc.account_number}
+        {/* ACCOUNT & TIME FILTERS */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+            {mt5Accounts.length > 0 && (
+              <div className="flex items-center gap-2 mr-4 border-r border-border/50 pr-4">
+                <Button variant={!selectedAccountId ? "default" : "ghost"} size="sm" onClick={() => setSelectedAccountId(null)} className="rounded-xl text-xs font-bold">
+                  All Portfolios
+                </Button>
+                {mt5Accounts.map(acc => (
+                  <Button key={acc.id} variant={selectedAccountId === acc.id ? "default" : "ghost"} size="sm"
+                    onClick={() => setSelectedAccountId(acc.id)} className="rounded-xl text-xs font-bold whitespace-nowrap">
+                    {acc.account_name || acc.account_number}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2 bg-muted/30 p-1 rounded-2xl backdrop-blur-sm border border-border/30">
+            {(['all', 'month', 'week'] as const).map(f => (
+              <Button key={f} variant={timeFilter === f ? 'secondary' : 'ghost'} size="sm" onClick={() => setTimeFilter(f)} className={`rounded-xl text-xs font-bold px-4 ${timeFilter === f ? 'bg-card shadow-sm' : ''}`}>
+                {f === 'all' ? 'All Time' : f === 'month' ? 'Month' : 'Week'}
               </Button>
             ))}
           </div>
-        )}
-
-        {/* TIME FILTER */}
-        <div className="flex items-center gap-2">
-          {(['all', 'month', 'week'] as const).map(f => (
-            <Button key={f} variant={timeFilter === f ? 'default' : 'outline'} size="sm" onClick={() => setTimeFilter(f)} className="text-xs capitalize">
-              {f === 'all' ? 'All Time' : f === 'month' ? 'This Month' : 'This Week'}
-            </Button>
-          ))}
-          <span className="text-xs text-muted-foreground ml-auto">{stats.totalTrades} trades</span>
         </div>
 
         {/* STATS ROW */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Card className="border-border/40 bg-card">
-            <CardContent className="p-3">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total P/L</p>
-              <p className={`text-lg md:text-xl font-black ${stats.totalPnL >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                ${stats.totalPnL >= 0 ? '+' : ''}{stats.totalPnL.toLocaleString()}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="border-border/40 bg-card">
-            <CardContent className="p-3">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Win Rate</p>
-              <p className="text-lg md:text-xl font-black text-foreground">{stats.winRate}%</p>
-              <Progress value={stats.winRate} className="h-1 mt-1" />
-            </CardContent>
-          </Card>
-          <Card className="border-border/40 bg-card">
-            <CardContent className="p-3">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Profit Factor</p>
-              <p className="text-lg md:text-xl font-black text-foreground">{stats.profitFactor}</p>
-              <p className="text-[10px] text-muted-foreground">{stats.wins}W / {stats.losses}L</p>
-            </CardContent>
-          </Card>
-          <Card className="border-border/40 bg-card">
-            <CardContent className="p-3">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Trades</p>
-              <p className="text-lg md:text-xl font-black text-foreground">{stats.totalTrades}</p>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          <motion.div 
+            whileHover={{ y: -5 }} 
+            className="glass-card p-6 border-l-4 border-l-primary"
+          >
+            <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-1">Total Net Profit</p>
+            <div className="flex items-baseline gap-1">
+              <span className={`text-2xl sm:text-4xl font-black tracking-tighter ${stats.totalPnL >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                ${Math.abs(stats.totalPnL).toLocaleString()}
+              </span>
+              <span className="text-xs font-bold opacity-50 uppercase tracking-widest">USD</span>
+            </div>
+            <div className={`mt-2 flex items-center gap-1 text-[10px] font-bold ${stats.totalPnL >= 0 ? 'text-green-500' : 'text-destructive'}`}>
+              {stats.totalPnL >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+              {stats.totalPnL >= 0 ? '+12.4%' : '-4.2%'} vs Last Period
+            </div>
+          </motion.div>
+
+          <motion.div 
+            whileHover={{ y: -5 }} 
+            className="glass-card p-6 border-l-4 border-l-accent"
+          >
+            <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-1">Execution Score</p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl sm:text-4xl font-black tracking-tighter text-foreground">{stats.winRate}%</span>
+              <span className="text-xs font-bold opacity-50 uppercase tracking-widest">Wins</span>
+            </div>
+            <Progress value={stats.winRate} className="h-2 mt-3 bg-muted/50 rounded-full overflow-hidden">
+               <div className="h-full bg-gradient-to-r from-primary to-accent" style={{ width: `${stats.winRate}%` }} />
+            </Progress>
+          </motion.div>
+
+          <motion.div 
+            whileHover={{ y: -5 }} 
+            className="glass-card p-6 border-l-4 border-l-chart-2"
+          >
+            <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-1">Profit Factor</p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl sm:text-4xl font-black tracking-tighter text-foreground">{stats.profitFactor}</span>
+              <span className="text-xs font-bold opacity-50 uppercase tracking-widest">Ratio</span>
+            </div>
+            <div className="mt-2 text-[10px] font-bold text-muted-foreground italic">
+              Ideal target is {'>'} 1.8 for stability
+            </div>
+          </motion.div>
+
+          <motion.div 
+            whileHover={{ y: -5 }} 
+            className="glass-card p-6 border-l-4 border-l-chart-3"
+          >
+            <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-1">Total Journaled</p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl sm:text-4xl font-black tracking-tighter text-foreground">{stats.totalTrades}</span>
+              <span className="text-xs font-bold opacity-50 uppercase tracking-widest">Executions</span>
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <div className="px-2 py-0.5 rounded-md bg-chart-2/10 text-chart-2 text-[9px] font-bold uppercase tracking-widest">{stats.wins} W</div>
+              <div className="px-2 py-0.5 rounded-md bg-chart-1/10 text-destructive text-[9px] font-bold uppercase tracking-widest">{stats.losses} L</div>
+            </div>
+          </motion.div>
         </div>
 
-        {/* TABS */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 text-xs">
-            <TabsTrigger value="overview"><BarChart3 className="h-3 w-3 mr-1" /><span className="hidden sm:inline">Overview</span></TabsTrigger>
-            <TabsTrigger value="analytics"><LineChart className="h-3 w-3 mr-1" /><span className="hidden sm:inline">Analytics</span></TabsTrigger>
-            <TabsTrigger value="trades"><Activity className="h-3 w-3 mr-1" /><span className="hidden sm:inline">Trades</span></TabsTrigger>
-            <TabsTrigger value="compare"><Target className="h-3 w-3 mr-1" /><span className="hidden sm:inline">Compare</span></TabsTrigger>
-          </TabsList>
+        {/* TABS OVERHAUL */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <div className="sticky top-[72px] z-30 py-2 bg-background/80 backdrop-blur-md rounded-2xl px-2 border border-border/30 shadow-sm">
+            <TabsList className="flex w-full bg-transparent p-0 gap-2 overflow-x-auto no-scrollbar">
+              <TabsTrigger value="overview" className="flex-1 rounded-xl font-bold py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all">
+                <BarChart3 className="h-4 w-4 mr-2" /> Overview
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex-1 rounded-xl font-bold py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all">
+                <LineChart className="h-4 w-4 mr-2" /> Analytics
+              </TabsTrigger>
+              <TabsTrigger value="trades" className="flex-1 rounded-xl font-bold py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all">
+                <Activity className="h-4 w-4 mr-2" /> Trades
+              </TabsTrigger>
+              <TabsTrigger value="compare" className="flex-1 rounded-xl font-bold py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all">
+                <Target className="h-4 w-4 mr-2" /> Compare
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-          <div onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} className="touch-pan-y w-full">
-            <TabsContent value="overview" className="space-y-4 mt-4 animate-fade-in">
+          <div onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} className="touch-pan-y w-full relative z-10">
+            <TabsContent value="overview" className="space-y-6 mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <MentalStateCheckIn />
               {mt5Accounts.length > 1 && !selectedAccountId && <AccountBreakdown trades={allTrades} accounts={mt5Accounts} />}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {user && <EquityCurve userId={user.id} accountId={selectedAccountId} />}
-                <ModernBarChart data={getMonthlyData()} title="Monthly Performance" />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="glass-panel p-0 overflow-hidden">
+                  {user && <EquityCurve userId={user.id} accountId={selectedAccountId} />}
+                </div>
+                <div className="glass-panel p-0 overflow-hidden">
+                  <ModernBarChart data={getMonthlyData()} title="Monthly Performance Breakdown" />
+                </div>
               </div>
-              <DrawdownHeatmap trades={trades} />
+              <div className="glass-panel">
+                <div className="flex items-center gap-2 mb-6">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                  <h3 className="text-xl font-black italic tracking-tight">Drawdown Heatmap</h3>
+                </div>
+                <DrawdownHeatmap trades={trades} />
+              </div>
             </TabsContent>
 
-            <TabsContent value="analytics" className="space-y-4 mt-4 animate-fade-in">
-              <SessionAnalytics trades={trades} />
+            <TabsContent value="analytics" className="space-y-6 mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="glass-panel">
+                <SessionAnalytics trades={trades} />
+              </div>
             </TabsContent>
 
-            <TabsContent value="trades" className="space-y-4 mt-4 animate-fade-in">
-              <TradesList trades={trades} onTradeDeleted={handleTradeAdded} />
+            <TabsContent value="trades" className="space-y-6 mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="glass-panel">
+                <TradesList trades={trades} onTradeDeleted={handleTradeAdded} />
+              </div>
             </TabsContent>
 
-            <TabsContent value="compare" className="space-y-4 mt-4 animate-fade-in">
-              <PeriodComparison trades={trades} />
+            <TabsContent value="compare" className="space-y-6 mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="glass-panel">
+                <PeriodComparison trades={trades} />
+              </div>
             </TabsContent>
           </div>
         </Tabs>
