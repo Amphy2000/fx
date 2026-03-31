@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from "date-fns";
 
@@ -17,6 +15,48 @@ interface Trade {
   profit_loss: number;
   created_at: string;
 }
+
+const formatCurrency = (amount: number) => {
+  const isNegative = amount < 0;
+  const abs = Math.abs(amount);
+  let formatted = "";
+  if (abs >= 1000) {
+    formatted = (abs / 1000).toFixed(abs % 1000 === 0 ? 0 : 2) + "K";
+    formatted = formatted.replace(/\.00K$/, 'K').replace(/(\.\d)0K$/, '$1K');
+  } else {
+    formatted = abs.toFixed(2);
+    formatted = formatted.replace(/\.00$/, '');
+  }
+  return `${isNegative ? "-" : ""}$${formatted}`;
+};
+
+const getCellColors = (totalPL: number) => {
+  if (totalPL > 0) {
+    return {
+      bg: "bg-[#e8f5e9] dark:bg-emerald-500/10",
+      border: "border-[#c8e6c9] dark:border-emerald-500/20",
+      hoverRing: "hover:ring-emerald-500/30",
+      text: "text-[#2e7d32] dark:text-emerald-400",
+      dateColor: "text-[#2e7d32]/90 dark:text-emerald-400/90"
+    };
+  }
+  if (totalPL < 0) {
+    return {
+      bg: "bg-[#ffebee] dark:bg-rose-500/10",
+      border: "border-[#ffcdd2] dark:border-rose-500/20",
+      hoverRing: "hover:ring-rose-500/30",
+      text: "text-[#d32f2f] dark:text-rose-400",
+      dateColor: "text-[#d32f2f]/90 dark:text-rose-400/90"
+    };
+  }
+  return {
+    bg: "bg-[#e3f2fd] dark:bg-blue-500/10",
+    border: "border-[#bbdefb] dark:border-blue-500/20",
+    hoverRing: "hover:ring-blue-500/30",
+    text: "text-[#1565c0] dark:text-blue-400",
+    dateColor: "text-[#1565c0]/90 dark:text-blue-400/90"
+  };
+};
 
 export default function TradeCalendar() {
   const [trades, setTrades] = useState<Trade[]>([]);
@@ -39,6 +79,7 @@ export default function TradeCalendar() {
   };
 
   const fetchTrades = async () => {
+    setLoading(true);
     try {
       const monthStart = startOfMonth(currentDate);
       const monthEnd = endOfMonth(currentDate);
@@ -73,168 +114,132 @@ export default function TradeCalendar() {
     const dayTrades = getTradesForDay(day);
     const totalPL = dayTrades.reduce((sum, trade) => sum + (trade.profit_loss || 0), 0);
     const wins = dayTrades.filter(t => t.result === "win").length;
-    const losses = dayTrades.filter(t => t.result === "loss").length;
-    return { totalPL, wins, losses, count: dayTrades.length };
+    return { totalPL, wins, count: dayTrades.length };
   };
 
   const getMonthStats = () => {
     const totalPL = trades.reduce((sum, trade) => sum + (trade.profit_loss || 0), 0);
-    const wins = trades.filter(t => t.result === "win").length;
-    const losses = trades.filter(t => t.result === "loss").length;
-    const winRate = trades.length > 0 ? ((wins / trades.length) * 100).toFixed(1) : "0";
-    return { totalPL, wins, losses, totalTrades: trades.length, winRate };
+    const tradeDays = new Set(trades.map(t => format(new Date(t.created_at), 'yyyy-MM-dd'))).size;
+    return { totalPL, tradeDays };
   };
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
-  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
-  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 }); // Sunday start
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
   
   const monthStats = getMonthStats();
 
-  if (loading) {
-    return (
-      <Layout>
-        <div className="container mx-auto px-4 py-8">
-          <p>Loading calendar...</p>
-        </div>
-      </Layout>
-    );
-  }
-
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8 space-y-6">
-        <div className="flex flex-col gap-4">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">Trade Calendar</h1>
-            <p className="text-muted-foreground mt-2 text-sm md:text-base">View your trades by day and track monthly performance</p>
+      <div className="container mx-auto px-4 py-8 max-w-6xl space-y-6">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Calendar</h1>
+          <p className="text-muted-foreground text-sm md:text-base">Track your daily trading performance and consistency.</p>
+        </div>
+
+        {/* Stats & Navigation Bar */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4 px-1">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-bold text-foreground">Monthly stats:</h2>
+            <span className={`px-3 py-1 rounded-md font-bold text-sm tracking-wide ${
+              monthStats.totalPL > 0 
+                ? "bg-[#e8f5e9] text-[#4caf50] dark:bg-emerald-500/20 dark:text-emerald-400" 
+                : monthStats.totalPL < 0
+                ? "bg-[#ffebee] text-[#f44336] dark:bg-rose-500/20 dark:text-rose-400"
+                : "bg-muted text-muted-foreground"
+            }`}>
+              {formatCurrency(monthStats.totalPL)}
+            </span>
           </div>
-
-          {/* Month Stats Summary */}
-          <Card className="bg-gradient-to-br from-primary/5 via-background to-background border-primary/30 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <span className="text-foreground">{format(currentDate, "MMMM yyyy")} Summary</span>
-                <Badge variant={monthStats.totalPL >= 0 ? "default" : "destructive"} className="text-lg px-4 py-1 w-fit">
-                  ${monthStats.totalPL.toFixed(2)}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Total Trades</p>
-                  <p className="text-2xl font-bold text-foreground">{monthStats.totalTrades}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Wins</p>
-                  <p className="text-2xl font-bold text-success">{monthStats.wins}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Losses</p>
-                  <p className="text-2xl font-bold text-destructive">{monthStats.losses}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Win Rate</p>
-                  <p className="text-2xl font-bold text-foreground">{monthStats.winRate}%</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Calendar Navigation */}
-          <div className="flex items-center justify-between">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentDate(subMonths(currentDate, 1))}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Previous
-            </Button>
-            <h2 className="text-xl font-semibold">{format(currentDate, "MMMM yyyy")}</h2>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentDate(addMonths(currentDate, 1))}
-            >
-              Next
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
+          
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 mr-4">
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-muted" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
+                 <ChevronLeft className="h-5 w-5 text-muted-foreground" />
+              </Button>
+              <span className="text-base font-bold min-w-[120px] text-center">{format(currentDate, "MMMM yyyy")}</span>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-muted" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
+                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </Button>
+            </div>
+            
+            <div className="flex items-center">
+              <span className="text-sm font-medium text-foreground bg-[#f3f4f6] dark:bg-muted px-4 py-1.5 rounded-full">
+                {monthStats.tradeDays} {monthStats.tradeDays === 1 ? 'day' : 'days'}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Calendar Grid */}
-        <Card className="shadow-xl">
-          <CardContent className="p-2 sm:p-3 md:p-4">
-            {/* Weekday Headers */}
-            <div className="grid grid-cols-7 gap-1 sm:gap-2 md:gap-3 mb-2 md:mb-3">
-              {["M", "T", "W", "T", "F", "S", "S"].map((day, idx) => (
-                <div key={idx} className="text-center text-xs sm:text-sm md:text-base font-semibold text-muted-foreground py-1 md:py-2">
-                  <span className="hidden sm:inline">{["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][idx]}</span>
-                  <span className="sm:hidden">{day}</span>
+        {/* Calendar Grid Container */}
+        <div className="w-full mt-2">
+          {/* Weekday Headers */}
+          <div className="grid grid-cols-7 gap-2 sm:gap-3 mb-2 sm:mb-3">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, idx) => (
+              <div key={idx} className="text-center">
+                 <div className="py-2.5 rounded-lg border border-[#e5e7eb] dark:border-border/50 bg-white dark:bg-muted/10 text-xs sm:text-sm font-semibold text-foreground shadow-sm">
+                   {day}
+                 </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Calendar Days */}
+          <div className={`grid grid-cols-7 gap-2 sm:gap-3 transition-opacity duration-300 ${loading ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+            {calendarDays.map((day) => {
+              const dayStats = getDayStats(day);
+              const isCurrentMonth = isSameMonth(day, currentDate);
+              const hasTrades = dayStats.count > 0;
+              const isToday = isSameDay(day, new Date());
+              
+              let cellWrapperClass = "relative flex flex-col items-center justify-center rounded-lg transition-all duration-200 min-h-[100px] sm:min-h-[140px] md:min-h-[160px] ";
+              
+              if (!isCurrentMonth) {
+                cellWrapperClass += "bg-white dark:bg-background border border-[#f3f4f6] dark:border-border/20 opacity-0 pointer-events-none"; // hidden if not current month to match zella style
+              } else if (!hasTrades) {
+                cellWrapperClass += "bg-[#f8f9fa] dark:bg-muted/10 border border-[#e5e7eb] dark:border-border/40 shadow-sm";
+              } else {
+                const colors = getCellColors(dayStats.totalPL);
+                cellWrapperClass += `${colors.bg} ${colors.border} border shadow-sm hover:ring-2 hover:ring-offset-1 hover:ring-offset-background ${colors.hoverRing} cursor-pointer`;
+              }
+
+              return (
+                <div key={day.toISOString()} className={cellWrapperClass}>
+                   <span className={`absolute top-2 right-2.5 text-[13px] sm:text-sm ${
+                     isToday 
+                       ? 'flex items-center justify-center w-6 h-6 rounded-full bg-[#673ab7] text-white font-bold' 
+                       : hasTrades 
+                         ? getCellColors(dayStats.totalPL).dateColor 
+                         : 'text-muted-foreground'
+                   }`}>
+                     {format(day, "d")}
+                   </span>
+                   
+                   {hasTrades && isCurrentMonth && (() => {
+                     const colors = getCellColors(dayStats.totalPL);
+                     const winRate = ((dayStats.wins / dayStats.count) * 100).toFixed(1);
+                     
+                     return (
+                       <div className="flex flex-col items-center justify-center gap-[2px] mt-4 px-1 text-center w-full">
+                          <span className={`font-bold text-[13px] sm:text-[15px] lg:text-[17px] tracking-tight ${colors.text}`}>
+                            {formatCurrency(dayStats.totalPL)}
+                          </span>
+                          <span className={`text-[10px] sm:text-[11px] font-medium ${colors.text} opacity-80`}>
+                            {dayStats.count} {dayStats.count === 1 ? 'trade' : 'trades'}
+                          </span>
+                          <span className={`text-[10px] sm:text-[11px] font-medium ${colors.text} opacity-80 tabular-nums`}>
+                            {winRate.endsWith('.0') ? winRate.slice(0, -2) : winRate}%
+                          </span>
+                       </div>
+                     );
+                   })()}
                 </div>
-              ))}
-            </div>
-
-            {/* Calendar Days */}
-            <div className="grid grid-cols-7 gap-1 sm:gap-2 md:gap-3">
-              {calendarDays.map((day) => {
-                const dayStats = getDayStats(day);
-                const isCurrentMonth = isSameMonth(day, currentDate);
-                const isToday = isSameDay(day, new Date());
-                const hasTrades = dayStats.count > 0;
-
-                return (
-                  <div
-                    key={day.toISOString()}
-                    className={`
-                      aspect-square sm:aspect-auto sm:min-h-[100px] md:min-h-[120px] p-1.5 sm:p-2 md:p-3 rounded-md sm:rounded-lg border-2 transition-all
-                      ${isCurrentMonth ? "bg-card" : "bg-muted/20"}
-                      ${isToday ? "border-primary shadow-lg shadow-primary/20" : "border-border"}
-                      ${hasTrades ? "hover:shadow-xl hover:scale-[1.02] cursor-pointer bg-gradient-to-br from-card to-primary/5" : ""}
-                    `}
-                  >
-                    <div className="flex flex-col h-full">
-                      <span className={`text-xs sm:text-sm md:text-base font-semibold mb-1 ${!isCurrentMonth ? "text-muted-foreground/50" : "text-foreground"} ${isToday ? "text-primary" : ""}`}>
-                        {format(day, "d")}
-                      </span>
-                      
-                      {hasTrades && (
-                        <div className="flex-1 space-y-0.5 sm:space-y-1 md:space-y-1.5">
-                          <div className="flex items-center">
-                            <Badge variant="secondary" className="px-1 sm:px-1.5 md:px-2 py-0 sm:py-0.5 text-[9px] sm:text-[10px] md:text-xs font-semibold truncate">
-                              {dayStats.count}
-                            </Badge>
-                          </div>
-                          <div className={`text-xs sm:text-sm md:text-base font-bold truncate ${dayStats.totalPL >= 0 ? "text-success" : "text-destructive"}`}>
-                            ${Math.abs(dayStats.totalPL) >= 1000 ? (dayStats.totalPL / 1000).toFixed(1) + 'k' : dayStats.totalPL.toFixed(0)}
-                          </div>
-                          <div className="flex gap-1 sm:gap-1.5 md:gap-2 text-[9px] sm:text-[10px] md:text-xs">
-                            {dayStats.wins > 0 && (
-                              <span className="text-success flex items-center gap-0.5 font-medium">
-                                <TrendingUp className="h-2 w-2 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3" />
-                                <span className="hidden sm:inline">{dayStats.wins}</span>
-                              </span>
-                            )}
-                            {dayStats.losses > 0 && (
-                              <span className="text-destructive flex items-center gap-0.5 font-medium">
-                                <TrendingDown className="h-2 w-2 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3" />
-                                <span className="hidden sm:inline">{dayStats.losses}</span>
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </Layout>
   );
