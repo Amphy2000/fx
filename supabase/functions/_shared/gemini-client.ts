@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 interface GeminiMessage {
   role: "user" | "model";
