@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 async function checkCache(supabase: any, cacheKey: string): Promise<any | null> {
   try {
@@ -24,34 +24,39 @@ async function storeCache(supabase: any, cacheKey: string, response: any, ttlMin
 }
 
 async function callGemini(prompt: string, systemPrompt: string, apiKey: string): Promise<string> {
-  const contents = [
-    { role: "user", parts: [{ text: `Instructions: ${systemPrompt}` }] },
-    { role: "model", parts: [{ text: "Understood." }] },
-    { role: "user", parts: [{ text: prompt }] },
+  const messages = [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: prompt },
   ];
 
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const response = await fetch(`${GEMINI_API_URL}/gemini-2.0-flash-lite:generateContent?key=${apiKey}`, {
+      const response = await fetch(LOVABLE_AI_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents, generationConfig: { temperature: 0.7, maxOutputTokens: 512 } }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages,
+          temperature: 0.7,
+          max_tokens: 512,
+        }),
       });
 
       if (response.status === 429) {
-        await new Promise(r => setTimeout(r, Math.pow(2, attempt) * 10000));
+        await new Promise(r => setTimeout(r, Math.pow(2, attempt) * 3000));
         continue;
       }
-      if (!response.ok) throw new Error(`Gemini: ${response.status}`);
+      if (response.status === 402) throw new Error("AI credits exhausted");
+      if (!response.ok) throw new Error(`Lovable AI: ${response.status}`);
 
       const data = await response.json();
-      return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      return data?.choices?.[0]?.message?.content || "";
     } catch (error) {
       console.error(`Attempt ${attempt + 1} failed:`, error);
-      if (attempt < 2) await new Promise(r => setTimeout(r, 5000));
+      if (attempt < 2) await new Promise(r => setTimeout(r, 3000));
     }
   }
-  throw new Error("Gemini unavailable");
+  throw new Error("Lovable AI unavailable");
 }
 
 serve(async (req) => {
@@ -118,7 +123,7 @@ serve(async (req) => {
     const emotionCounts: Record<string, number> = {};
     trades.forEach(t => { if (t.emotion_before) emotionCounts[t.emotion_before] = (emotionCounts[t.emotion_before] || 0) + 1; });
 
-    const geminiKey = Deno.env.get("GEMINI_API_KEY");
+    const geminiKey = Deno.env.get("LOVABLE_API_KEY");
     
     let summary: string;
     if (!geminiKey) {
