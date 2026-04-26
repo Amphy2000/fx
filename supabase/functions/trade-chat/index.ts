@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 // Simple hash for cache
 function hashString(str: string): string {
@@ -47,55 +47,50 @@ async function storeCache(supabase: any, cacheKey: string, reply: string): Promi
   }
 }
 
-// Call Gemini
+// Call Lovable AI Gateway
 async function callGemini(messages: any[], apiKey: string): Promise<string> {
-  const contents = messages
-    .filter(m => m.role !== 'system')
-    .map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }]
-    }));
-
-  // Add system as first user message
-  const systemMsg = messages.find(m => m.role === 'system');
-  if (systemMsg) {
-    contents.unshift(
-      { role: 'user', parts: [{ text: `Instructions: ${systemMsg.content}` }] },
-      { role: 'model', parts: [{ text: 'Understood, I will follow these instructions.' }] }
-    );
-  }
+  const payloadMessages = messages.map((m: any) => ({
+    role: m.role === 'model' ? 'assistant' : m.role,
+    content: m.content,
+  }));
 
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const response = await fetch(
-        `${GEMINI_API_URL}/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents,
-            generationConfig: { temperature: 0.8, maxOutputTokens: 512 },
-          }),
-        }
-      );
+      const response = await fetch(LOVABLE_AI_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: payloadMessages,
+          temperature: 0.8,
+          max_tokens: 512,
+        }),
+      });
 
       if (response.status === 429) {
-        const wait = Math.pow(2, attempt) * 10000;
+        const wait = Math.pow(2, attempt) * 3000;
         console.log(`Rate limited, waiting ${wait}ms`);
         await new Promise(r => setTimeout(r, wait));
         continue;
       }
 
-      if (!response.ok) throw new Error(`Gemini: ${response.status}`);
+      if (response.status === 402) {
+        throw new Error("AI credits exhausted");
+      }
+
+      if (!response.ok) throw new Error(`Lovable AI: ${response.status}`);
 
       const data = await response.json();
-      return data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm having trouble thinking right now. Try again?";
+      return data?.choices?.[0]?.message?.content || "I'm having trouble thinking right now. Try again?";
     } catch (error) {
       console.error(`Attempt ${attempt + 1} failed:`, error);
-      if (attempt < 2) await new Promise(r => setTimeout(r, 5000));
+      if (attempt < 2) await new Promise(r => setTimeout(r, 3000));
     }
   }
-  throw new Error("Gemini unavailable");
+  throw new Error("Lovable AI unavailable");
 }
 
 serve(async (req) => {
@@ -169,7 +164,7 @@ serve(async (req) => {
     const totalTrades = trades?.length || 0;
     const winRate = totalTrades > 0 ? Math.round((wins / totalTrades) * 100) : 0;
 
-    const geminiKey = Deno.env.get("GEMINI_API_KEY");
+    const geminiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!geminiKey) {
       return new Response(JSON.stringify({ 
         reply: "I'm taking a quick break. Try again in a moment!",
