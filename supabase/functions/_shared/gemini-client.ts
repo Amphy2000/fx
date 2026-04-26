@@ -267,10 +267,10 @@ export async function callGemini(options: {
   } = options;
 
   const supabase = createClient(supabaseUrl, supabaseKey);
-  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  const apiKey = Deno.env.get("LOVABLE_API_KEY") || Deno.env.get("GEMINI_API_KEY");
 
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY not configured");
+    throw new Error("LOVABLE_API_KEY not configured");
   }
 
   // Check cache first
