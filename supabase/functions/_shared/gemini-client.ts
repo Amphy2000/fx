@@ -36,7 +36,7 @@ interface CacheEntry {
 
 // Rate limit tracking (in-memory for single function instance)
 let lastRequestTime = 0;
-const MIN_REQUEST_INTERVAL = 12000; // 12 seconds between requests (5 RPM = 1 request per 12s)
+const MIN_REQUEST_INTERVAL = 200; // Lovable AI gateway has generous limits
 
 // Create a hash for cache key
 function hashString(str: string): string {
