@@ -107,98 +107,85 @@ async function waitForRateLimit(): Promise<void> {
   lastRequestTime = Date.now();
 }
 
-// Call Gemini API with retry logic
+// Call Lovable AI Gateway with retry logic (OpenAI-compatible API)
 async function callGeminiWithRetry(
   model: string,
   messages: { role: string; content: string }[],
   apiKey: string,
   maxRetries: number = 3
 ): Promise<string> {
-  // Convert OpenAI-style messages to Gemini format
-  const geminiContents: GeminiMessage[] = messages
-    .filter(m => m.role !== "system")
-    .map(m => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }]
-    }));
-
-  // Add system prompt as first user message if present
-  const systemMessage = messages.find(m => m.role === "system");
-  if (systemMessage) {
-    geminiContents.unshift({
-      role: "user",
-      parts: [{ text: `System instructions: ${systemMessage.content}` }]
-    });
-    // Add a model acknowledgment
-    geminiContents.splice(1, 0, {
-      role: "model",
-      parts: [{ text: "Understood. I will follow these instructions." }]
-    });
+  // Map legacy gemini model names to Lovable AI gateway model identifiers
+  let gatewayModel = model;
+  if (!gatewayModel.includes("/")) {
+    if (gatewayModel.startsWith("gemini-")) {
+      gatewayModel = `google/${gatewayModel}`;
+    }
+  }
+  // Default to a fast Lovable AI model if unrecognized legacy name
+  if (gatewayModel === "google/gemini-2.0-flash-lite" || gatewayModel === "google/gemini-2.0-flash") {
+    gatewayModel = "google/gemini-2.5-flash";
   }
 
-  const request: GeminiRequest = {
-    contents: geminiContents,
-    generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: 2048,
-      topP: 0.95,
-      topK: 40,
-    }
+  const body = {
+    model: gatewayModel,
+    messages: messages.map(m => ({
+      role: m.role === "model" ? "assistant" : m.role,
+      content: m.content,
+    })),
+    temperature: 0.7,
+    max_tokens: 2048,
   };
 
   let lastError: Error | null = null;
-  
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       await waitForRateLimit();
-      
-      const response = await fetch(
-        `${GEMINI_API_URL}/${model}:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(request),
-        }
-      );
+
+      const response = await fetch(LOVABLE_AI_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(body),
+      });
 
       if (response.status === 429) {
-        // Rate limited - exponential backoff
-        const waitTime = Math.pow(2, attempt) * 10000; // 10s, 20s, 40s
+        const waitTime = Math.pow(2, attempt) * 5000;
         console.log(`Rate limited (429). Waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
         continue;
       }
 
+      if (response.status === 402) {
+        throw new Error("Lovable AI credits exhausted. Please add credits to your workspace.");
+      }
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`Gemini API error (${response.status}):`, errorText);
-        throw new Error(`Gemini API error: ${response.status}`);
+        console.error(`Lovable AI error (${response.status}):`, errorText);
+        throw new Error(`Lovable AI error: ${response.status}`);
       }
 
-      const data: GeminiResponse = await response.json();
-      
-      if (data.error) {
-        throw new Error(data.error.message);
-      }
-
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const data = await response.json();
+      const text = data?.choices?.[0]?.message?.content;
       if (!text) {
-        throw new Error("No response content from Gemini");
+        throw new Error("No response content from Lovable AI");
       }
-
       return text;
     } catch (error) {
       lastError = error as Error;
-      console.error(`Gemini attempt ${attempt + 1} failed:`, error);
-      
+      console.error(`Lovable AI attempt ${attempt + 1} failed:`, error);
+
       if (attempt < maxRetries - 1) {
-        const waitTime = Math.pow(2, attempt) * 5000;
+        const waitTime = Math.pow(2, attempt) * 3000;
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
     }
   }
 
-  throw lastError || new Error("All Gemini API attempts failed");
+  throw lastError || new Error("All Lovable AI attempts failed");
 }
 
 // Increment daily AI usage counter
