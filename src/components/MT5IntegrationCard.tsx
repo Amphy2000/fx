@@ -177,6 +177,7 @@ export const MT5IntegrationCard = () => {
         auto_sync_enabled: true,
         last_sync_status: "pending",
         api_secret_encrypted: investorPassword,
+        api_key_encrypted: crypto.randomUUID(),
       });
 
       if (error) {

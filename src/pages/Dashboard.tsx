@@ -25,6 +25,7 @@ import { ExportDialog } from "@/components/ExportDialog";
 import { MilestoneNotification } from "@/components/MilestoneNotification";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import { BotSignals } from "@/components/BotSignals";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -323,6 +324,9 @@ const Dashboard = () => {
             </div>
           </motion.div>
         </div>
+
+        {/* LIVE BOT SIGNALS */}
+        <BotSignals />
 
         {/* TABS OVERHAUL */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
