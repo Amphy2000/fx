@@ -228,6 +228,7 @@ export const MT5AccountCard = ({ account, onSync, onDisconnect, syncing, summary
             <p className={`text-lg font-bold ${summary && summary.totalPnL >= 0 ? "text-success" : "text-destructive"}`}>
               {summary ? `${summary.totalPnL >= 0 ? "+" : ""}$${summary.totalPnL.toFixed(2)}` : "$0.00"}
             </p>
+          </div>
         </div>
 
         {apiKey ? (
