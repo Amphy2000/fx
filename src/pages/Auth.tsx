@@ -67,11 +67,16 @@ const Auth = () => {
 
   const getUserIP = async (): Promise<string> => {
     try {
-      const response = await fetch('https://api.ipify.org?format=json');
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000); // 3s timeout
+      const response = await fetch('https://api.ipify.org?format=json', {
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
       const data = await response.json();
       return data.ip;
     } catch (error) {
-      console.error('Failed to get IP:', error);
+      // Non-critical — never block login/signup over IP fetch failure
       return 'unknown';
     }
   };

@@ -1,0 +1,42 @@
+name: Supabase Keep-Alive
+
+on:
+  schedule:
+    # Runs every 3 days at 06:00 UTC (well within Supabase's 7-day pause window)
+    - cron: '0 6 */3 * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  keep-alive:
+    name: Ping Supabase Database
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://nrwgwenyphmbxaddyrcu.supabase.co' }}
+      SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yd2d3ZW55cGhtYnhhZGR5cmN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyODAzMTksImV4cCI6MjA4OTg1NjMxOX0.jogYtlnswwj7wT4oIY7iVdLxfEnu_sEpuyxU7ogaf9o' }}
+
+    steps:
+      - name: Ping Supabase REST & Database
+        run: |
+          echo "Pinging Supabase to prevent inactivity pause..."
+          
+          # Query a lightweight table to generate actual Postgres activity
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${SUPABASE_URL}/rest/v1/profiles?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_KEY}")
+            
+          echo "Database query response code: HTTP $RESPONSE"
+          
+          # Also ping auth settings endpoint
+          AUTH_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${SUPABASE_URL}/auth/v1/settings" \
+            -H "apikey: ${SUPABASE_KEY}")
+            
+          echo "Auth settings response code: HTTP $AUTH_RESPONSE"
+          
+          if [ "$RESPONSE" -ge 200 ] && [ "$RESPONSE" -lt 500 ]; then
+            echo "✅ Supabase project is active and responding!"
+          else
+            echo "⚠️ Non-success status: $RESPONSE. Please check your Supabase project status."
+            exit 1
+          fi
